@@ -1,5 +1,43 @@
-<nav-bar class="Navbar" style="width: 200px; display: flex; justify-content: space-between">
-  <a href="/" data-link>home</a>
-  <a href="/login" data-link>login</a>
-  <a href="/game" data-link>game</a>
+<nav-bar class="navbar navbar-expand-lg">
+  <style>
+    .navbar {
+      background-color: #303D29;
+      --bs-navbar-toggler-icon-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='white' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+    }
+    .logo-image {
+      margin-top: -6%;
+      width: 150px;
+      height: auto;
+    }
+    .nav-link {
+      color: white;
+    }
+    .nav-link:hover {
+      color: #756655;
+    }
+    .navbar-toggler {
+      color: white;
+      border-color: white;
+    }
+  </style>
+  <nav class="navbar navbar-expand-lg">
+    <div class="container-fluid">
+      <a href="/" data-link class="navbar-brand">
+        <img src="./srcs/assets/logo.svg" alt="logo" class="d-inline-block align-text-top logo-image">
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <div class="navbar-nav">
+          <a class="nav-link" href="/game" data-link>친구목록</a>
+          <a class="nav-link" href="/login" data-link>로그아웃</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+  <div class="float-right">
+    <button class="btn btn-outline-success" id="profileCardModalBtn">profile</button>
+    <profile-card data-component="ProfileCard"></profile-card>
+  </div>
 </nav-bar>
