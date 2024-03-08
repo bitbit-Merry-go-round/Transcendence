@@ -5,6 +5,7 @@ import HomeView from "@/views/home/home_view";
 import LoginView from "@/views/login/login_view";
 import GameView from "@/views/game/game_view";
 import NavBar from "@/views/components/nav_bar";
+import ProfileCard from "@/views/components/profile_card";
 import viewClasses from "@/views/viewClasses";
 
 // CONFIG file path
