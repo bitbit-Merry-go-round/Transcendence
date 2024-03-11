@@ -1,0 +1,44 @@
+body {
+    font-family: 'SCoreDream';
+    font-weight: 500;
+}
+
+.home-view {
+    height: 100vh;
+    background-color: #ECEEE7;
+}
+
+.img-login {
+    background-image: url(./assets/forest.jpeg);
+    height: 100vh; 
+    background-repeat: no-repeat; 
+    background-size: cover;
+    background-position: center;
+}
+
+.img-logo {
+    margin-top: 5%;
+    margin-bottom: 5%;
+}
+.btn {
+    --bs-btn-font-family: 'SCoreDream';
+    --bs-btn-font-weight: 600;
+}
+
+.btn-primary {
+    --bs-btn-color: #fff;
+    --bs-btn-bg: #97B278;
+    --bs-btn-border-color: #97B278;
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: ##b3baa5;
+    --bs-btn-hover-border-color: #b3baa5;
+    --bs-btn-focus-shadow-rgb: 49,132,253;
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: #b3baa5;
+    --bs-btn-active-border-color: #b3baa5;
+    --bs-btn-active-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
+    --bs-btn-disabled-color: #fff;
+    --bs-btn-disabled-bg: #D0D8C0;
+    --bs-btn-disabled-border-color: #D0D8C0;
+}
+
