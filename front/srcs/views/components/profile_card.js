@@ -20,10 +20,8 @@ export default class ProfileCard extends View {
       
       const force = 80;
 
-      const rotateX = -(y / window.innerHeight) * force;
-      const rotateY = (x / window.innerWidth) * force;
-      
-      console.log(x,y, '->' , rotateX, rotateY);
+      const rotateX = +(y / window.innerHeight) * force;
+      const rotateY = -(x / window.innerWidth) * force;
       
       profileCard.style.transform = `translate(-50%, -50%) perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
     }, false);
