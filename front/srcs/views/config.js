@@ -9,6 +9,10 @@ export default {
       {
         "className": "NavBar",
         "fileName": "nav_bar.html"
+      },
+      {
+        "className": "ProfileCard",
+        "fileName": "profile_card.html"
       }
     ],
     "home": [ 
