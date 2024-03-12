@@ -7,6 +7,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
 import { GameData, Player } from "@/data/game_data";
 import ObservableObject from "@/lib/observable_object";
+import GUI from "node_modules/lil-gui/dist/lil-gui.esm.min.js";
 
 const FRAME_TIME_THRESHOLD = 0.01;
 const MAX_PEDDLE_SPEED = 30;
@@ -40,7 +41,7 @@ const PLAYER_POSITION = Object.freeze({
  *  }}
  */
 const controlMap = {
-   "ArrowLeft": {
+  "ArrowLeft": {
     player: 0,
     x: -1,
     y: 0,
@@ -67,7 +68,6 @@ const controlMap = {
  */
 export default class Scene {
 
-
   #physics;
   #scene;
   #gameData;
@@ -78,14 +78,29 @@ export default class Scene {
   #windowSize;
   /** @type {THREE.PerspectiveCamera} */
   #camera;
+  /** @type {HTMLAudioElement} */
+  #bgm;
 
   /** @type {THREE.WebGLRenderer} */
   #renderer;
-  
+
+  /** @type {{
+   * ambientLight: THREE.AmbientLight,
+   * directionalLight: THREE.DirectionalLight
+   * }} */ //@ts-ignore: setLights
+  #lights = {};
+
+  lightConfigs = {
+    ambientColor: 0xffffff,
+    ambientIntensity: 2.1,
+    directionalColor: 0xffffff,
+    directionalIntensity: 2.1
+  }
+
   /** @type {{
    *   clock: THREE.Clock,
    *   elapsed: number
-  * }} */
+   * }} */
   #time;
 
   /** @type {Array<{
@@ -98,11 +113,23 @@ export default class Scene {
   /**
    * @type {{
    *  mesh: THREE.Mesh | null,
-   *  physicsId: number | null
+   *  physicsId: number | null,
    * }} 
    */
   #ball = { mesh: null, physicsId: null };
+
+  ballColor = 0xff0000;
+
+  /**
+   * @type {{
+   *  [key: number]: THREE.Mesh // physicsId: Mesh
+   * }} 
+   */
+  #walls = {}; 
   
+  /** @type {number} */
+  wallColor = 0x00ff00;
+
   /** @type {{
    *    mesh: THREE.Mesh,
    *    physicsId: number
@@ -110,13 +137,19 @@ export default class Scene {
    */
   #peddles = [];
 
-	/** @type {number[]} */
-	#eventsIds = [];
+  peddleColors = {
+    "player1": 0x00ffff,
+    "player2": 0xffff00,
+  };
 
-	#hitSound = {
-		sound: new Audio("assets/sound/hit.mp3"),
-		lastPlayed: 0
-	};
+  /** @type {number[]} */
+  #eventsIds = [];
+
+  #hitSound = {
+    sound: new Audio("assets/sound/hit.mp3"),
+    lastPlayed: 0,
+    volume: 0.3
+    };
 
   /** @type {{
    *    pressed: {
@@ -169,14 +202,14 @@ export default class Scene {
     this.#load()
       .#init()
       .#addObjects()
-      .#addHelpers()
       .#addControls()
-			.#addEvents()
+      .#addEvents()
+      .#addHelpers()
       .#startRender();
   }
 
   prepareDisappear() {
-    
+
   }
 
   #load() {
@@ -204,11 +237,11 @@ export default class Scene {
         root.add(this.#gameScene);
         this.#gameScene.position.copy(screen.position)
         this.#gameScene.position.z += 0.08;
-        
+
         this.#gameScene.scale.set(
-         screenSize.x / sceneSize.x - 0.02,
-         screenSize.y / sceneSize.y - 0.015,
-         screenSize.z / sceneSize.z  
+          screenSize.x / sceneSize.x - 0.02,
+          screenSize.y / sceneSize.y - 0.015,
+          screenSize.z / sceneSize.z  
         );
         this.#scene.add(model);
       },
@@ -216,25 +249,26 @@ export default class Scene {
       },
       (error) => {
         console.error("load error", error);
-        }
+      }
     )
 
-    
+
     const rgbeLoader = new RGBELoader();
     rgbeLoader.load("assets/night_field.hdr",
       (environmentMap) =>
-{
-   environmentMap.mapping = THREE.EquirectangularReflectionMapping;
+      {
+        environmentMap.mapping = THREE.EquirectangularReflectionMapping;
 
-    this.#scene.background = environmentMap;
-    this.#scene.environment = environmentMap;
-    this.#scene.backgroundIntensity = 1;
-})
+        this.#scene.background = environmentMap;
+        this.#scene.environment = environmentMap;
+        this.#scene.backgroundBlurriness = 0.1;
+        this.#scene.backgroundIntensity = 1;
+      })
 
 
-const bgm = new Audio("assets/sound/bgm1.mp3");
-bgm.volume = 0.2;
-bgm.play()
+    this.#bgm = new Audio("assets/sound/bgm1.mp3");
+    this.#bgm.volume = 0.2;
+    this.#bgm.play()
 
     return this;
   }
@@ -246,11 +280,11 @@ bgm.play()
 
   #init() {
     this.#setLights()
-    .#setCamera()
-    .#setRenderer()
-    .#addResizeCallback()
-    .#addVisibleCallback()
-    .#setTime()
+      .#setCamera()
+      .#setRenderer()
+      .#addResizeCallback()
+      .#addVisibleCallback()
+      .#setTime()
     return this;
   }
 
@@ -264,7 +298,7 @@ bgm.play()
     const mesh = new THREE.Mesh(
       new THREE.SphereGeometry(1, 16, 16),
       new THREE.MeshStandardMaterial({
-        color: 0xff0000,
+        color: this.ballColor,
         metalness: 0.3,
         roughness: 0.4
       })
@@ -291,7 +325,7 @@ bgm.play()
     this.#gameScene.add(mesh);
     this.#ball = {
       mesh,
-      physicsId
+      physicsId,
     };
     return this;
   }
@@ -308,7 +342,7 @@ bgm.play()
       wallType: WALL_TYPES.safeWall,
       direction: DIRECTION.LEFT,
     };
-    
+
     safeWalls[1].data = {
       wallType: WALL_TYPES.safeWall,
       direction: DIRECTION.RIGHT,
@@ -334,19 +368,19 @@ bgm.play()
   }
 
   /** @param {{
-    *   width: number,
-    *   height: number
-    * }} wallSize
-    * @param {{
-    *   x: number,
-    *   y: number
-    * }[]} wallPositions
-    */
+   *   width: number,
+   *   height: number
+   * }} wallSize
+   * @param {{
+   *   x: number,
+   *   y: number
+   * }[]} wallPositions
+   */
   #addWall(wallSize, wallPositions) {
 
     const wallGeometry = new THREE.BoxGeometry(wallSize.width, wallSize.height);
     const wallMaterial = new THREE.MeshStandardMaterial({
-      color: 0x00ff00,
+      color: this.wallColor,
       metalness: 0.3,
       roughness: 0.4
     });
@@ -361,16 +395,16 @@ bgm.play()
     });
 
     const wallPhysics = wallPositions.map(pos => {
-        return PhysicsEntity.createRect({
-          type: "IMMOVABLE",
-          width: wallSize.width,
-          height: wallSize.height,
-          center: {
-            x: pos.x, 
-            y: pos.y
-          }
-        });
+      return PhysicsEntity.createRect({
+        type: "IMMOVABLE",
+        width: wallSize.width,
+        height: wallSize.height,
+        center: {
+          x: pos.x, 
+          y: pos.y
+        }
       });
+    });
     const wallPhysicsId = this.#physics.addObject(...wallPhysics);
     for (let i = 0; i < wallPhysicsId.length; ++i) {
       const physicsId = wallPhysicsId[i];
@@ -380,6 +414,7 @@ bgm.play()
           physicsId: physicsId
         },
       );
+      this.#walls[physicsId] = wallMeshes[i];
     }
     this.#gameScene.add(...wallMeshes);
     return wallPhysics;
@@ -390,22 +425,20 @@ bgm.play()
       width: 3,
       height: 1
     };
-    
+
     const geometry = new THREE.BoxGeometry(
       size.width,
       size.height
     );
-    const colors = [
-      0x0000ff,
-      0x00ffff
-    ];
-    const materials = colors.map(color =>
-      new THREE.MeshStandardMaterial({
+
+    const materials = Object.entries(this.peddleColors).map(([_, color]) => {
+      return new THREE.MeshStandardMaterial({
         color: color,
         metalness: 0.3,
         roughness: 0.5,
       })
-    );
+    })
+
     const positions = [
       {
         x: 0,
@@ -425,6 +458,7 @@ bgm.play()
       mesh.position.set(pos.x, pos.y, 0);
       return mesh;
     });
+
     const physicsEntities = positions.map(pos => 
       PhysicsEntity.createRect({
         type: "MOVABLE",
@@ -451,27 +485,19 @@ bgm.play()
   }
 
   #setLights() {
-    const ambientLight = new THREE.AmbientLight(0xffffff, 2.1);
-    const directionalLight = new THREE.DirectionalLight(
-      0xffffff,
-      1
-    );
-    directionalLight.castShadow = true;
-    directionalLight.shadow.mapSize.set(1024, 1024);
-    directionalLight.shadow.camera.far = 15;
-    directionalLight.position.set(5, 5, 2);
-    //   this.#scene.add(ambientLight, directionalLight);
 
-    const gameAmbientLight = new THREE.AmbientLight(0xffffff, 2.1);
+    const gameAmbientLight = new THREE.AmbientLight(this.lightConfigs.ambientColor, this.lightConfigs.ambientIntensity);
     const gameDirectionalLight = new THREE.DirectionalLight(
-      0xffffff,
-      1
+      this.lightConfigs.directionalcolor,
+      this.lightConfigs.directionalIntensity
     );
     gameDirectionalLight.castShadow = true;
     gameDirectionalLight.shadow.mapSize.set(1024, 1024);
     gameDirectionalLight.shadow.camera.far = 15;
     gameDirectionalLight.position.set(0, 0, 1);
     this.#gameScene.add(gameAmbientLight, gameDirectionalLight);
+    this.#lights.ambientLight = gameAmbientLight;
+    this.#lights.directionalLight = gameDirectionalLight;
     return this;
   }
 
@@ -491,7 +517,8 @@ bgm.play()
   #setRenderer() {
     this.#renderer = new THREE.WebGLRenderer({
       canvas: this.#canvas,
-      alpha: true,
+      alpha: false,
+      antialias: true
     });
     this.#renderer.shadowMap.enabled = true;
     this.#renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -523,7 +550,7 @@ bgm.play()
   }
 
   #addVisibleCallback() {
-    
+
     const onVisibilityChange = ( /** @param {Boolean} visible */ (visible) => {
       this.isBallMoving = visible;
       if (visible) {
@@ -547,7 +574,18 @@ bgm.play()
     return this;
   }
 
+  /*
+   * Dev tool
+   */
   #addHelpers() {
+
+    this.gui = new GUI();
+    this.configs = {
+      envMapIntensity: 1,
+      bgmVolume: 0.2,
+      effectVolume: 0.3,
+    };
+
     const axesHelper = new THREE.AxesHelper(5);
     axesHelper.setColors(
       new THREE.Color(0xffffff), 
@@ -561,7 +599,90 @@ bgm.play()
       new THREE.Color(0x0000ff), 
       new THREE.Color(0x0000ff)
     );
-    this.#gameScene.add(gameAxesHelper);
+    this.#gameScene.add(gameAxesHelper); 
+
+
+    const sound = this.gui.addFolder("sound");
+
+    sound.add(this.configs, "bgmVolume")
+    .min(0)
+    .max(1)
+      .step(0.001)
+      .onChange(volume => {
+        this.#bgm.volume = volume;
+      })
+  
+    sound.add(this.configs, "effectVolume")
+    .min(0)
+    .max(1)
+      .step(0.001)
+      .onChange(volume => {
+        this.#hitSound.volume = volume;
+      })
+
+    const color = this.gui.addFolder("color");
+
+    color.addColor(this, "ballColor")
+      .onChange(newColor => {
+        if (this.#ball.mesh)
+          this.#ball.mesh.material.color.set(newColor);
+      })
+
+    color.addColor(this, "wallColor")
+      .onChange(newColor => {
+        Object.entries(this.#walls) 
+          .forEach(([id, mesh]) => {
+            mesh.material.color.set(newColor);
+          })
+        
+      })
+
+    Object.entries(this.peddleColors).forEach(([player], index) => {
+      color.addColor(this.peddleColors, player) 
+        .onChange(newColor => {
+          this.#peddles[index].mesh.material.color.set(newColor);
+        })
+    })
+
+    const light = this.gui.addFolder("light");
+
+    light.add(this.configs, "envMapIntensity")
+      .min(0)
+      .max(3)
+      .step(0.001)
+      .onChange((intensity) => {
+        this.#scene.traverse(child => {
+          if (child.isMesh && child.material.isMeshStandardMaterial) {
+            child.material.envMapIntensity = intensity;
+          }
+        })
+      })
+    light.addColor(this.lightConfigs, "ambientColor")
+      .onChange(color => {
+        this.#lights.ambientLight.color.set(color);
+      })
+
+    light.addColor(this.lightConfigs, "directionalColor")
+      .onChange(color => {
+        this.#lights.directionalLight.color.set(color);
+      })
+
+    light.add(this.lightConfigs, "ambientIntensity")
+      .min(0).max(5)
+      .step(0.01)
+      .onChange(value => this.#lights.ambientLight.intensity = value);
+    
+    light.add(this.lightConfigs, "directionalIntensity")
+      .min(0).max(5)
+      .step(0.01)
+      .onChange(value => this.#lights.directionalLight.intensity = value);
+
+    const background = this.gui.addFolder("background");
+    background.add(this.#scene, "backgroundBlurriness")
+      .min(0).max(1).step(0.001);
+    background.add(this.#scene, "backgroundIntensity")
+      .min(0).max(1).step(0.001);
+
     return this;
   }
 
@@ -581,7 +702,7 @@ bgm.play()
       if (!controlKey)
         return ;
       if (this.#peddleControls[controlKey.player].pressed.key == 
-      event.key) {
+        event.key) {
         this.#peddleControls[controlKey.player].pressed = {
           x: 0, 
           y: 0,
@@ -593,31 +714,31 @@ bgm.play()
     return this;
   }
 
-	#addEvents() {
-		const id = this.#physics.addCollisionCallback(
-			(collider, collidee, time) => {
-				if (Math.abs(this.#time.elapsed - this.#hitSound.time) < SOUND_EFFECT_THRESHOLD)
-					return false;
-				if (collider.isShape("CIRCLE") || collidee.isShape("CIRCLE")) {
-					return true;
-				}
-				return false;
-			},
-			(collider, collidee, time) => {
+  #addEvents() {
+    const id = this.#physics.addCollisionCallback(
+      (collider, collidee, time) => {
+        if (Math.abs(this.#time.elapsed - this.#hitSound.time) < SOUND_EFFECT_THRESHOLD)
+          return false;
+        if (collider.isShape("CIRCLE") || collidee.isShape("CIRCLE")) {
+          return true;
+        }
+        return false;
+      },
+      (collider, collidee, time) => {
         if (collidee.data && collidee.data.wallType &&
-        collidee.data.wallType == WALL_TYPES.trapWall) {
+          collidee.data.wallType == WALL_TYPES.trapWall) {
           this.#lostSide = collidee.data.direction;
           this.isBallMoving = false;
         }
-				this.#hitSound.sound.currentTime = 0;
-				this.#hitSound.sound.play();
-        this.#hitSound.sound.volume = 1;
-				this.#hitSound.time = this.#time.elapsed;
-			}
-		);
-		this.#eventsIds.push(id);
-		return this;
-	}
+        this.#hitSound.sound.currentTime = 0;
+        this.#hitSound.sound.volume = this.#hitSound.volume;
+        this.#hitSound.sound.play();
+        this.#hitSound.time = this.#time.elapsed;
+      }
+    );
+    this.#eventsIds.push(id);
+    return this;
+  }
 
   /**
    * @param {{
@@ -701,7 +822,7 @@ bgm.play()
       if (!this.isBallMoving && 
         this.#ball.mesh && this.#ball.physicsId) {
         this.#removeBall()
-        .#updateGameData();
+          .#updateGameData();
         this.isBallMoving = true;
       }
       this.#updateObjects({frameTime, frameSlice})

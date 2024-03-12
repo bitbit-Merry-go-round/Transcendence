@@ -20,6 +20,10 @@ app.use("/three", express.static(path.resolve(__dirname, "node_modules", "three"
   { extensions: ["js"] }
 ));
 
+app.use("/node_modules", express.static(path.resolve(__dirname, "node_modules"),
+  { extensions: ["js"] }
+));
+
 app.get("/*", (req, res) => {
   res.sendFile(path.resolve("front/srcs", "index.html"));
 });
