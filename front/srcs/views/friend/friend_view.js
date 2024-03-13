@@ -2,7 +2,10 @@ import View from "@/lib/view";
 
 export default class FriendView extends View {
 
-  constructor() {
+
+  constructor({data}) {
+    
     super();
+    this.data = data
   }
 }
