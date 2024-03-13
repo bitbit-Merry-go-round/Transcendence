@@ -23,8 +23,8 @@ const WALL_TYPES = Object.freeze({
 const DIRECTION = Object.freeze({
   top: "TOP",
   bottom: "BOTTOM",
-  LEFT: "LEFT",
-  RIGHT: "RIGHT"
+  left: "LEFT",
+  right: "RIGHT"
 });
 
 const PLAYER_POSITION = Object.freeze({
@@ -71,8 +71,16 @@ export default class Scene {
   #physics;
   #scene;
   #gameData;
+  #textureLoader = new THREE.TextureLoader();
   /** @type {"TOP" | "BOTTOM" | null} */
   #lostSide = null;
+
+  #gameSize = {
+    width: 100,
+    height: 100
+  };
+
+
   #gameScene;
   #canvas;
   #windowSize;
@@ -119,6 +127,12 @@ export default class Scene {
   #ball = { mesh: null, physicsId: null };
 
   ballColor = 0xff0000;
+  #ballRadiusInGame = 0.03;
+  #ballSpeed = 20;
+  #ballStartDirection = {
+    x: DIRECTION.left,
+    y: DIRECTION.bottom
+  };
 
   /**
    * @type {{
@@ -126,6 +140,7 @@ export default class Scene {
    * }} 
    */
   #walls = {}; 
+  #wallTextureRepeat = 10;
   
   /** @type {number} */
   wallColor = 0x00ff00;
@@ -141,6 +156,11 @@ export default class Scene {
     "player1": 0x00ffff,
     "player2": 0xffff00,
   };
+
+  peddleSizeInGame = {
+    width: 0.15,
+    height: 0.015
+  }
 
   /** @type {number[]} */
   #eventsIds = [];
@@ -193,7 +213,8 @@ export default class Scene {
     this.#canvas = canvas;
     this.#gameData = gameData;
     this.#scene = new THREE.Scene();
-    this.#gameScene = new THREE.Scene();
+
+    this.#gameScene = new THREE.Group();
     this.#windowSize = {
       width: canvas.width,
       height: canvas.height
@@ -214,6 +235,7 @@ export default class Scene {
 
   #load() {
 
+    // Model
     const gltfLoader = new GLTFLoader();
     gltfLoader.load(
       "assets/macintosh/scene.gltf",
@@ -221,28 +243,31 @@ export default class Scene {
         const model = gltf.scene;
         model.scale.set(25, 25, 25);
         const root = model.children[0].children[0].children[0];
-        const screen = root.children[2];
+        const screen = root.children[2].children[0];
         const screenBox= new THREE.Box3().setFromObject(screen);
         const screenSize = {
           x: screenBox.max.x - screenBox.min.x,
           y: screenBox.max.y - screenBox.min.y,
           z: screenBox.max.z - screenBox.min.z
         };
+
         const sceneBox = new THREE.Box3().setFromObject(this.#gameScene);
         const sceneSize = {
           x: sceneBox.max.x - sceneBox.min.x,
           y: sceneBox.max.y - sceneBox.min.y,
           z: sceneBox.max.z - sceneBox.min.z
         };
-        root.add(this.#gameScene);
-        this.#gameScene.position.copy(screen.position)
-        this.#gameScene.position.z += 0.08;
 
-        this.#gameScene.scale.set(
-          screenSize.x / sceneSize.x - 0.02,
-          screenSize.y / sceneSize.y - 0.015,
-          screenSize.z / sceneSize.z  
-        );
+        this.#gameScene.position.copy(screen.position)
+
+         this.#gameScene.scale.set(
+           (screenSize.x / sceneSize.x) * 0.75,
+           (screenSize.y / sceneSize.y) * 0.65,
+           screenSize.z / sceneSize.z  
+         );
+
+        screen.parent.add(this.#gameScene);
+        screen.removeFromParent();
         this.#scene.add(model);
       },
       (_) => {
@@ -250,9 +275,10 @@ export default class Scene {
       (error) => {
         console.error("load error", error);
       }
+    
     )
 
-
+    // Background
     const rgbeLoader = new RGBELoader();
     rgbeLoader.load("assets/night_field.hdr",
       (environmentMap) =>
@@ -263,12 +289,22 @@ export default class Scene {
         this.#scene.environment = environmentMap;
         this.#scene.backgroundBlurriness = 0.1;
         this.#scene.backgroundIntensity = 1;
+
+        this.#gameScene.background = environmentMap;
+        this.#gameScene.environment = environmentMap;
+        this.#gameScene.backgroundBlurriness = 0.1;
+        this.#gameScene.backgroundIntensity = 1;
+
       })
 
 
+
+
+    // bgm
     this.#bgm = new Audio("assets/sound/bgm1.mp3");
     this.#bgm.volume = 0.2;
     this.#bgm.play()
+
 
     return this;
   }
@@ -280,6 +316,7 @@ export default class Scene {
 
   #init() {
     this.#setLights()
+      .#setGameBackground()
       .#setCamera()
       .#setRenderer()
       .#addResizeCallback()
@@ -304,15 +341,20 @@ export default class Scene {
       })
     );
     mesh.position.set(0, 0, 0);
+    const ballWidth = this.#gameSize.width * this.#ballRadiusInGame;
+    const ballHeight = this.#gameSize.height* this.#ballRadiusInGame;
+    mesh.scale.x = ballWidth ;
+    mesh.scale.y = ballHeight;
+  
     const ballPhysics = PhysicsEntity.createCircle({
       type: "MOVABLE",
       collideType: "DYNAMIC",
-      radius: 1,
+      radius: Math.max(ballWidth, ballHeight),
       center: { x: 0, y:0 }
     });
     ballPhysics.veolocity = {
-      x: 10,
-      y: 15
+      x: (this.#ballStartDirection.x == DIRECTION.right? 1 : -1) * this.#ballSpeed,
+      y: (this.#ballStartDirection.y == DIRECTION.top? 1 : -1) * this.#ballSpeed,
     };
     const physicsId = this.#physics.addObject(ballPhysics)[0];
 
@@ -331,27 +373,33 @@ export default class Scene {
   }
 
   #addWalls() {
-    const safeWalls = this.#addWall({ width: 1, height: 40, }, 
+    const safeWalls = this.#addWall({ 
+      width: this.#gameSize.width * 0.05,
+      height: this.#gameSize.height * 0.9
+    }, 
       [
-        { x: -10, y: 0 },
-        { x: 10, y: 0 }
+        { x: this.#gameSize.width * -0.45, y: 0, z: 0.5 },
+        { x: this.#gameSize.width * 0.45, y: 0, z: 0.5 }
       ]
     );
 
     safeWalls[0].data = {
       wallType: WALL_TYPES.safeWall,
-      direction: DIRECTION.LEFT,
+      direction: DIRECTION.left,
     };
 
     safeWalls[1].data = {
       wallType: WALL_TYPES.safeWall,
-      direction: DIRECTION.RIGHT,
+      direction: DIRECTION.right,
     };
 
-    const trapWalls = this.#addWall({ width: 20, height:1 },
+    const trapWalls = this.#addWall({
+      width: this.#gameSize.width * 0.95, 
+      height:this.#gameSize.height* 0.05, 
+    },
       [
-        { x: 0, y: 20 },
-        { x: 0, y: -20 }
+        { x: 0, y: this.#gameSize.height * -0.45, z: 0.4 },
+        { x: 0, y: this.#gameSize.height * 0.45, z: 0.4 }
       ]
     );
 
@@ -367,34 +415,76 @@ export default class Scene {
     return this;
   }
 
+  #resizeTexture({texture, x, y}) {
+    texture.repeat.x = x;
+    texture.repeat.y = y;
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.magFilter = THREE.LinearFilter; 
+    texture.minFilter = THREE.NearestMipMapLinearFilter;
+  }
+
+  #createMaterialFromTexture(name, onLoad = (texture) => {}) {
+
+    const colorTexture = this.#textureLoader.load(
+      `assets/textures/${name}/diff.jpg`,
+      onLoad
+    )
+
+    const normalTexture = this.#textureLoader.load(
+      `assets/textures/${name}/nor.png`,
+      onLoad
+    );
+
+    const aoRoughnessMetallnessTexture = this.#textureLoader.load(
+      `assets/textures/${name}/arm.jpg`,
+      onLoad
+    );
+
+    const material = new THREE.MeshStandardMaterial({
+      map: colorTexture,
+      normalMap: normalTexture,
+      aoMap: aoRoughnessMetallnessTexture,
+      roughnessMap: aoRoughnessMetallnessTexture,
+      metalnessMap: aoRoughnessMetallnessTexture,
+    });
+
+    return material;
+  }
+
   /** @param {{
    *   width: number,
    *   height: number
    * }} wallSize
    * @param {{
    *   x: number,
-   *   y: number
+   *   y: number,
+   *   z: number
    * }[]} wallPositions
    */
   #addWall(wallSize, wallPositions) {
 
-    const wallGeometry = new THREE.BoxGeometry(wallSize.width, wallSize.height);
-    const wallMaterial = new THREE.MeshStandardMaterial({
-      color: this.wallColor,
-      metalness: 0.3,
-      roughness: 0.4
-    });
+    const geometry = new THREE.BoxGeometry(wallSize.width, wallSize.height);
+    const material = this.#createMaterialFromTexture("brick", 
+      (texture) => {
+        this.#resizeTexture({
+        texture,
+          x: 1 / wallSize.height * this.#wallTextureRepeat,
+          y: 1 / wallSize.width * this.#wallTextureRepeat,
+      })
+      }
+    ) 
 
-    const wallMeshes = wallPositions.map(pos =>  {
+    const meshes = wallPositions.map(pos =>  {
       const mesh = new THREE.Mesh(
-        wallGeometry, 
-        wallMaterial
+        geometry, 
+        material
       );
-      mesh.position.set(pos.x, pos.y, 0);
+      mesh.position.set(pos.x, pos.y, pos.z);
       return mesh;
     });
 
-    const wallPhysics = wallPositions.map(pos => {
+    const physics = wallPositions.map(pos => {
       return PhysicsEntity.createRect({
         type: "IMMOVABLE",
         width: wallSize.width,
@@ -405,25 +495,24 @@ export default class Scene {
         }
       });
     });
-    const wallPhysicsId = this.#physics.addObject(...wallPhysics);
-    for (let i = 0; i < wallPhysicsId.length; ++i) {
-      const physicsId = wallPhysicsId[i];
+    const physicsIds = this.#physics.addObject(...physics);
+    for (let i = 0; i < physicsIds.length; ++i) {
       this.#objects.push(
         {
-          mesh: wallMeshes[i],
-          physicsId: physicsId
+          mesh: meshes[i],
+          physicsId: physicsIds[i]
         },
       );
-      this.#walls[physicsId] = wallMeshes[i];
+      this.#walls[physicsIds[i]] = meshes[i];
     }
-    this.#gameScene.add(...wallMeshes);
-    return wallPhysics;
+    this.#gameScene.add(...meshes);
+    return physics;
   }
 
   #addPeddles() {
     const size = {
-      width: 3,
-      height: 1
+      width: this.#gameSize.width * this.peddleSizeInGame.width,
+      height: this.#gameSize.height * this.peddleSizeInGame.height,
     };
 
     const geometry = new THREE.BoxGeometry(
@@ -442,11 +531,11 @@ export default class Scene {
     const positions = [
       {
         x: 0,
-        y: -15
+        y: this.#gameSize.height * - 0.4
       },
       {
         x: 0,
-        y: 15
+        y: this.#gameSize.height * 0.4
       }
     ];
     const meshes = materials.map((material, index) => {
@@ -501,6 +590,15 @@ export default class Scene {
     return this;
   }
 
+  #setGameBackground() {
+
+    const geometry = new THREE.BoxGeometry();
+    
+    const material = new THREE.MeshBasicMaterial();
+
+    return this;
+  }
+
   #setCamera() {
     this.#camera = new THREE.PerspectiveCamera(
       75,
@@ -517,7 +615,7 @@ export default class Scene {
   #setRenderer() {
     this.#renderer = new THREE.WebGLRenderer({
       canvas: this.#canvas,
-      alpha: false,
+      alpha: true,
       antialias: true
     });
     this.#renderer.shadowMap.enabled = true;
@@ -525,6 +623,15 @@ export default class Scene {
     this.#renderer.setSize(this.#windowSize.width, 
       this.#windowSize.height);
     this.#renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    //this.#gameRenderer = new THREE.WebGLRenderer({
+    //  canvas: this.#canvas,
+    //  alpha: true,
+    //});
+    //this.#gameRenderer.shadowMap.enabled = true;
+    //this.#gameRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    //this.#gameRenderer.setSize(100, 100);
+    //this.#gameRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     return this;
   }
 
@@ -835,9 +942,6 @@ export default class Scene {
       this.#renderId = window.requestAnimationFrame(tick);
       this.#updateObjects({frameTime, frameSlice})
       this.#renderer.render(this.#scene, this.#camera);
-      this.#renderer.autoClear = false;
-      this.#renderer.render(this.#gameScene, this.#camera);
-      this.#renderer.autoClear = true;
       this.controls.update();
     }).bind(this);
 

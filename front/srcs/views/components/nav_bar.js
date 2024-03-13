@@ -8,6 +8,7 @@ export default class NavBar extends View {
 
   connectedCallback() {
     super.connectedCallback();
+    console.log("navbar connected");
     const profileCardModalBtn = document.getElementById('profileCardModalBtn');
     const profileCardModal = document.getElementById('profileCardModal');
     const modalCloseBtn = document.querySelector('.btn-close');
