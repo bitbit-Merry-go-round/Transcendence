@@ -101,7 +101,7 @@ export default class Scene {
    *   clock: THREE.Clock,
    *   elapsed: number
    * }} */
-  #time;
+ #time;
 
   /** @type {Array<{
    *    mesh: THREE.Mesh,
@@ -715,7 +715,7 @@ export default class Scene {
   }
 
   #addEvents() {
-    const id = this.#physics.addCollisionCallback(
+    const hitSoundEvent = this.#physics.addCollisionCallback(
       (collider, collidee, time) => {
         if (Math.abs(this.#time.elapsed - this.#hitSound.time) < SOUND_EFFECT_THRESHOLD)
           return false;
@@ -725,18 +725,32 @@ export default class Scene {
         return false;
       },
       (collider, collidee, time) => {
-        if (collidee.data && collidee.data.wallType &&
-          collidee.data.wallType == WALL_TYPES.trapWall) {
-          this.#lostSide = collidee.data.direction;
-          this.isBallMoving = false;
-        }
         this.#hitSound.sound.currentTime = 0;
         this.#hitSound.sound.volume = this.#hitSound.volume;
         this.#hitSound.sound.play();
         this.#hitSound.time = this.#time.elapsed;
       }
     );
-    this.#eventsIds.push(id);
+
+    const ballOutEvent = this.#physics.addCollisionCallback(
+      (collider, collidee, time) => {
+
+        if (!collider.isShape("CIRCLE") && !collidee.isShape("CIRCLE")) {
+          return false;
+        }
+        return (collidee.data && collidee.data.wallType &&
+          collidee.data.wallType == WALL_TYPES.trapWall);
+      },
+      (collider, collidee, time) => {
+        this.#lostSide = collidee.data.direction;
+        this.#removeBall()
+        .#updateGameData();
+        this.isBallMoving = true;
+      }
+    )
+
+    this.#eventsIds.push(hitSoundEvent);
+    this.#eventsIds.push(ballOutEvent);
     return this;
   }
 
@@ -819,12 +833,6 @@ export default class Scene {
       this.#time.elapsed = elapsed;
       let frameSlice = Math.min(frameTime, FRAME_TIME_THRESHOLD);
       this.#renderId = window.requestAnimationFrame(tick);
-      if (!this.isBallMoving && 
-        this.#ball.mesh && this.#ball.physicsId) {
-        this.#removeBall()
-          .#updateGameData();
-        this.isBallMoving = true;
-      }
       this.#updateObjects({frameTime, frameSlice})
       this.#renderer.render(this.#scene, this.#camera);
       this.#renderer.autoClear = false;
