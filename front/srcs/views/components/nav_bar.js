@@ -2,9 +2,8 @@ import View from "@/lib/view";
 
 export default class NavBar extends View {
 
-  constructor({data}) {
+  constructor() {
     super();
-    this.data = data
   }
 
   connectedCallback() {
