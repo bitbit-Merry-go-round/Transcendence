@@ -279,6 +279,18 @@ export default class Physics {
         }
         if (collideAxes.y)
           collider.veolocity.y *= -1;
+
+        if (collideAxes.x && collideAxes.y && collider.isShape("CIRCLE")) {
+          let randomness = (Math.random() - 0.5) * 0.2 ;
+          if (collider.veolocity.x > 0) {
+            collider.veolocity.x += randomness;
+            collider.veolocity.y -= randomness;
+          }
+          else {
+            collider.veolocity.x -= randomness;
+            collider.veolocity.y += randomness;
+          }
+        }
       }
       else {
         collider.acceleration = { x: 0, y: 0 };
