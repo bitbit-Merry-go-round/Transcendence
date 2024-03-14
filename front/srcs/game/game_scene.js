@@ -6,12 +6,13 @@ import { EPSILON } from "@/game/physicsUtils";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
 import { GameData, Player } from "@/data/game_data";
+import ParticleGenerator from "@/game/particleGenerator";
 import ObservableObject from "@/lib/observable_object";
 import GUI from "node_modules/lil-gui/dist/lil-gui.esm.min.js";
 
 const FRAME_TIME_THRESHOLD = 0.01;
-const MAX_PEDDLE_SPEED = 30;
-const PEDDLE_ACCEL = 5;
+const MAX_PEDDLE_SPEED = 50;
+const PEDDLE_ACCEL = 10;
 const PEDDLE_DECEL_RATIO = 0.5;
 const SOUND_EFFECT_THRESHOLD = 0.3;
 
@@ -70,16 +71,23 @@ export default class Scene {
 
   #physics;
   #scene;
+  #scene_objs = {};
   #gameData;
+
   #textureLoader = new THREE.TextureLoader();
   /** @type {"TOP" | "BOTTOM" | null} */
   #lostSide = null;
 
   #gameSize = {
     width: 100,
-    height: 100
+    height: 100,
+    depth: 1
   };
 
+  #depth = {
+    wall: 1,
+    peddle: 0.5
+  };
 
   #gameScene;
   #canvas;
@@ -128,7 +136,7 @@ export default class Scene {
 
   ballColor = 0xff0000;
   #ballRadiusInGame = 0.03;
-  #ballSpeed = 20;
+  #ballSpeed = 30;
   #ballStartDirection = {
     x: DIRECTION.left,
     y: DIRECTION.bottom
@@ -168,8 +176,11 @@ export default class Scene {
   #hitSound = {
     sound: new Audio("assets/sound/hit.mp3"),
     lastPlayed: 0,
-    volume: 0.3
+    volume: 0.8
     };
+
+  /** @type {ParticleGenerator} */
+  #particleGenerator;
 
   /** @type {{
    *    pressed: {
@@ -220,8 +231,10 @@ export default class Scene {
       height: canvas.height
     };
     this.#physics = new Physics();
-    this.#load()
+    this
+      .#load()
       .#init()
+      .#setGameBackground()
       .#addObjects()
       .#addControls()
       .#addEvents()
@@ -238,12 +251,29 @@ export default class Scene {
     // Model
     const gltfLoader = new GLTFLoader();
     gltfLoader.load(
-      "assets/macintosh/scene.gltf",
+      "assets/scene/game_scene.glb",
       (gltf) => {
-        const model = gltf.scene;
-        model.scale.set(25, 25, 25);
-        const root = model.children[0].children[0].children[0];
-        const screen = root.children[2].children[0];
+        
+        const game_scene = gltf.scene;
+        game_scene.scale.set(2, 2, 2);
+        game_scene.children.forEach(obj =>  {
+          this.#scene_objs[obj.name] = obj;
+        });
+
+        /** @type {THREE.Mesh} */
+        const keyboard = this.#scene_objs["keyboard"];
+        keyboard.scale.x *= -1;
+
+
+        /** @type {THREE.Mesh} */
+        const mac = this.#scene_objs["macintosh"];
+        /** @type {THREE.Mesh} */
+        let screen;
+        mac.traverse(obj => {
+          if (obj.name == "screen") //@ts-ignore
+            screen = obj
+        });
+        console.log(this.#scene_objs)
         const screenBox= new THREE.Box3().setFromObject(screen);
         const screenSize = {
           x: screenBox.max.x - screenBox.min.x,
@@ -261,9 +291,61 @@ export default class Scene {
         this.#gameScene.position.copy(screen.position)
 
          this.#gameScene.scale.set(
-           (screenSize.x / sceneSize.x) * 0.75,
-           (screenSize.y / sceneSize.y) * 0.65,
-           screenSize.z / sceneSize.z  
+           (screenSize.x / sceneSize.x) * 0.8,
+           (screenSize.y / sceneSize.y) * 0.7,
+           (screenSize.z / sceneSize.z) * 5 
+         );
+
+        screen.parent.add(this.#gameScene);
+        screen.removeFromParent();
+
+        this.#camera.position.set(
+          0.34,
+          2.6,
+          3
+        );
+        this.#camera.rotation.set(
+          -0.46,
+          0.09,
+          0.04
+        );
+           
+        this.#scene.add(game_scene);
+      },
+      (progress) => {
+      },
+      (error) => {
+        console.error(error);
+      }
+    )
+    /*
+    gltfLoader.load(
+      "assets/macintosh/scene.glb",
+      (gltf) => {
+        const model = gltf.scene;
+        model.scale.set(25, 25, 25);
+        const root = model.children[0].children[0].children[0];
+        const screen = root.children[1];
+        const screenBox= new THREE.Box3().setFromObject(screen);
+        const screenSize = {
+          x: screenBox.max.x - screenBox.min.x,
+          y: screenBox.max.y - screenBox.min.y,
+          z: screenBox.max.z - screenBox.min.z
+        };
+
+        const sceneBox = new THREE.Box3().setFromObject(this.#gameScene);
+        const sceneSize = {
+          x: sceneBox.max.x - sceneBox.min.x,
+          y: sceneBox.max.y - sceneBox.min.y,
+          z: sceneBox.max.z - sceneBox.min.z
+        };
+
+        this.#gameScene.position.copy(screen.position)
+
+         this.#gameScene.scale.set(
+           (screenSize.x / sceneSize.x) * 0.8,
+           (screenSize.y / sceneSize.y) * 0.7,
+           (screenSize.z / sceneSize.z) * 5 
          );
 
         screen.parent.add(this.#gameScene);
@@ -275,7 +357,6 @@ export default class Scene {
       (error) => {
         console.error("load error", error);
       }
-    
     )
 
     // Background
@@ -289,16 +370,8 @@ export default class Scene {
         this.#scene.environment = environmentMap;
         this.#scene.backgroundBlurriness = 0.1;
         this.#scene.backgroundIntensity = 1;
-
-        this.#gameScene.background = environmentMap;
-        this.#gameScene.environment = environmentMap;
-        this.#gameScene.backgroundBlurriness = 0.1;
-        this.#gameScene.backgroundIntensity = 1;
-
       })
-
-
-
+    */
 
     // bgm
     this.#bgm = new Audio("assets/sound/bgm1.mp3");
@@ -316,7 +389,6 @@ export default class Scene {
 
   #init() {
     this.#setLights()
-      .#setGameBackground()
       .#setCamera()
       .#setRenderer()
       .#addResizeCallback()
@@ -343,9 +415,7 @@ export default class Scene {
     mesh.position.set(0, 0, 0);
     const ballWidth = this.#gameSize.width * this.#ballRadiusInGame;
     const ballHeight = this.#gameSize.height* this.#ballRadiusInGame;
-    mesh.scale.x = ballWidth ;
-    mesh.scale.y = ballHeight;
-  
+
     const ballPhysics = PhysicsEntity.createCircle({
       type: "MOVABLE",
       collideType: "DYNAMIC",
@@ -375,11 +445,11 @@ export default class Scene {
   #addWalls() {
     const safeWalls = this.#addWall({ 
       width: this.#gameSize.width * 0.05,
-      height: this.#gameSize.height * 0.9
+      height: this.#gameSize.height 
     }, 
       [
-        { x: this.#gameSize.width * -0.45, y: 0, z: 0.5 },
-        { x: this.#gameSize.width * 0.45, y: 0, z: 0.5 }
+        { x: this.#gameSize.width * -0.5, y: 0, z: this.#depth.wall * 0.55 },
+        { x: this.#gameSize.width * 0.5, y: 0, z: this.#depth.wall * 0.55 }
       ]
     );
 
@@ -394,12 +464,12 @@ export default class Scene {
     };
 
     const trapWalls = this.#addWall({
-      width: this.#gameSize.width * 0.95, 
+      width: this.#gameSize.width * 1, 
       height:this.#gameSize.height* 0.05, 
     },
       [
-        { x: 0, y: this.#gameSize.height * -0.45, z: 0.4 },
-        { x: 0, y: this.#gameSize.height * 0.45, z: 0.4 }
+        { x: 0, y: this.#gameSize.height * -0.5, z: this.#depth.wall * 0.5 },
+        { x: 0, y: this.#gameSize.height * 0.5, z: this.#depth.wall * 0.5 }
       ]
     );
 
@@ -464,7 +534,7 @@ export default class Scene {
    */
   #addWall(wallSize, wallPositions) {
 
-    const geometry = new THREE.BoxGeometry(wallSize.width, wallSize.height);
+    const geometry = new THREE.BoxGeometry(wallSize.width, wallSize.height, this.#depth.wall);
     const material = this.#createMaterialFromTexture("brick", 
       (texture) => {
         this.#resizeTexture({
@@ -517,7 +587,8 @@ export default class Scene {
 
     const geometry = new THREE.BoxGeometry(
       size.width,
-      size.height
+      size.height,
+      this.#depth.peddle
     );
 
     const materials = Object.entries(this.peddleColors).map(([_, color]) => {
@@ -544,7 +615,7 @@ export default class Scene {
         material
       );
       const pos = positions[index];
-      mesh.position.set(pos.x, pos.y, 0);
+      mesh.position.set(pos.x, pos.y, this.#depth.peddle * 0.5);
       return mesh;
     });
 
@@ -592,10 +663,39 @@ export default class Scene {
 
   #setGameBackground() {
 
-    const geometry = new THREE.BoxGeometry();
-    
-    const material = new THREE.MeshBasicMaterial();
+    const size = {
+      x: this.#gameSize.width * 0.8,
+      y: this.#gameSize.height * 0.8,
+      z: this.#gameSize.depth * 0.5
+    };
 
+    /*
+    const container = new THREE.Mesh(
+      new THREE.BoxGeometry(this.#gameSize.width, this.#gameSize.height, size.z),
+      new THREE.MeshBasicMaterial({
+        transparent: true,
+        opacity: 0,
+        depthWrite: false
+      })
+    );
+    container.position.setZ(size.z);
+
+    this.#particleGenerator = new ParticleGenerator({
+      textureLoader: this.#textureLoader,
+      count: 10,
+    });
+    this.#particleGenerator.createParticles();
+    const particles = this.#particleGenerator.getParticles();
+    particles.scale.set(
+      20,
+      20,
+      1
+    );
+
+    particles.position.setZ(size.z * -0.8);
+    container.add(particles);
+    this.#gameScene.add(container);
+    */
     return this;
   }
 
@@ -624,14 +724,6 @@ export default class Scene {
       this.#windowSize.height);
     this.#renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-    //this.#gameRenderer = new THREE.WebGLRenderer({
-    //  canvas: this.#canvas,
-    //  alpha: true,
-    //});
-    //this.#gameRenderer.shadowMap.enabled = true;
-    //this.#gameRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    //this.#gameRenderer.setSize(100, 100);
-    //this.#gameRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     return this;
   }
 
@@ -690,7 +782,7 @@ export default class Scene {
     this.configs = {
       envMapIntensity: 1,
       bgmVolume: 0.2,
-      effectVolume: 0.3,
+      effectVolume: 0.8,
     };
 
     const axesHelper = new THREE.AxesHelper(5);
@@ -941,6 +1033,7 @@ export default class Scene {
       let frameSlice = Math.min(frameTime, FRAME_TIME_THRESHOLD);
       this.#renderId = window.requestAnimationFrame(tick);
       this.#updateObjects({frameTime, frameSlice})
+      //this.#particleGenerator.animate();
       this.#renderer.render(this.#scene, this.#camera);
       this.controls.update();
     }).bind(this);
