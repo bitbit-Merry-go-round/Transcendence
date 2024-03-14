@@ -4,7 +4,7 @@
 	</div>
 	<div class="mb-auto">
 		<div class="d-flex my-5 mx-5">
-			<h1 class="me-5">친구 목록</h1>
+			<h1 class="me-5 page-name">친구 목록</h1>
 			<div class="col-md-4">
 				<div class="input-group">
 					<span class="input-group-text" id="basic-addon1">
@@ -16,7 +16,7 @@
 				</div>
 			</div>
 		</div>
-		<ul class="d-flex flex-column justify-content-start align-self-center" data-for="friend in user.friends">
+		<ul class="d-flex flex-column justify-content-start friend-list align-self-center" data-for="friend in user.friends">
 			<li class="d-flex py-2 my-1 friend-list-element">
 				<img src="{{friend.avatar.url}}" style="width:3em; height:3em; border-radius: 50%;" id="profileCardModalBtn" class="img-button mx-3">
 				<div class="status-circle-sm"></div>
