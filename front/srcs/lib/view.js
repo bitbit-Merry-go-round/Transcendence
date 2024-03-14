@@ -123,7 +123,7 @@ export default class View extends HTMLElement {
       if (matches)  {
         const key = matches[1].split('.')[0];
         if (!this.#reRenderTriggers[key]) {
-          console.error("Fail to add rerender trigget for ", key);
+          console.log("Fail to add rerender trigget for ", key);
           continue;
         }
         this.#reRenderTriggers[key].push({
