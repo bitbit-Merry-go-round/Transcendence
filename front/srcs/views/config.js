@@ -32,6 +32,12 @@ export default {
         "className": "GameView",
         "fileName": "game_view.html"
       }
+    ],
+    "friend": [ 
+      {
+        "className": "FriendView",
+        "fileName": "friend_view.html"
+      }
     ]
   }
 }

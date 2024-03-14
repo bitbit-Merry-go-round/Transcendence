@@ -1,9 +1,19 @@
+html, body, div, span, h1, h2, h3, h4, h5, h6, p, pre {
+    word-break: keep-all;
+}
+
 body {
+    min-width: 500px;
     font-family: 'SCoreDream';
     font-weight: 500;
 }
 
-.home-view {
+.page-name {
+    color: #7D9F56;
+    text-shadow: 2px 1px 0 rgba(0, 0, 0, 0.154);
+}
+
+.view {
     height: 100vh;
     background-color: #ECEEE7;
 }
@@ -42,3 +52,142 @@ body {
     --bs-btn-disabled-border-color: #D0D8C0;
 }
 
+.navbar {
+    background-color: #303D29;
+    --bs-navbar-toggler-icon-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='white' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+.logo-image {
+    margin-top: -6%;
+    width: 150px;
+    height: auto;
+}
+
+.nav-link {
+    color: white; 
+}
+
+.nav-link:hover {
+    color: #756655;
+}
+
+.navbar-toggler {
+    color: white;
+    border-color: white;
+}
+
+#profileCardModal {
+    display: none;
+    position: fixed;
+    z-index: 10;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
+}
+
+.profile-card {
+    transition: all 0.1s;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #ECEEE7;
+    border-radius: 5%;
+    padding: 20px;
+}
+
+.userAvatar {
+    border-radius: 50%;
+    height: 12em;
+    width: 12em;
+}
+
+.userMessage {
+    background-color: white;
+    border-radius: 5%;
+    color: #899681;
+    height: 5em;
+    width: 15em;
+}
+
+.score {
+    color: #7D9F56;
+}
+
+.btn-add-friend {
+    background-color: #97B278; 
+    border-color: #97B278;
+}
+
+.btn-close {
+    --bs-btn-close-focus-shadow:0 0 0 0.25rem rgb(34, 86, 6, 25%);
+}
+
+.status-circle {
+    width: 1.5em;
+    height: 1.5em;
+    border-radius: 50%;
+    background-color: #7D9F56;
+    border: 2px solid white;
+    bottom: 1em;
+    right: 1em;
+    position: absolute;
+}
+
+/* friend list */
+ul {
+    list-style-type: none;
+}
+
+.friend-list {
+    box-sizing: border-box;
+    width: 50em;
+    height: 30em;
+    margin-right: 1em;
+    overflow-y: scroll;
+    white-space: nowrap;
+}
+
+.friend-list::-webkit-scrollbar {
+    width: 10px;  /* 스크롤바의 너비 */
+}
+
+.friend-list::-webkit-scrollbar-thumb {
+    border-radius: 10px; 
+    border: 7px solid #B1C59A;
+}
+
+.friend-list::-webkit-scrollbar-track {
+    background-color: rgba(0,0,0,0.05);
+    border-radius: 10px; 
+}
+
+.friend-list::-webkit-scrollbar-corner {
+    background-color: rgba(0,0,0,0);
+}
+
+.friend-list-element {
+    background-color: #FAFBF9;
+    margin-right: 1em;
+    border-radius: 3em;
+    color: black;
+    font-size: medium;
+}
+
+.status-circle-sm {
+    width: 1em;
+    height: 1em;
+    border-radius: 50%;
+    background-color: #7D9F56;
+    border: 2px solid white;
+    bottom: -2.1em;
+    right: 1.8em;
+    position: relative;
+}
+
+.status-offline {
+    background-color: #7e7e7e;
+}

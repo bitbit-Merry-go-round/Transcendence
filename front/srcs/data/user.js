@@ -48,9 +48,10 @@ export default class User {
  * }} args
  * @returns UserProfile
  */
-export function createProfile({id, profileUrl, stateMessage, wins, loses, isLoggedIn}) {
+export function createProfile({id, level, profileUrl, stateMessage, wins, loses, isLoggedIn}) {
   return ({
     id,
+    level: level ?? 0,
     stateMessage: stateMessage ?? "",
     wins: wins ?? 0,
     loses: loses ?? 0,

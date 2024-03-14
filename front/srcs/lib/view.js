@@ -50,7 +50,7 @@ export default class View extends HTMLElement {
   }
 
   /** @type{any} */
-  #data;
+  data;
 
   /** @type {{[key: string]: Array<
    * {
@@ -63,7 +63,8 @@ export default class View extends HTMLElement {
   /** @param {any} data */
   constructor({data} = {}) {
     super();
-    this.#data = data;
+
+    this.data = data;
     if (data) {
       Object.keys(data).forEach(key => this.#reRenderTriggers[key] = []);
     }
@@ -80,7 +81,7 @@ export default class View extends HTMLElement {
       .#addTriggers()
       .#replaceAttributes()
       .#expandForLoops(this)
-      .#filterCondition(this, this.#data)
+      .#filterCondition(this, this.data)
       .#fillData(this);
   }
 
@@ -105,7 +106,7 @@ export default class View extends HTMLElement {
       /** @type{View} */ 
       const viewClass = View.allViews.constructor[className];
       const view =  await new viewClass({
-        data: this.#data
+        data: this.data
       });
       await view.render();
       elements[i].replaceWith(view);
@@ -142,7 +143,7 @@ export default class View extends HTMLElement {
       if (attr.value.length == 0) 
         continue;
       attrs[i].value = this.#replaceContent(
-        attr.value, this.#data);
+        attr.value, this.data);
     }
     return this;
   }
@@ -160,19 +161,21 @@ export default class View extends HTMLElement {
   #expandForLoop(node) {
     const keys = node.getAttribute(LOOP_KEY).split("in")
       .map(key => key.trim());
+
     if (keys.length < 2)  {
       console.err("Not valid for loop use 'A in B'", node);
       return;
     }
-    let values = getValue(this.#data, keys[1]);
+    let values = getValue(this.data, keys[1]);
     if (!Array.isArray(values)) {
       console.error(`Data for ${key[1]} is not array `, 
         values
       );
       return ;
     }
+    
     const container = {
-      ...this.#data,
+      ...this.data,
     }
     const template = node.innerHTML;
     node.innerHTML = "";
@@ -213,7 +216,7 @@ export default class View extends HTMLElement {
         continue;
       this.#replaceAttributes(child);
       child.innerHTML = this.#replaceContent(
-        child.innerHTML, this.#data); 
+        child.innerHTML, this.data); 
       if (child.hasAttribute(COMPONENT_KEY)) {
         continue;
       }
@@ -233,9 +236,8 @@ export default class View extends HTMLElement {
       const data = getValue(container, matches[1]);
       content = content.replaceAll(
         new RegExp(matches[0], "g"), data);
-    }
+      }
   }
-
   connectedCallback() { }
 
   disConnectedCallback() { }
