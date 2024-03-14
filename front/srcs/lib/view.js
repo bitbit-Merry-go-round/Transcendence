@@ -17,7 +17,7 @@ export default class View extends HTMLElement {
     dirName: {},
     fileName: {}
   };
-  static regexReplace =  /{{([^}}]+)}}/g;
+  static regexReplace =  /{{([^}}]+)}}/;
   static regexMatch =  /{{([^}}]+)}}/;
 
   static async getTemplate() {
@@ -234,7 +234,7 @@ export default class View extends HTMLElement {
         return content;
       }
       const data = getValue(container, matches[1]);
-      content = content.replaceAll(
+      content = content.replace(
         new RegExp(matches[0], "g"), data);
       }
   }
