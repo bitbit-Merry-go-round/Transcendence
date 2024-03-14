@@ -19,7 +19,7 @@ const user = new ObservableObject(new User({
         level: 25,
         profileUrl: "https://ca.slack-edge.com/T039P7U66-U03M2KCK5T6-e75d6c9b8cb3-512"
       }),
-    ...["eunjiko", "hyecheon", "yham", '1', '2', '3', '4', '5']
+    ...["eunjiko", "hyecheon", "yham", '1', '2', '3', '4', '5', '6']
       .map(name => createProfile({id: name}))
   ]
 }))
