@@ -144,6 +144,7 @@ ul {
 
 .friend-list {
     box-sizing: border-box;
+    width: 50em;
     height: 30em;
     margin-right: 1em;
     overflow-y: scroll;
