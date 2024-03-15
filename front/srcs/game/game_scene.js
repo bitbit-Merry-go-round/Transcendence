@@ -9,6 +9,7 @@ import { GameData, Player } from "@/data/game_data";
 import ParticleGenerator from "@/game/particleGenerator";
 import ObservableObject from "@/lib/observable_object";
 import GUI from "node_modules/lil-gui/dist/lil-gui.esm.min.js";
+import { Animation, AnimationCurves } from "@/game/animation";
 import { WALL_TYPES, DIRECTION, GameMap } from "@/data/game_map";
 
 const FRAME_TIME_THRESHOLD = 0.01;
@@ -16,7 +17,6 @@ const MAX_PEDDLE_SPEED = 50;
 const PEDDLE_ACCEL = 10;
 const PEDDLE_DECEL_RATIO = 0.5;
 const SOUND_EFFECT_THRESHOLD = 0.3;
-
 
 const PLAYER_POSITION = Object.freeze({
   [DIRECTION.top]: 0,
@@ -62,6 +62,17 @@ export default class Scene {
   #physics;
   #scene;
   #scene_objs = {};
+
+
+  /** @type {{
+   *    key: string,
+   *    animation: Animation,
+   *    speed: number,
+   *    onProgress: (current: { x: number, y: number, z: number }) => void,
+   *    onEnded: (last: { x: number, y: number, z: number }) => void
+   *  }[]} 
+   */
+  #animations = [];
   #gameData;
   #gameMap;
 
@@ -74,6 +85,7 @@ export default class Scene {
    *  }
    * }} */
   #loadedTextures = { };
+
   /** @type {"TOP" | "BOTTOM" | null} */
   #lostSide = null;
 
@@ -94,6 +106,15 @@ export default class Scene {
   #windowSize;
   /** @type {THREE.PerspectiveCamera} */
   #camera;
+  cameraPositions = { start: { x: 0, y: 80, z: 30 },
+    startRotate: { x: 0, y: 20, z: 10 },
+    play: { x: 0.2, y: 1.8, z: 0.60 },
+  }
+
+  cameraRotations = {
+    play: { x: -0.26, y: 0, z: 0}
+  }
+
   /** @type {HTMLAudioElement} */
   #bgm;
 
@@ -117,7 +138,7 @@ export default class Scene {
    *   clock: THREE.Clock,
    *   elapsed: number
    * }} */
- #time;
+  #time;
 
   /** @type {Array<{
    *    mesh: THREE.Mesh,
@@ -180,7 +201,7 @@ export default class Scene {
     sound: new Audio("assets/sound/hit.mp3"),
     lastPlayed: 0,
     volume: 0.8
-    };
+  };
 
   /** @type {ParticleGenerator} */
   #sceneParticle;
@@ -248,8 +269,6 @@ export default class Scene {
         centerY: 80
       }
     ], WALL_TYPES.safe);
-    const json = JSON.stringify(this.#gameMap.allWalls)
-    console.log(json);
     this.#scene = new THREE.Scene();
 
     this.#gameScene = new THREE.Group();
@@ -333,15 +352,32 @@ export default class Scene {
         screen.parent.add(this.#gameScene);
         screen.removeFromParent();
 
-        this.#camera.position.set(
-          0.2,
-          1.9,
-          0.40
-        );
         const target = new THREE.Vector3();
         mac.getWorldPosition(target);
         this.controls.target.set(target.x, target.y, target.z);
         this.#scene.add(scene);
+        this.#camera.position.set(
+          this.cameraPositions.start.x,
+          this.cameraPositions.start.y,
+          this.cameraPositions.start.z,
+        );
+        this.#camera.lookAt(0, 0, 0);
+        this.#moveCamera({
+          dest: {...this.cameraPositions.startRotate},
+          speed: 0.005,
+          curve: AnimationCurves.easein,
+          onEnded: () => {
+            this.#moveCamera({
+              dest: {...this.cameraPositions.play},
+              curve: AnimationCurves.easeout,
+              speed: 0.01,
+            });
+            this.#rotateCamera({
+              dest: {...this.cameraRotations.play},
+              speed: 0.01
+            })
+          }
+        });
       },
       (progress) => {
       },
@@ -356,6 +392,82 @@ export default class Scene {
     this.#bgm.play()
 
     return this;
+  }
+
+  /** @param {{
+   *    dest: {
+   *      x: number, y: number, z: number
+   *    },
+   *    speed: number,
+   *    curve?: (t: number) => number,
+   *    onEnded?: (last:{
+   *      x: number, y: number, z: number
+   *    }) => void
+   * }} params
+   */
+  #moveCamera({dest, speed, curve = AnimationCurves.smoothstep, onEnded = () => {}}) {
+    const animation = new Animation({
+      start: this.#camera.position.clone(),
+      end: new THREE.Vector3(
+        dest.x, 
+        dest.y,
+        dest.z
+      ),
+      curve,
+      repeat: false,
+      key: "cameraMove"
+    })
+    this.#animations.push({
+      animation,
+      speed,
+      onProgress: (pos) => {
+        this.#camera.position.set(pos.x, pos.y, pos.z);
+      },
+      onEnded,
+      key: animation.key
+    });
+    return (this.#animations[this.#animations.length - 1]);
+  }
+
+  /** @param {{
+   *    dest: {
+   *      x: number, y: number, z: number
+   *    },
+   *    speed: number,
+   *    curve?: (t: number) => number,
+   *    onEnded?: (last:{
+   *      x: number, y: number, z: number
+   *    }) => void
+   * }} params
+   */
+  #rotateCamera({dest, speed, 
+    curve = AnimationCurves.smoothstep, onEnded = () => {}}) {
+    const animation = new Animation({
+      start: new THREE.Vector3( 
+        this.#camera.rotation.x,
+        this.#camera.rotation.y,
+        this.#camera.rotation.z,
+      ),
+      end: new THREE.Vector3(
+        dest.x, 
+        dest.y,
+        dest.z
+      ),
+      curve,
+      repeat: false,
+      key: "cameraRotate"
+    })
+    this.#animations.push({
+      animation,
+      speed,
+      onProgress: (rotation) => {
+        this.#camera.rotation.set(rotation.x, rotation.y, rotation.z);
+      },
+      onEnded,
+      key: animation.key
+    });
+    return (this.#animations[this.#animations.length - 1]);
+
   }
 
   #init() {
@@ -375,6 +487,7 @@ export default class Scene {
   }
 
   #addBall() {
+    console.log(this.#camera.rotation)
     const mesh = new THREE.Mesh(
       new THREE.SphereGeometry(this.#ballRadiusInGame, 16, 16),
       new THREE.MeshStandardMaterial({
@@ -1095,6 +1208,15 @@ export default class Scene {
       const elapsed = this.#time.clock.getElapsedTime();
       let frameTime = elapsed - this.#time.elapsed;
       this.#time.elapsed = elapsed;
+      this.#animations.forEach(
+      ({animation, speed, onProgress, key, onEnded}) => {
+        animation.proceed(speed);
+        onProgress(animation.current);
+        if (animation.isFinished) {
+          onEnded(animation.current);
+        }
+      })
+      this.#animations = this.#animations.filter(e => !e.animation.isFinished);
       let frameSlice = Math.min(frameTime, FRAME_TIME_THRESHOLD);
       this.#renderId = window.requestAnimationFrame(tick);
       this.#updateObjects({frameTime, frameSlice})
