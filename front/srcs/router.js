@@ -26,7 +26,6 @@ const user = new ObservableObject(new User({
 
 
 export async function route() {
-  console.log(user);
   const routes = [
     { path: "/friend", view: HomeView},
     { path: "/login", view: LoginView},
