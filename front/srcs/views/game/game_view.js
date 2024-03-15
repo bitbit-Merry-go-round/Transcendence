@@ -66,7 +66,13 @@ export default class GameView extends View {
         this.#isPaused = false;
         this.#startButton.style.display = "none";
       }
-    }
-    )
+    })
+    window.addEventListener("keypress", event => {
+      if (event.key == "Enter" && this.#isPaused) {
+        this.#scene.startGame();
+        this.#isPaused = false;
+        this.#startButton.style.display = "none";
+      }
+    }) 
   }
 }

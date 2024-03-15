@@ -9,6 +9,7 @@ import { GameData, Player } from "@/data/game_data";
 import ParticleGenerator from "@/game/particleGenerator";
 import ObservableObject from "@/lib/observable_object";
 import GUI from "node_modules/lil-gui/dist/lil-gui.esm.min.js";
+import { WALL_TYPES, DIRECTION, GameMap } from "@/data/game_map";
 
 const FRAME_TIME_THRESHOLD = 0.01;
 const MAX_PEDDLE_SPEED = 50;
@@ -16,17 +17,6 @@ const PEDDLE_ACCEL = 10;
 const PEDDLE_DECEL_RATIO = 0.5;
 const SOUND_EFFECT_THRESHOLD = 0.3;
 
-const WALL_TYPES = Object.freeze({
-  safeWall: "SAFE",
-  trapWall: "TRAP",
-});
-
-const DIRECTION = Object.freeze({
-  top: "TOP",
-  bottom: "BOTTOM",
-  left: "LEFT",
-  right: "RIGHT"
-});
 
 const PLAYER_POSITION = Object.freeze({
   [DIRECTION.top]: 0,
@@ -73,8 +63,17 @@ export default class Scene {
   #scene;
   #scene_objs = {};
   #gameData;
+  #gameMap;
 
   #textureLoader = new THREE.TextureLoader();
+  /** @type {{
+   *  [key in string]: {
+   *    colorTexture: THREE.Texture,
+   *    normalTexture: THREE.Texture,
+   *    aoRoughnessMetallnessTexture: THREE.Texture
+   *  }
+   * }} */
+  #loadedTextures = { };
   /** @type {"TOP" | "BOTTOM" | null} */
   #lostSide = null;
 
@@ -89,6 +88,7 @@ export default class Scene {
     peddle: 3
   };
 
+  /** @type {THREE.Group} */
   #gameScene;
   #canvas;
   #windowSize;
@@ -136,7 +136,7 @@ export default class Scene {
 
   ballColor = 0xff0000;
   #ballRadiusInGame = 3;
-  #ballSpeed = 30;
+  #ballSpeed = 40;
   #ballStartDirection = {
     x: DIRECTION.left,
     y: DIRECTION.bottom
@@ -148,7 +148,7 @@ export default class Scene {
    * }} 
    */
   #walls = {}; 
-  #wallTextureRepeat = 10;
+  #wallTextureRepeat = 0.05;
   
   /** @type {number} */
   wallColor = 0x00ff00;
@@ -170,7 +170,10 @@ export default class Scene {
     height: 0.015
   }
 
-  /** @type {number[]} */
+  /** @type {{
+   *  desc: string,
+   *  id: number
+   * }[]} */
   #eventsIds = [];
 
   #hitSound = {
@@ -180,7 +183,10 @@ export default class Scene {
     };
 
   /** @type {ParticleGenerator} */
-  #particleGenerator;
+  #sceneParticle;
+
+  /** @type {ParticleGenerator} */
+  #gameParticle;
 
   /** @type {{
    *    pressed: {
@@ -223,6 +229,27 @@ export default class Scene {
   constructor({canvas, gameData}) {
     this.#canvas = canvas;
     this.#gameData = gameData;
+    this.#gameMap = new GameMap({
+      safeWalls: [],
+      trapWalls: [],
+    });
+    this.#gameMap.addBorderWalls();
+    this.#gameMap.addWalls([
+      {
+        width: 40,
+        height: 2,
+        centerX: 20,
+        centerY: 30
+      },
+      {
+        width: 40,
+        height: 2,
+        centerX: 70,
+        centerY: 80
+      }
+    ], WALL_TYPES.safe);
+    const json = JSON.stringify(this.#gameMap.allWalls)
+    console.log(json);
     this.#scene = new THREE.Scene();
 
     this.#gameScene = new THREE.Group();
@@ -232,14 +259,20 @@ export default class Scene {
     };
     this.#physics = new Physics();
     this
+      .#setSceneBackground()
       .#load()
       .#init()
       .#setGameBackground()
       .#addObjects()
-      .#addControls()
       .#addEvents()
       .#addHelpers()
+      .#addControls()
       .#startRender();
+  }
+
+  startGame() {
+    this.#addBall();
+    this.isBallMoving = true;
   }
 
   prepareDisappear() {
@@ -263,6 +296,7 @@ export default class Scene {
         /** @type {THREE.Mesh} */
         const keyboard = this.#scene_objs["keyboard"];
         keyboard.scale.x *= -1;
+        keyboard.position.z -= 0.1;
 
         /** @type {THREE.Mesh} */
         const mac = this.#scene_objs["macintosh"];
@@ -291,8 +325,8 @@ export default class Scene {
         this.#gameScene.position.z += 0.1;
 
         this.#gameScene.scale.set(
-          (screenSize.x / sceneSize.x) * 0.8,
-          (screenSize.y / sceneSize.y) * 0.7,
+          (screenSize.x / sceneSize.x) * 0.7,
+          (screenSize.y / sceneSize.y) * 0.65,
           (screenSize.x / sceneSize.x) * 0.8
         );
          
@@ -300,16 +334,13 @@ export default class Scene {
         screen.removeFromParent();
 
         this.#camera.position.set(
-          0.34,
-          2.6,
-          3
+          0.2,
+          1.9,
+          0.40
         );
-        this.#camera.rotation.set(
-          -0.46,
-          0.09,
-          0.04
-        );
-           
+        const target = new THREE.Vector3();
+        mac.getWorldPosition(target);
+        this.controls.target.set(target.x, target.y, target.z);
         this.#scene.add(scene);
       },
       (progress) => {
@@ -321,15 +352,10 @@ export default class Scene {
 
     // bgm
     this.#bgm = new Audio("assets/sound/bgm1.mp3");
-    this.#bgm.volume = 0.2;
+    this.#bgm.volume = 0.1;
     this.#bgm.play()
 
     return this;
-  }
-
-  startGame() {
-    this.#addBall();
-    this.isBallMoving = true;
   }
 
   #init() {
@@ -367,18 +393,16 @@ export default class Scene {
       radius: Math.max(ballWidth, ballHeight),
       center: { x: 0, y:0 }
     });
+    this.#ballStartDirection.x = (Math.random() > 0.5) ? DIRECTION.left: DIRECTION.right;
+    this.#ballStartDirection.y = (this.#lostSide == DIRECTION.top) ? DIRECTION.bottom: DIRECTION.top;
     let velX = (this.#ballStartDirection.x == DIRECTION.right? 1 : -1) * this.#ballSpeed * (Math.random() + 0.5);
-    let velY = (this.#ballStartDirection.y == DIRECTION.top? 1 : -1) * this.#ballSpeed * (
-      this.#ballSpeed / (Math.abs(velX)));
+    let velY = (this.#ballStartDirection.y == DIRECTION.top? 1 : -1) * this.#ballSpeed;
 
     ballPhysics.veolocity = {
       x: velX,
       y: velY,
     };
 
-    this.#ballStartDirection.x = (Math.random() > 0.5) ? DIRECTION.left: DIRECTION.right;
-    this.#ballStartDirection.y = (this.#lostSide == DIRECTION.top) ? DIRECTION.bottom: DIRECTION.top;
-    this.#lostSide = null;
     const physicsId = this.#physics.addObject(ballPhysics)[0];
 
     this.#objects.push(
@@ -396,45 +420,30 @@ export default class Scene {
   }
 
   #addWalls() {
-    const safeWalls = this.#addWall({ 
-      width: this.#gameSize.width * 0.05,
-      height: this.#gameSize.height 
-    }, 
-      [
-        { x: this.#gameSize.width * -0.5, y: 0, z: this.#depth.wall * 0.55 },
-        { x: this.#gameSize.width * 0.5, y: 0, z: this.#depth.wall * 0.55 }
-      ]
-    );
-
-    safeWalls[0].data = {
-      wallType: WALL_TYPES.safeWall,
-      direction: DIRECTION.left,
-    };
-
-    safeWalls[1].data = {
-      wallType: WALL_TYPES.safeWall,
-      direction: DIRECTION.right,
-    };
-
-    const trapWalls = this.#addWall({
-      width: this.#gameSize.width * 1, 
-      height:this.#gameSize.height* 0.05, 
-    },
-      [
-        { x: 0, y: this.#gameSize.height * -0.5, z: this.#depth.wall * 0.5 },
-        { x: 0, y: this.#gameSize.height * 0.5, z: this.#depth.wall * 0.5 }
-      ]
-    );
-
-    trapWalls[0].data = {
-      wallType: WALL_TYPES.trapWall,
-      direction: DIRECTION.top
-    };
-
-    trapWalls[1].data = {
-      wallType: WALL_TYPES.trapWall,
-      direction: DIRECTION.bottom
-    };
+    const sizes = this.#gameMap.wallSizes;
+    sizes.forEach(size => {
+      const walls = this.#gameMap.getWallsBySize(size);
+      const entities = this.#addWall(
+        size,
+        walls.map(wall => ({
+            x: (wall.centerX * 0.01 - 0.5) * this.#gameSize.width,
+            y: (wall.centerY * 0.01 - 0.5) * this.#gameSize.height,
+            z: this.#depth.wall * 0.5,
+          })
+        )
+      );
+      for (let i = 0; i < walls.length; ++i) {
+        const wall = walls[i];
+        entities[i].data = {
+          wallType: wall.type,
+        };
+        if (wall.type == WALL_TYPES.trap) {
+          if (wall.centerX == 50)
+            entities[i].data.direction = 
+              wall.centerY > 50 ? DIRECTION.top: DIRECTION.bottom;
+        }
+      }
+    })
     return this;
   }
 
@@ -449,19 +458,52 @@ export default class Scene {
 
   #createMaterialFromTexture(name, onLoad = (texture) => {}) {
 
+
+    const loadedTextures = this.#loadedTextures[name];
+    if (loadedTextures &&
+      loadedTextures.colorTexture && 
+      loadedTextures.normalTexture &&
+    loadedTextures. aoRoughnessMetallnessTexture) {
+
+      const textures = {};
+      Object.entries(loadedTextures)
+        .forEach(([ key, text ]) => {
+          textures[key] = text.clone();
+        });
+    return new THREE.MeshStandardMaterial({
+      map: textures.colorTexture,
+      normalMap: textures.normalTexture,
+      aoMap: textures.aoRoughnessMetallnessTexture,
+      roughnessMap: textures.aoRoughnessMetallnessTexture,
+      metalnessMap: textures.aoRoughnessMetallnessTexture,
+    });
+
+    }
+    //@ts-ignore
+    this.#loadedTextures[name] = {};
+
     const colorTexture = this.#textureLoader.load(
       `assets/textures/${name}/diff.jpg`,
-      onLoad
+      texture => {
+        this.#loadedTextures[name].colorTexture = texture.clone();
+        onLoad(texture);
+      }
     )
 
     const normalTexture = this.#textureLoader.load(
       `assets/textures/${name}/nor.png`,
-      onLoad
+      texture => {
+        this.#loadedTextures[name].normalTexture= texture.clone();
+        onLoad(texture);
+      }
     );
 
     const aoRoughnessMetallnessTexture = this.#textureLoader.load(
       `assets/textures/${name}/arm.jpg`,
-      onLoad
+      texture => {
+        this.#loadedTextures[name].aoRoughnessMetallnessTexture = texture.clone();
+        onLoad(texture);
+      }
     );
 
     const material = new THREE.MeshStandardMaterial({
@@ -492,8 +534,8 @@ export default class Scene {
       (texture) => {
         this.#resizeTexture({
         texture,
-          x: 1 / wallSize.height * this.#wallTextureRepeat,
-          y: 1 / wallSize.width * this.#wallTextureRepeat,
+          x: wallSize.width * this.#wallTextureRepeat,
+          y: wallSize.height * this.#wallTextureRepeat,
       })
       }
     ) 
@@ -572,8 +614,8 @@ export default class Scene {
       return mesh;
     });
 
-    const physicsEntities = positions.map(pos => 
-      PhysicsEntity.createRect({
+    const physicsEntities = positions.map((pos, index) => {
+      const entity = PhysicsEntity.createRect({
         type: "MOVABLE",
         width: size.width,
         height: size.height,
@@ -581,8 +623,13 @@ export default class Scene {
           x: pos.x,
           y: pos.y
         }
-      })
-    );
+      });
+      entity.data = {
+        isPeddle: true,
+        player: PLAYER_POSITION[ index == 0 ? DIRECTION.top: DIRECTION.bottom]
+      };
+      return entity;
+    });
     const physicsIds = this.#physics.addObject(...physicsEntities);
     for (let i = 0; i < physicsIds.length; ++i) {
       this.#objects.push({
@@ -614,6 +661,40 @@ export default class Scene {
     return this;
   }
 
+  #setSceneBackground() {
+    this.#scene.background = new THREE.Color("black");
+    const container = new THREE.Mesh(
+      new THREE.BoxGeometry(),
+      new THREE.MeshBasicMaterial({
+        transparent: true,
+        opacity: 0,
+        depthWrite: false
+      })
+    );
+    this.#sceneParticle= new ParticleGenerator({
+      textureLoader: this.#textureLoader,
+      count: 500,
+      particleSize: 0.3,
+      computeDepth: true,
+      maxSize: {
+        x: 2, 
+        y: 2,
+        z: 2
+      },
+    });
+    this.#sceneParticle.animationConfig.speedCoefficient = 0.0001;
+    this.#sceneParticle.animationConfig.speedVariantConstant = 1;
+    this.#sceneParticle.setColor(["#ffffff", "#ddd0b2", "#f8edde", "#3ac4d6"]);
+
+    this.#sceneParticle.createParticles();
+    const particles = this.#sceneParticle.getParticles();
+    container.add(particles);
+    container.scale.set(100, 100, 100);
+    this.#scene.add(container);
+    
+    return this;
+  }
+
   #setGameBackground() {
 
     const size = {
@@ -630,18 +711,27 @@ export default class Scene {
         depthWrite: false
       })
     );
-    this.#particleGenerator = new ParticleGenerator({
+    this.#gameParticle = new ParticleGenerator({
       textureLoader: this.#textureLoader,
-      count: 200,
-      particleSize: 0.002,
+      count: 100,
+      particleSize: 0.001,
       maxSize: {
-        x: 80,
-        y: 80,
-        z: 30
+        x: 70,
+        y: 70,
+        z: 20
       }
     });
-    this.#particleGenerator.createParticles();
-    const particles = this.#particleGenerator.getParticles();
+    this.#gameParticle.setColor([
+      "#008DDA",
+      "#41C9E2",
+      "#ACE2E1",
+      "#F7EEDD",
+    ])
+    this.#gameParticle.animationConfig.speedCoefficient = 0.001;
+    this.#gameParticle.animationConfig.speedVariantCoefficient = 0.001;
+    this.#gameParticle.animationConfig.speedVariantConstant = 50;
+    this.#gameParticle.createParticles();
+    const particles = this.#gameParticle.getParticles();
     container.add(particles);
     container.scale.set(0.8, 0.8, 0.2);
     this.#gameScene.add(container);
@@ -653,9 +743,8 @@ export default class Scene {
       75,
       this.#windowSize.width / this.#windowSize.height,
       0.1,
-      100
+      150
     );
-    this.#camera.position.set(0, 0, 20);
     this.controls = new OrbitControls(this.#camera, this.#canvas)
     this.controls.enableDamping = true
     return this;
@@ -863,7 +952,8 @@ export default class Scene {
   }
 
   #addEvents() {
-    const hitSoundEvent = this.#physics.addCollisionCallback(
+
+    const hitSoundEventId = this.#physics.addCollisionCallback(
       (collider, collidee, time) => {
         if (Math.abs(this.#time.elapsed - this.#hitSound.time) < SOUND_EFFECT_THRESHOLD)
           return false;
@@ -880,25 +970,51 @@ export default class Scene {
       }
     );
 
-    const ballOutEvent = this.#physics.addCollisionCallback(
+    const hitBallEffectId = this.#physics.addCollisionCallback(
+      (collider, collidee, time) => {
+
+        if (!collider.isShape("CIRCLE") && !collidee.isShape("CIRCLE")) {
+          return false;
+        }
+        return (collider.data?.isPeddle || collidee.data?.isPeddle);
+      },
+      (collider, collidee, time) => {
+        /** @type {PhysicsEntity} */
+        const ball = collider.isShape("CIRCLE") ? collider: collidee;
+        /** @type {PhysicsEntity} */
+        const peddle = ball == collider ? collidee: collider;
+        ball.veolocity.x += peddle.veolocity.x * 0.1;
+      }
+    )
+
+    const ballOutEventId = this.#physics.addCollisionCallback(
       (collider, collidee, time) => {
 
         if (!collider.isShape("CIRCLE") && !collidee.isShape("CIRCLE")) {
           return false;
         }
         return (collidee.data && collidee.data.wallType &&
-          collidee.data.wallType == WALL_TYPES.trapWall);
+          collidee.data.wallType == WALL_TYPES.trap);
       },
       (collider, collidee, time) => {
         this.#lostSide = collidee.data.direction;
         this.#removeBall()
         .#updateGameData();
-        this.isBallMoving = true;
       }
     )
 
-    this.#eventsIds.push(hitSoundEvent);
-    this.#eventsIds.push(ballOutEvent);
+    this.#eventsIds.push({
+      desc: "hitSoundEvent",
+      id: hitSoundEventId
+    });
+    this.#eventsIds.push({
+      desc: "ballOutEvent",
+      id: ballOutEventId
+    });
+    this.#eventsIds.push({
+      desc: "hitBallEffect",
+      id: hitBallEffectId
+    });
     return this;
   }
 
@@ -975,15 +1091,16 @@ export default class Scene {
 
   #startRender() {
     const tick = (() => {
+      this.controls.update()
       const elapsed = this.#time.clock.getElapsedTime();
       let frameTime = elapsed - this.#time.elapsed;
       this.#time.elapsed = elapsed;
       let frameSlice = Math.min(frameTime, FRAME_TIME_THRESHOLD);
       this.#renderId = window.requestAnimationFrame(tick);
       this.#updateObjects({frameTime, frameSlice})
-      this.#particleGenerator.animate();
+      this.#gameParticle.animate();
+      this.#sceneParticle.animate();
       this.#renderer.render(this.#scene, this.#camera);
-      this.controls.update();
     }).bind(this);
 
     tick();

@@ -1,5 +1,13 @@
 import * as THREE from "three";
 
+function hexToRGB(hex) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+
+  return [r, g, b];
+}
+
 /**
  * Particles.
  */
@@ -36,6 +44,8 @@ export default class ParticleGenerator {
     }[]}
     */
   particleData = [];
+  /** @type {boolean}} */
+  computeDepth; 
 
   /** @type {{
       x: number, 
@@ -43,8 +53,16 @@ export default class ParticleGenerator {
       z: number
     }}
     */
-  maxSize
+  maxSize;
 
+  /** @type {number[][] | null} */
+  #colors = null;
+
+  animationConfig = {
+    speedCoefficient: 0.01,
+    speedVariantConstant: 100,
+    speedVariantCoefficient: 0.01,
+  }
 
   /**
    * constructor.
@@ -62,20 +80,33 @@ export default class ParticleGenerator {
    *    x: number,
    *    y: number,
    *    z: number
-   *   }
+   *   },
+   *   computeDepth: boolean = false
    * }}
    */
   constructor({
     textureLoader,
     count,
     particleSize,
-    maxSize = null
+    maxSize = null,
+    computeDepth = false,
   }) {
     this.textureLoader = textureLoader;
     this.count = count;
     this.particleSize = particleSize;
     this.#particleContainer = new THREE.Group();
     this.maxSize = maxSize;
+    this.computeDepth = computeDepth
+  }
+
+  /** @param {string[]} colors */
+  setColor(colors) {
+    this.#colors = colors.map(c => {
+      if (c[0] != "#") {
+        return (hexToRGB("#" + c.toLowerCase()));
+      }
+      return hexToRGB(c.toLowerCase());
+    })
   }
 
   /** createParticles. */
@@ -83,25 +114,34 @@ export default class ParticleGenerator {
 
     const buffer = new THREE.BufferGeometry()
     const vertices = new Float32Array(this.count * 3);
-    const colors = new Float32Array(this.count * 3);
+    const colors = this.#colors ? new Uint8Array(this.count * 3): new Float32Array(this.count * 3);
     for (let i3 = 0; i3 < this.count; ++i3) {
       //xyz
-      const x =  (Math.random() - 0.5) * this.maxSize.x;
-      const y = (Math.random() - 0.5) * this.maxSize.y;
-      const z = (Math.random() - 0.5) * this.maxSize.z;
+      const x =  (Math.random() - 0.5) * (this.maxSize?.x ?? 1);
+      const y = (Math.random() - 0.5) * (this.maxSize?.y ?? 1);
+      const z = (Math.random() - 0.5) * (this.maxSize?.z ?? 1);
       vertices[i3] = x;
       vertices[i3 + 1] = y;
       vertices[i3 + 2] = z;
+
       // rgb
-      colors[i3] = Math.random(); 
-      colors[i3 + 1] = Math.random();
-      colors[i3 + 2] = Math.random();
+      if (this.#colors) {
+        const color = this.#colors[i3 % this.#colors.length];
+        colors[i3 ] = color[0];
+        colors[i3 + 1]  = color[1];
+        colors[i3 + 2]  = color[2];
+      }
+      else {
+        colors[i3] = Math.random(); 
+        colors[i3 + 1] = Math.random();
+        colors[i3 + 2] = Math.random();
+      }
 
       //animate
 
       const time = Math.random() * 100;
-      const speed = Math.random() * 0.01;
-      const factor = Math.random() * 100 + 1; 
+      const speed = Math.random() * this.animationConfig.speedCoefficient;
+      const factor = Math.random() * this.animationConfig.speedVariantCoefficient + this.animationConfig.speedVariantConstant; 
 
       this.particleData.push({
         position: {
@@ -122,8 +162,8 @@ export default class ParticleGenerator {
     const material = new THREE.PointsMaterial({
       transparent: true,
       size: this.particleSize,
-      depthTest: false,
-      depthWrite: false,
+      depthTest: this.computeDepth,
+      depthWrite: this.computeDepth,
       blending: THREE.AdditiveBlending,
       vertexColors: true,
       sizeAttenuation: true
