@@ -210,18 +210,24 @@ ul {
 }
 
 .mode-header {
+    font-size: 3em;
     margin-left: auto;
     margin-right: auto;
     color: #7D9F56;
 }
 
 .btn-mode {
-    color: white;
-    font-size: large;
+    font-size: 2em;
     background-color: #756655;
     border-color: #756655;
     border-radius: 1em;
-    height: 4em;
+    height: 3em;
     margin-top: auto;    
     margin-bottom: auto;    
+    text-align: center;
+}
+
+.btn-mode:hover {
+    color: #756655;
+    border-color: #756655;
 }
