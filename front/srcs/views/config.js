@@ -38,6 +38,12 @@ export default {
         "className": "FriendView",
         "fileName": "friend_view.html"
       }
+    ],
+    "record": [ 
+      {
+        "className": "RecordView",
+        "fileName": "record_view.html"
+      }
     ]
   }
 }
