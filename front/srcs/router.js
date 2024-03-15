@@ -3,6 +3,7 @@ import HomeView from "@/views/home/home_view";
 import LoginView from "@/views/login/login_view";
 import GameView from "@/views/game/game_view";
 import FriendView from "@/views/friend/friend_view";
+import ModeView from "@/views/mode/mode_view";
 import ObservableObject from "@/lib/observable_object";
 import User, { createProfile } from "@/data/user";
 
@@ -28,10 +29,11 @@ const user = new ObservableObject(new User({
 export async function route() {
   console.log(user);
   const routes = [
-    { path: "/friend", view: HomeView},
+    { path: "/mode", view: HomeView},
     { path: "/login", view: LoginView},
-    { path: "/", view: FriendView},
+    { path: "/friend", view: FriendView},
     { path: "/game", view: GameView },
+    { path: "/", view: ModeView },
   ]
   const match = routes.find((route) => {
     return route.path == location.pathname
