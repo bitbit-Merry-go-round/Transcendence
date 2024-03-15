@@ -191,3 +191,37 @@ ul {
 .status-offline {
     background-color: #7e7e7e;
 }
+
+/* mode view */
+.page-header {
+    width: 90vw;
+    margin-top: auto;
+    margin-bottom: auto;
+}
+
+.mode-box {
+    background-color: white;
+    border-radius: 2em;
+    width: 30vw;
+    height: 50vh;
+    margin-top: 10vh;
+    margin-left: 10vh;
+    margin-right: 10vh;
+}
+
+.mode-header {
+    margin-left: auto;
+    margin-right: auto;
+    color: #7D9F56;
+}
+
+.btn-mode {
+    color: white;
+    font-size: large;
+    background-color: #756655;
+    border-color: #756655;
+    border-radius: 1em;
+    height: 4em;
+    margin-top: auto;    
+    margin-bottom: auto;    
+}
