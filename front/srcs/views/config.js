@@ -39,6 +39,12 @@ export default {
         "fileName": "friend_view.html"
       }
     ],
+    "mode": [ 
+      {
+        "className": "ModeView",
+        "fileName": "mode_view.html"
+      }
+    ],
     "record": [ 
       {
         "className": "RecordView",
