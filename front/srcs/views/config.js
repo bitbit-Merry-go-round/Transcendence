@@ -50,6 +50,12 @@ export default {
         "className": "RecordView",
         "fileName": "record_view.html"
       }
+    ],
+    "tournament": [ 
+      {
+        "className": "TournamentView",
+        "fileName": "tournament_view.html"
+      }
     ]
   }
 }
