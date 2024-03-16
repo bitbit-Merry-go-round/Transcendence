@@ -304,3 +304,32 @@ ul {
 .score-day {
     margin-right: 1em;
 }
+
+/* 토너먼트 */
+.tournament-box {
+    background-color: #B1C59A;
+    border-radius: 2em;
+    width: 50vw;
+    height: 50vh;
+    margin-top: 10vh;
+    border-color: #ffffff00;
+}
+
+.input-player {
+    border-radius: 0.5em;
+    padding: 1em;
+    height: 3em;
+    font-size: x-large;
+    border-color: #ffffff00;
+}
+
+.btn-tournament {
+    background-color: #756655;
+    border-color: #756655;
+}
+
+.tournament-footer {
+    margin-left: auto;
+    margin-right: auto;
+    width: 50vw;
+}
