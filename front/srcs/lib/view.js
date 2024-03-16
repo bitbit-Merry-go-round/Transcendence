@@ -17,7 +17,7 @@ export default class View extends HTMLElement {
     dirName: {},
     fileName: {}
   };
-  static regexReplace =  /{{([^}}]+)}}/g;
+  static regexReplace =  /{{([^}}]+)}}/;
   static regexMatch =  /{{([^}}]+)}}/;
 
   static async getTemplate() {
@@ -123,7 +123,7 @@ export default class View extends HTMLElement {
       if (matches)  {
         const key = matches[1].split('.')[0];
         if (!this.#reRenderTriggers[key]) {
-          console.error("Fail to add rerender trigget for ", key);
+          console.log("Fail to add rerender trigget for ", key);
           continue;
         }
         this.#reRenderTriggers[key].push({
@@ -234,7 +234,7 @@ export default class View extends HTMLElement {
         return content;
       }
       const data = getValue(container, matches[1]);
-      content = content.replaceAll(
+      content = content.replace(
         new RegExp(matches[0], "g"), data);
       }
   }

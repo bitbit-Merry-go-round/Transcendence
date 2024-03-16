@@ -45,6 +45,12 @@ export default {
         "fileName": "mode_view.html"
       }
     ],
+    "record": [ 
+      {
+        "className": "RecordView",
+        "fileName": "record_view.html"
+      }
+    ]
   }
 }
 

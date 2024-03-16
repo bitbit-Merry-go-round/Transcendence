@@ -1,7 +1,6 @@
 import View from "@/lib/view";
 
-export default class FriendView extends View {
-
+export default class RecordView extends View {
 
   constructor({data}) {
     
