@@ -56,6 +56,12 @@ export default {
         "className": "TournamentView",
         "fileName": "tournament_view.html"
       }
+    ],
+    "match": [ 
+      {
+        "className": "MatchView",
+        "fileName": "match_view.html"
+      }
     ]
   }
 }
