@@ -12,11 +12,17 @@
         <a class="d-flex btn btn-primary btn-mode align-items-center justify-content-center" href="/local" data-link>1 : 1</a>
         <a class="d-flex btn btn-primary btn-mode align-items-center justify-content-center" href="/tournament" data-link>토너먼트</a>
       </div>
-      <div class="d-flex flex-column p-4 mode-box justify-content-start">
+      <div class="d-flex flex-column p-4 mode-box justify-content-start online-mode">
         <h2 class="mode-header">ONLINE</h2>
-        <a class="d-flex btn btn-primary btn-mode align-items-center justify-content-center" href="/online" data-link>1 : 1</a>
+        <a class="d-flex btn btn-primary btn-mode align-items-center justify-content-center online-game">1 : 1</a>
       </div>
     </div>
     </div>
+  </div>
+  <div class="loading-wrap" style="display: none;">
+    <div class="loading-spinner my-5"></div>
+    <p id="loadingMessage" class="mt-5 loading-message">공 빠닥빠닥 광 내는 중...</p>
+    <!-- 매칭 결과 페이지로 연결해야 함. -->
+    <a href="/game" data-link></a>
   </div>
 </mode-view>
