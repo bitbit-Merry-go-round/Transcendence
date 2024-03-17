@@ -386,3 +386,35 @@ ul {
     height: 32em;
     width: 20em;
 }
+
+.game-config {
+    background-color: white;
+    margin-top: 1em;
+    margin-left: 11em;
+    margin-right: 11em;
+
+    border-radius: 1em;
+    height: 4em;
+}
+
+.match-player-name {
+    font-size: 1.5em;
+}
+
+.game-play {
+    margin-top: 1em;
+    margin-right: 11em;
+}
+
+.btn-play {
+    display: flex;
+    margin-top: 1em;
+    border-radius: 1em;
+    background-color: #756655;
+    border-color: #756655;
+    width: 7em;
+    height: 3em;
+    font-size: 1.5em;
+    justify-content: center;
+    align-items: center;
+}
