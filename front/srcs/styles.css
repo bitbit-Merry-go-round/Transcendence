@@ -124,7 +124,7 @@ body {
     border-radius: 1em;
     color: #899681;
     height: 5em;
-    width: 15em;
+    width: 90%;
 }
 
 .score {
@@ -379,4 +379,10 @@ ul {
     100% {
         opacity: 1;
     }
+}
+
+/* match */
+.match-player-card {
+    height: 32em;
+    width: 20em;
 }
