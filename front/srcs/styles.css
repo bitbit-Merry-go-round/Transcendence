@@ -274,7 +274,7 @@ ul {
 }
 
 .record-list-element {
-    background-color: #FAFBF9;
+    background-color: #fff;
     padding: 1em;
     border-radius: 3em;
     color: black;
@@ -332,4 +332,51 @@ ul {
     margin-left: auto;
     margin-right: auto;
     width: 50vw;
+}
+
+.loading-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background-color: #000a;
+    position: fixed;
+  }
+  .loading-spinner {
+    width: 10em;
+    height: 10em;
+    border: 1em solid #97B278;
+    border-top: 1em solid transparent;
+    border-radius: 5em;
+    animation: rotate 1s linear infinite;
+  }
+
+  @keyframes rotate {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+.loading-message {
+    font-size: 3em;
+    color: white;
+    opacity: 1;
+    animation: animate 3s infinite;
+}
+  
+@keyframes animate {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
 }
