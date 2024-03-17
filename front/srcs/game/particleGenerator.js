@@ -32,6 +32,9 @@ export default class ParticleGenerator {
   /** @type {THREE.Points} */
   #particles;
 
+  /** @type {boolean} */
+  isPlaying;
+
   /** @type{{
       position: {
         x: number, 
@@ -97,6 +100,7 @@ export default class ParticleGenerator {
     this.#particleContainer = new THREE.Group();
     this.maxSize = maxSize;
     this.computeDepth = computeDepth
+    this.isPlaying = true;
   }
 
   /** @param {string[]} colors */
@@ -181,6 +185,8 @@ export default class ParticleGenerator {
    * animate.
    */
   animate() {
+    if (!this.isPlaying)
+      return;
 
     for (let i = 0; i < this.count; ++i) {
       const data = this.particleData[i];

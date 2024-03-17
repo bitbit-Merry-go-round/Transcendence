@@ -4,6 +4,8 @@ import { GameData, Player } from "@/data/game_data";
 import Observable from "@/lib/observable";
 import ObservableObject from "@/lib/observable_object";
 
+const WIN_SCORE = 1;
+
 export default class GameView extends View {
 
   /** @type {HTMLCanvasElement} */
@@ -37,13 +39,18 @@ export default class GameView extends View {
       ( /**@type {{ [key: string]: number }} */newScores) => {
         for (let nickname in newScores) {
           const player = this.#data.players.find(p => p.nickname == nickname);
+          const score = newScores[player.nickname];
           /** @type {HTMLElement} */
           const label = this.querySelector(
             `span[data-player=${nickname}]`);
-          label.innerText = newScores[player.nickname].toString();
-          this.#isPaused = true;
-          this.#startButton.style.display = "inline-block";
+          label.innerText = score.toString();
+          if (score == WIN_SCORE) {
+            this.#scene.endGame();
+            return;
+          }
         }
+        this.#isPaused = true;
+        this.#startButton.style.display = "inline-block";
       
     })
   }

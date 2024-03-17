@@ -4,14 +4,20 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import PhysicsEntity from "@/game/physicsEntity";
 import { EPSILON } from "@/game/physicsUtils";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
-import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
 import { GameData, Player } from "@/data/game_data";
 import ParticleGenerator from "@/game/particleGenerator";
 import ObservableObject from "@/lib/observable_object";
 import GUI from "node_modules/lil-gui/dist/lil-gui.esm.min.js";
 import { Animation, AnimationCurves } from "@/game/animation";
 import { WALL_TYPES, DIRECTION, GameMap } from "@/data/game_map";
+import LeafGenerator from "@/game/leafGenerator";
 
+const ASSETS = Object.freeze({
+  scene: "assets/models/scene/game_scene.glb",
+  bgm: "assets/sound/bgm1.mp3",
+  hitSound: "assets/sound/hit.mp3",
+  leaf: "assets/models/leaf/leaf.gltf",
+});
 const FRAME_TIME_THRESHOLD = 0.01;
 const MAX_PEDDLE_SPEED = 50;
 const PEDDLE_ACCEL = 10;
@@ -62,50 +68,20 @@ export default class Scene {
   #physics;
   #scene;
   #scene_objs = {};
-
-
-  /** @type {{
-   *    key: string,
-   *    animation: Animation,
-   *    speed: number,
-   *    onProgress: (current: { x: number, y: number, z: number }) => void,
-   *    onEnded: (last: { x: number, y: number, z: number }) => void
-   *  }[]} 
-   */
-  #animations = [];
   #gameData;
   #gameMap;
 
-  #textureLoader = new THREE.TextureLoader();
-  /** @type {{
-   *  [key in string]: {
-   *    colorTexture: THREE.Texture,
-   *    normalTexture: THREE.Texture,
-   *    aoRoughnessMetallnessTexture: THREE.Texture
-   *  }
-   * }} */
-  #loadedTextures = { };
-
   /** @type {"TOP" | "BOTTOM" | null} */
   #lostSide = null;
-
-  #gameSize = {
-    width: 100,
-    height: 100,
-    depth: 1
-  };
-
-  #depth = {
-    wall: 5,
-    peddle: 3
-  };
 
   /** @type {THREE.Group} */
   #gameScene;
   #canvas;
   #windowSize;
+
   /** @type {THREE.PerspectiveCamera} */
   #camera;
+
   cameraPositions = { start: { x: 0, y: 80, z: 30 },
     startRotate: { x: 0, y: 20, z: 10 },
     play: { x: 0.2, y: 1.8, z: 0.60 },
@@ -181,34 +157,6 @@ export default class Scene {
    */
   #peddles = [];
 
-  peddleColors = {
-    "player1": 0x00ffff,
-    "player2": 0xffff00,
-  };
-
-  peddleSizeInGame = {
-    width: 0.15,
-    height: 0.015
-  }
-
-  /** @type {{
-   *  desc: string,
-   *  id: number
-   * }[]} */
-  #eventsIds = [];
-
-  #hitSound = {
-    sound: new Audio("assets/sound/hit.mp3"),
-    lastPlayed: 0,
-    volume: 0.8
-  };
-
-  /** @type {ParticleGenerator} */
-  #sceneParticle;
-
-  /** @type {ParticleGenerator} */
-  #gameParticle;
-
   /** @type {{
    *    pressed: {
    *      player: number,
@@ -238,6 +186,72 @@ export default class Scene {
   ];
 
   isBallMoving = false;
+  peddleColors = {
+    "player1": 0x00ffff,
+    "player2": 0xffff00,
+  };
+
+  peddleSizeInGame = {
+    width: 0.15,
+    height: 0.015
+  }
+
+  /** @type {{
+   *  desc: string,
+   *  id: number
+   * }[]} */
+  #eventsIds = [];
+
+  #hitSound = {
+    sound: new Audio(ASSETS.hitSound),
+    lastPlayed: 0,
+    volume: 0.8
+  };
+
+  /**
+   * Effect
+   */
+
+  /** @type {ParticleGenerator} */
+  #sceneParticle;
+
+  /** @type {ParticleGenerator} */
+  #gameParticle;
+
+  /** @type {LeafGenerator} */
+  #leaf;
+
+  /** @type {{
+   *    key: string,
+   *    animation: Animation,
+   *    speed: number,
+   *    onProgress: (current: { x: number, y: number, z: number }) => void,
+   *    onEnded: (last: { x: number, y: number, z: number }) => void
+   *  }[]} 
+   */
+  #animations = [];
+  #textureLoader = new THREE.TextureLoader();
+  #gltfLoader = new GLTFLoader();
+  /** @type {{
+   *  [key in string]: {
+   *    colorTexture: THREE.Texture,
+   *    normalTexture: THREE.Texture,
+   *    aoRoughnessMetallnessTexture: THREE.Texture
+   *  }
+   * }} */
+  #loadedTextures = { };
+
+  #gameSize = {
+    width: 100,
+    height: 100,
+    depth: 1
+  };
+
+  #depth = {
+    wall: 5,
+    peddle: 3
+  };
+
   #renderId = 0;
 
   /**
@@ -265,8 +279,8 @@ export default class Scene {
       {
         width: 40,
         height: 2,
-        centerX: 70,
-        centerY: 80
+        centerX: 80,
+        centerY: 70
       }
     ], WALL_TYPES.safe);
     this.#scene = new THREE.Scene();
@@ -286,6 +300,7 @@ export default class Scene {
       .#addEvents()
       .#addHelpers()
       .#addControls()
+      .#loadLeaf()
       .#startRender();
   }
 
@@ -294,16 +309,52 @@ export default class Scene {
     this.isBallMoving = true;
   }
 
+  endGame() {
+    if (this.#ball.mesh)  {
+      this.#removeBall();
+    }
+    const cameraDest = {
+      x: this.#camera.position.x,
+      y: this.#camera.position.y,
+      z: this.#camera.position.z + 1.5,
+    }
+    this.#moveCamera({
+      dest: cameraDest,
+      speed: 0.01,
+      curve: AnimationCurves.easein
+    });
+    
+    // leaf
+    const container = new THREE.Mesh(
+      new THREE.BoxGeometry(),
+      new THREE.MeshBasicMaterial({
+        transparent: true,
+        opacity: 0,
+        depthWrite: false
+      })
+    );
+    container.position.z = 0.5;
+    this.#scene.add(container);
+    this.#leaf.generate({
+      count: 50,
+      startY: 5,
+      endY: -1,
+      container
+    });
+    this.isBallMoving = false;
+  }
+
   prepareDisappear() {
 
   }
 
   #load() {
 
-    // Model
-    const gltfLoader = new GLTFLoader();
-    gltfLoader.load(
-      "assets/scene/game_scene.glb",
+    /**
+     * Scene
+     */
+    this.#gltfLoader.load(
+      ASSETS.scene,
       (gltf) => {
         
         const scene= gltf.scene;
@@ -367,6 +418,9 @@ export default class Scene {
           speed: 0.005,
           curve: AnimationCurves.easein,
           onEnded: () => {
+            this.#sceneParticle.isPlaying = false;
+            this.#gameParticle.isPlaying = true;
+          
             this.#moveCamera({
               dest: {...this.cameraPositions.play},
               curve: AnimationCurves.easeout,
@@ -387,7 +441,7 @@ export default class Scene {
     )
 
     // bgm
-    this.#bgm = new Audio("assets/sound/bgm1.mp3");
+    this.#bgm = new Audio(ASSETS.bgm);
     this.#bgm.volume = 0.1;
     this.#bgm.play()
 
@@ -487,7 +541,6 @@ export default class Scene {
   }
 
   #addBall() {
-    console.log(this.#camera.rotation)
     const mesh = new THREE.Mesh(
       new THREE.SphereGeometry(this.#ballRadiusInGame, 16, 16),
       new THREE.MeshStandardMaterial({
@@ -834,6 +887,7 @@ export default class Scene {
         z: 20
       }
     });
+    this.#gameParticle.isPlaying = false;
     this.#gameParticle.setColor([
       "#008DDA",
       "#41C9E2",
@@ -1202,6 +1256,16 @@ export default class Scene {
     return this;
   }
 
+  #loadLeaf() {
+    
+    this.#leaf = new LeafGenerator({
+      loader: this.#gltfLoader,
+      path: ASSETS.leaf
+    });
+    this.#leaf.load();
+    return this;
+  }
+
   #startRender() {
     const tick = (() => {
       this.controls.update()
@@ -1222,6 +1286,7 @@ export default class Scene {
       this.#updateObjects({frameTime, frameSlice})
       this.#gameParticle.animate();
       this.#sceneParticle.animate();
+      this.#leaf.animate();
       this.#renderer.render(this.#scene, this.#camera);
     }).bind(this);
 

@@ -10,6 +10,9 @@ export const AnimationCurves = {
   },
   easeout: (t) => {
     return Math.sin(t * Math.PI * 0.5);
+  },
+  linear: (t) => {
+    return t;
   }
 }
 
@@ -65,6 +68,9 @@ export class Animation {
   proceed(delta) {
     this.#_progress += delta;
     this.#_progress = Math.min(this.#_progress, 1);
+    if (this.#repeat) { //@ts-ignore
+      this.#_progress *= (this.#_progress < 1);
+    }
     this.#_passed = this.#curve(this.#_progress);
   }
 
@@ -86,5 +92,4 @@ export class Animation {
   get progress() {
     return (this.#_progress);
   }
-
 }
