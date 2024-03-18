@@ -14,9 +14,11 @@ import LeafGenerator from "@/game/leafGenerator";
 
 const ASSETS = Object.freeze({
   scene: "assets/models/scene/game_scene.glb",
+  leaf: "assets/models/leaf/leaf.gltf",
   bgm: "assets/sound/bgm1.mp3",
   hitSound: "assets/sound/hit.mp3",
-  leaf: "assets/models/leaf/leaf.gltf",
+  winSound: "assets/sound/win.mp3",
+  lostSound: "assets/sound/lost.mp3",
 });
 const FRAME_TIME_THRESHOLD = 0.01;
 const MAX_PEDDLE_SPEED = 50;
@@ -318,6 +320,11 @@ export default class Scene {
       y: this.#camera.position.y,
       z: this.#camera.position.z + 1.5,
     }
+    const sound = new Audio(
+      ASSETS.winSound
+    );
+    sound.volume = 0.8;
+    sound.play();
     this.#moveCamera({
       dest: cameraDest,
       speed: 0.01,
@@ -415,7 +422,7 @@ export default class Scene {
         this.#camera.lookAt(0, 0, 0);
         this.#moveCamera({
           dest: {...this.cameraPositions.startRotate},
-          speed: 0.005,
+          speed: 0.008,
           curve: AnimationCurves.easein,
           onEnded: () => {
             this.#sceneParticle.isPlaying = false;
@@ -424,11 +431,11 @@ export default class Scene {
             this.#moveCamera({
               dest: {...this.cameraPositions.play},
               curve: AnimationCurves.easeout,
-              speed: 0.01,
+              speed: 0.015,
             });
             this.#rotateCamera({
               dest: {...this.cameraRotations.play},
-              speed: 0.01
+              speed: 0.015
             })
           }
         });
@@ -442,7 +449,7 @@ export default class Scene {
 
     // bgm
     this.#bgm = new Audio(ASSETS.bgm);
-    this.#bgm.volume = 0.1;
+    this.#bgm.volume = 0.05;
     this.#bgm.play()
 
     return this;
@@ -986,7 +993,7 @@ export default class Scene {
     this.gui = new GUI();
     this.configs = {
       envMapIntensity: 1,
-      bgmVolume: 0.2,
+      bgmVolume: 0.05,
       effectVolume: 0.8,
     };
 

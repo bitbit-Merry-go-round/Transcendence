@@ -4,7 +4,7 @@ import { GameData, Player } from "@/data/game_data";
 import Observable from "@/lib/observable";
 import ObservableObject from "@/lib/observable_object";
 
-const WIN_SCORE = 1;
+const WIN_SCORE = 3;
 
 export default class GameView extends View {
 
@@ -50,7 +50,7 @@ export default class GameView extends View {
           }
         }
         this.#isPaused = true;
-        this.#startButton.style.display = "inline-block";
+        this.#startButton.style.visibility = "visible";
       
     })
   }
@@ -66,19 +66,22 @@ export default class GameView extends View {
       gameData: this.#gameData
     });
     this.#startButton = this.querySelector("#start-button");
+    setTimeout(() => {
+      this.#startButton.style.visibility = "visible";  
+    }, 3000);
     this.#startButton
       .addEventListener("click", () => {
       if (this.#isPaused) {
         this.#scene.startGame();
         this.#isPaused = false;
-        this.#startButton.style.display = "none";
+        this.#startButton.style.visibility = "hidden";
       }
     })
     window.addEventListener("keypress", event => {
       if (event.key == "Enter" && this.#isPaused) {
         this.#scene.startGame();
         this.#isPaused = false;
-        this.#startButton.style.display = "none";
+        this.#startButton.style.visibility = "hidden";
       }
     }) 
   }
