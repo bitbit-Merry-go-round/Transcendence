@@ -12,13 +12,14 @@ import { Animation, AnimationCurves } from "@/game/animation";
 import { WALL_TYPES, DIRECTION, GameMap } from "@/data/game_map";
 import LeafGenerator from "@/game/leafGenerator";
 
-const ASSETS = Object.freeze({
+export const ASSETS = Object.freeze({
   scene: "assets/models/scene/game_scene.glb",
   leaf: "assets/models/leaf/leaf.gltf",
   bgm: "assets/sound/bgm1.mp3",
   hitSound: "assets/sound/hit.mp3",
   winSound: "assets/sound/win.mp3",
   lostSound: "assets/sound/lost.mp3",
+  getColorTexture: (name) => `assets/textures/${name}/diff.jpg`,
 });
 const FRAME_TIME_THRESHOLD = 0.01;
 const MAX_PEDDLE_SPEED = 50;

@@ -138,8 +138,8 @@ export class GameMap {
     };
 
     const sideWallPositions = [
-      { x: 0, y: 50 },
-      { x: 100, y: 50 }
+      { x: 1, y: 50 },
+      { x: 99, y: 50 }
     ];
 
     sideWallPositions.forEach(pos => {
@@ -159,8 +159,8 @@ export class GameMap {
       height: 2
     };
     const topBottomPositions = [
-      { x: 50, y: 0 },
-      { x: 50, y: 100},
+      { x: 50, y: 1 },
+      { x: 50, y: 99 },
     ];
 
     topBottomPositions.forEach(pos => {
