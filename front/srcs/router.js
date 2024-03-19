@@ -1,6 +1,6 @@
 import HomeView from "@/views/home/home_view";
-import { routes } from "@/views/viewClasses";
-import global from "@/data/global";
+import globalData from "@/data/global";
+import { routes } from "@/views/config";
 
 class Router {
 
@@ -22,7 +22,7 @@ export async function route() {
   app.innerHTML = "";
   const page =  new view({
     data: {
-      user: global.user
+      user: globalData.user
     }
   });
   await page.render();

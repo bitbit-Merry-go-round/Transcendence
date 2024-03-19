@@ -1,9 +1,14 @@
+import MapSelector from "@/views/components/map_selector";
 import GameView from "@/views/game/game_view";
 import LoginView from "@/views/login/login_view";
 import HomeView from "@/views/home/home_view";
+import FriendView from "@/views/friend/friend_view";
+import ModeView from "@/views/mode/mode_view";
+import RecordView from "@/views/record/record_view";
+import TournamentView from "@/views/tournament/tournament_view";
+import MatchView from "@/views/match/match_view";
 import NavBar from "@/views/components/nav_bar";
 import ProfileCard from "@/views/components/profile_card";
-import MapSelector from "@/views/components/map_selector";
 
 /**
  * fileName for view class MUST contain '_' or '-' (Web components requirement)
@@ -80,8 +85,24 @@ export default {
 export const viewConstructors = {
   GameView,
   HomeView,
-  NavBar,
   LoginView,
+  FriendView,
+  ModeView,
+  RecordView,
+  TournamentView,
+  MatchView,
+  NavBar,
   ProfileCard,
-  MapSelector,
+  MapSelector
 };
+
+export const routes = [
+  { path: "/", view: HomeView},
+  { path: "/login", view: LoginView},
+  { path: "/friend", view: FriendView},
+  { path: "/record", view: RecordView},
+  { path: "/game", view: GameView },
+  { path: "/mode", view: ModeView },
+  { path: "/match", view: MatchView },
+  { path: "/tournament", view: TournamentView },
+];

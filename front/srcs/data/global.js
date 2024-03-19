@@ -1,4 +1,7 @@
-export default global = (() =>{
+import ObservableObject from "@/lib/observable_object";
+import User, { createProfile } from "@/data/user";
+
+const globalData = (() =>{
   const user = new ObservableObject(new User({
     profile:
     createProfile({
@@ -19,3 +22,5 @@ export default global = (() =>{
 
   return ({ user });
 })();
+
+export default globalData;
