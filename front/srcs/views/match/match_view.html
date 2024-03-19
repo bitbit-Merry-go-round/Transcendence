@@ -4,7 +4,7 @@
 			<h1 class="me-5 page-name">Online 1 : 1</h1>
 		</div>
 		<div class="d-flex justify-content-center ">
-      <div class="d-flex profile-card-record flex-column justify-content-between align-items-center mx-5 mt-5 mb-4 match-player-card">
+      <div class="d-flex profile-card-record flex-column justify-content-between align-items-center mx-5 mt-3 mb-4 match-player-card">
         <div class="d-flex justify-content-center">
           <div class="position-relative">
             <img class="user-avatar"
@@ -26,7 +26,7 @@
         </div>
       </div>
       <div class="mx-2" style="color: #7D9F56; margin-top: auto; margin-bottom:auto; font-size: 3em;">VS</div>
-      <div class="d-flex profile-card-record flex-column justify-content-between align-items-center mx-5 mt-5 mb-4 match-player-card">
+      <div class="d-flex profile-card-record flex-column justify-content-between align-items-center mx-5 mt-3 mb-4 match-player-card">
         <div class="d-flex justify-content-center">
           <div class="position-relative">
             <img class="user-avatar"
@@ -48,20 +48,47 @@
         </div>
       </div>
 		</div>
-    <div class="d-flex justify-content-center align-items-center game-config">
-      <div class="my-auto text-secondary">
-        <span>게임 설정</span>
-        <span class="material-symbols-outlined">
-        settings
-        </span></div>
-      <div>
-        <button class="btn btn-primary ms-4">맵</button>
-        <button class="btn btn-primary ms-4">패들 속도</button>
+    <div class="d-flex flex-column justify-content-center align-items-center">
+      <div class="d-flex justify-content-center align-items-center game-config">
+        <div class="d-flex align-items-center my-auto text-secondary">
+          <span class="material-symbols-outlined">settings</span>
+          <span class="mx-2">게임 설정</span>
+          <span class="material-symbols-outlined">settings</span>
+        </div>
+        <div>
+          <button id="confMapBtn" class="btn btn-primary ms-4">맵</button>
+          <button id="confPaddleBtn" class="btn btn-primary ms-4">패들 속도</button>
+        </div>
+      </div>
+      <div class="d-flex justify-content-end game-play">
+        <a href="/game" class="btn btn-primary btn-play" data-link>PLAY</a>
       </div>
     </div>
-    <div class="d-flex justify-content-end game-play">
-      <a href="/game" class="btn btn-primary btn-play" data-link>PLAY</a>
-    </div>
 	</div>
+  <div class="map-wrap match-modal" style="display: none;">
+    <div class="map-modal d-flex flex-column justify-content-center">
+      <button type="button" class="btn-close ms-auto"></button>
+      <div class="container">
+        <div class="low">
+          <div class="col">
+            <img src="srcs/assets/imac.png" alt="map1" class="img-map">
+            <img src="srcs/assets/imac.png" alt="map2" class="img-map">
+          </div>
+          <div class="col">
+            <img src="srcs/assets/imac.png" alt="map3" class="img-map">
+            <img src="srcs/assets/imac.png" alt="map4" class="img-map">
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-primary">확인</button>
+    </div>
+  </div>
+  <div class="paddle-wrap match-modal" style="display: none;">
+    <div class="map-modal d-flex flex-column justify-content-center">
+      <button type="button" class="btn-close ms-auto"></button>
+      <input type="range" name="paddle-speed" id="paddleSpeed" max="5" min="0" step="1">
+      <button class="btn btn-primary">확인</button>
+    </div>
+  </div>
 </match-view>
   
