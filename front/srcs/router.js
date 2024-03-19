@@ -6,6 +6,7 @@ import FriendView from "@/views/friend/friend_view";
 import ModeView from "@/views/mode/mode_view";
 import RecordView from "@/views/record/record_view";
 import TournamentView from "@/views/tournament/tournament_view";
+import MatchView from "@/views/match/match_view";
 import ObservableObject from "@/lib/observable_object";
 import User, { createProfile } from "@/data/user";
 
@@ -36,6 +37,7 @@ export async function route() {
     { path: "/record", view: RecordView},
     { path: "/game", view: GameView },
     { path: "/mode", view: ModeView },
+    { path: "/match", view: MatchView },
     { path: "/tournament", view: TournamentView },
   ]
   const match = routes.find((route) => {
