@@ -3,6 +3,7 @@ import Scene from "@/game/game_scene";
 import { GameData, Player } from "@/data/game_data";
 import Observable from "@/lib/observable";
 import ObservableObject from "@/lib/observable_object";
+import { GameMap, WALL_TYPES } from "@/data/game_map";
 
 const WIN_SCORE = 3;
 
@@ -21,6 +22,8 @@ export default class GameView extends View {
   #isPaused = true;
   /** @type {HTMLElement} */
   #startButton;
+  /** @type{GameMap} */
+  #gameMap;
 
   constructor({data}) {
     super({data});
@@ -53,6 +56,25 @@ export default class GameView extends View {
         this.#startButton.style.visibility = "visible";
       
     })
+    this.#gameMap = new GameMap({
+      safeWalls: [],
+      trapWalls: [],
+    });
+    this.#gameMap.addBorderWalls();
+    this.#gameMap.addWalls([
+      {
+        width: 40,
+        height: 2,
+        centerX: 20,
+        centerY: 30
+      },
+      {
+        width: 40,
+        height: 2,
+        centerX: 80,
+        centerY: 70
+      }
+    ], WALL_TYPES.safe);
   }
 
   connectedCallback() {
@@ -63,7 +85,8 @@ export default class GameView extends View {
     this.#canvas.height = container.offsetHeight;
     this.#scene = new Scene({
       canvas: this.#canvas,
-      gameData: this.#gameData
+      gameData: this.#gameData,
+      gameMap: this.#gameMap
     });
     this.#startButton = this.querySelector("#start-button");
     setTimeout(() => {
@@ -84,5 +107,11 @@ export default class GameView extends View {
         this.#startButton.style.visibility = "hidden";
       }
     }) 
+  }
+
+  disConnectedCallback() {
+    console.log("disConnectedCallback");
+    super.disConnectedCallback();
+    this.#scene.prepareDisappear();
   }
 }

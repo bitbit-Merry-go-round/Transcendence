@@ -80,19 +80,24 @@ export default class Scene {
   /** @type {THREE.Group} */
   #gameScene;
   #canvas;
+  /** @type {{
+   *  width: number
+   *  height: number
+   * }} */
   #windowSize;
 
   /** @type {THREE.PerspectiveCamera} */
   #camera;
 
-  cameraPositions = { start: { x: 0, y: 80, z: 30 },
+  cameraPositions = { 
+    start: { x: 0, y: 80, z: 30 },
     startRotate: { x: 0, y: 20, z: 10 },
     play: { x: 0.2, y: 1.8, z: 0.60 },
-  }
+  };
 
   cameraRotations = {
     play: { x: -0.26, y: 0, z: 0}
-  }
+  };
 
   /** @type {HTMLAudioElement} */
   #bgm;
@@ -111,7 +116,11 @@ export default class Scene {
     ambientIntensity: 2.1,
     directionalColor: 0xffffff,
     directionalIntensity: 2.1
-  }
+  };
+
+  /**
+   *  Object
+   */
 
   /** @type {{
    *   clock: THREE.Clock,
@@ -119,10 +128,10 @@ export default class Scene {
    * }} */
   #time;
 
-  /** @type {Array<{
+  /** @type {{
    *    mesh: THREE.Mesh,
    *    physicsId: number
-   *  }>}
+   *  }[]}
    */
   #objects = [];
 
@@ -197,7 +206,7 @@ export default class Scene {
   peddleSizeInGame = {
     width: 0.15,
     height: 0.015
-  }
+  };
 
   /** @type {{
    *  desc: string,
@@ -235,6 +244,7 @@ export default class Scene {
   #animations = [];
   #textureLoader = new THREE.TextureLoader();
   #gltfLoader = new GLTFLoader();
+
   /** @type {{
    *  [key in string]: {
    *    colorTexture: THREE.Texture,
@@ -262,32 +272,14 @@ export default class Scene {
    * @param {{
    *  canvas: HTMLCanvasElement,
    *  gameData: ObservableObject,
+   *  gameMap: GameMap
    * }} params
    */
-  constructor({canvas, gameData}) {
+  constructor({canvas, gameData, gameMap}) {
     this.#canvas = canvas;
     this.#gameData = gameData;
-    this.#gameMap = new GameMap({
-      safeWalls: [],
-      trapWalls: [],
-    });
-    this.#gameMap.addBorderWalls();
-    this.#gameMap.addWalls([
-      {
-        width: 40,
-        height: 2,
-        centerX: 20,
-        centerY: 30
-      },
-      {
-        width: 40,
-        height: 2,
-        centerX: 80,
-        centerY: 70
-      }
-    ], WALL_TYPES.safe);
+    this.#gameMap = gameMap;
     this.#scene = new THREE.Scene();
-
     this.#gameScene = new THREE.Group();
     this.#windowSize = {
       width: canvas.width,
@@ -353,7 +345,8 @@ export default class Scene {
   }
 
   prepareDisappear() {
-
+    console.log("disappear");
+    this.#bgm.pause();
   }
 
   #load() {
