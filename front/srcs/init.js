@@ -1,18 +1,15 @@
 //@ts-nocheck
 import CONFIG, { viewConstructors } from  "@/views/config";
 import View from "@/lib/view";
-import HomeView from "@/views/home/home_view";
-import LoginView from "@/views/login/login_view";
-import GameView from "@/views/game/game_view";
-import NavBar from "@/views/components/nav_bar";
-import ProfileCard from "@/views/components/profile_card";
 
 // CONFIG file path
 export default function init() {
   View.DEFAULT_DIR = CONFIG["default_dir"];
+  console.log(viewConstructors)
   for (const dir in CONFIG.filePath) {
     for (let view of CONFIG.filePath[dir]) {
       const viewClass = viewConstructors[view.className];
+      console.log(view, viewClass)
       const viewName = view.fileName.replaceAll('_', '-');
       viewClass.register({
         viewName,
