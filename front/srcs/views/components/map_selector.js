@@ -43,21 +43,28 @@ export default class MapSelector extends View {
     width: 256,
     height: 256
   };
-  
 
-  constructor() {
+  constructor(params) {
     super();
+  }
+
+  hide() {
+    const parent = this.parentNode;
+    if (parent) {
+      parent.style.display = "none";
+    }
+    else {
+      this.#background.style.visibility = "hidden";
+    }
   }
 
   connectedCallback() {
     super.connectedCallback();
     this.#container = this.querySelector("#map-selector-container");
     this.#background = this.querySelector("#map-selector-background");
-    this.querySelector("#show-map-button")
-      .addEventListener("click", () => {
-        const display = this.#background.style.display;
-        this.#background.style.display =  display == "flex" ? "none": "flex";
-      })
+
+    this.querySelector("#map-selector-close-button")
+    .addEventListener("click", () => this.hide());
     this.#drawMaps();
   }
 
@@ -73,8 +80,7 @@ export default class MapSelector extends View {
     for (let {map, textureName} of examples) {
       const image = mapGenerator.generate({map, textureName});
       const canvas = document.createElement("canvas");
-      canvas.addEventListener("click", 
-        () => this.#showMap(map));
+      canvas.dataset.map = JSON.stringify(map.allWalls); 
       canvas.classList.add("map-preview");
       const ctx = canvas.getContext("bitmaprenderer");
       ctx.transferFromImageBitmap(image);
@@ -83,8 +89,7 @@ export default class MapSelector extends View {
     }
   }
 
-  #showMap(map) {
-    console.log(map);
+  showMap(map) {
   }
   
   disConnectedCallback() {

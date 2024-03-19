@@ -4,12 +4,45 @@ import { routes } from "@/views/config";
 
 class Router {
 
-  static shared;
+  static _shared;
+
+  /** @type {{
+   * prev: { path: null, view: null, } | null,
+   * current: { path: null, view: null, } | null,
+   * next: { path: null, view: null, } | null,
+   * }} */
+  #views = {
+    prev: null,
+    current: null,
+    next: null
+  };
+
+  static get shared() {
+    if (!this._shared) {
+      return new Router();
+    }
+    return this._shared;
+  }
 
   constructor() {
-    if (Router.shared) 
-      return Router.shared
-    Router.shared = this;
+    if (Router._shared) 
+      return Router._shared
+    Router._shared = this;
+  }
+
+  async navigate(view) {
+    const app = document.getElementById("app");
+    const page = new view({
+      data: {
+        user: globalData.user
+      }
+    });
+    await page.render();
+    if (!this.#views.current) {
+      app.innerHTML = "";
+      app.appendChild(page);
+    }
+    anchorToLink(page);
   }
 }
 
@@ -18,16 +51,7 @@ export async function route() {
     return route.path == location.pathname
   })
   const view = match ? match.view : HomeView;   
-  const app = document.getElementById("app");
-  app.innerHTML = "";
-  const page =  new view({
-    data: {
-      user: globalData.user
-    }
-  });
-  await page.render();
-  app.appendChild(page);
-  anchorToLink(app);
+  await Router.shared.navigate(view);
 }
 
 /** @param {string | URL} url */
