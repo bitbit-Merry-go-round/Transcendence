@@ -63,7 +63,6 @@ export default class View extends HTMLElement {
   /** @param {any} data */
   constructor({data} = {}) {
     super();
-
     this.data = data;
     if (data) {
       Object.keys(data).forEach(key => this.#reRenderTriggers[key] = []);
@@ -123,7 +122,7 @@ export default class View extends HTMLElement {
       if (matches)  {
         const key = matches[1].split('.')[0];
         if (!this.#reRenderTriggers[key]) {
-          console.log("Fail to add rerender trigget for ", key);
+          console.log("Fail to add rerender trigget for ", this, key);
           continue;
         }
         this.#reRenderTriggers[key].push({

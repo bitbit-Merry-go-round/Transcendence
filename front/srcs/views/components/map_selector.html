@@ -1,0 +1,41 @@
+<map-selector>
+	<style>
+		#map-selector-background {
+			display: none;
+			position: fixed;
+			z-index: 10;
+			left: 0;
+			top: 0;
+			width: 100%;
+			height: 100%;
+			overflow: auto;
+			background-color: rgba(0, 0, 0, 0.4);
+		}
+		#map-selector-container {
+			transition: all 0.1s;
+			position: fixed;
+			top: 20%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			background-color: #ECEEE7;
+			border-radius: 1em;
+			padding: 1em;
+		}
+    .map-preview {
+      width: 200px;
+      height: 200px;
+      margin: 0.5em 1em;
+    }
+    .map-preview:hover {
+      border: thick double #303D29;
+      border-width: 0.5em;
+    }
+	</style>
+	<div class="d-flex justify-content-center" style="height: 80vh;">
+    <button id="show-map-button" style="height: 2em">Map</button>
+		<div id="map-selector-background">
+			<div id="map-selector-container" class="d-flex justify-content-end">
+			</div>
+		</div>
+	</div>
+</map-selector>
