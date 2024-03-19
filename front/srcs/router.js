@@ -9,6 +9,7 @@ import TournamentView from "@/views/tournament/tournament_view";
 import MatchView from "@/views/match/match_view";
 import ObservableObject from "@/lib/observable_object";
 import User, { createProfile } from "@/data/user";
+import { routes } from "@/views/viewClasses";
 
 const user = new ObservableObject(new User({
   profile:
@@ -30,16 +31,6 @@ const user = new ObservableObject(new User({
 
 
 export async function route() {
-  const routes = [
-    { path: "/", view: HomeView},
-    { path: "/login", view: LoginView},
-    { path: "/friend", view: FriendView},
-    { path: "/record", view: RecordView},
-    { path: "/game", view: GameView },
-    { path: "/mode", view: ModeView },
-    { path: "/match", view: MatchView },
-    { path: "/tournament", view: TournamentView },
-  ]
   const match = routes.find((route) => {
     return route.path == location.pathname
   })

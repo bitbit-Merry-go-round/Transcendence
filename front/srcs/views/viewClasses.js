@@ -21,3 +21,14 @@ export default {
   NavBar,
   ProfileCard,
 };
+
+export const routes = [
+  { path: "/", view: HomeView},
+  { path: "/login", view: LoginView},
+  { path: "/friend", view: FriendView},
+  { path: "/record", view: RecordView},
+  { path: "/game", view: GameView },
+  { path: "/mode", view: ModeView },
+  { path: "/match", view: MatchView },
+  { path: "/tournament", view: TournamentView },
+];
