@@ -17,7 +17,7 @@ export default class View extends HTMLElement {
     dirName: {},
     fileName: {}
   };
-  static regexReplace =  /{{([^}}]+)}}/g;
+  static regexReplace =  /{{([^}}]+)}}/;
   static regexMatch =  /{{([^}}]+)}}/;
 
   static async getTemplate() {
@@ -160,6 +160,7 @@ export default class View extends HTMLElement {
   #expandForLoop(node) {
     const keys = node.getAttribute(LOOP_KEY).split("in")
       .map(key => key.trim());
+
     if (keys.length < 2)  {
       console.err("Not valid for loop use 'A in B'", node);
       return;
@@ -171,6 +172,7 @@ export default class View extends HTMLElement {
       );
       return ;
     }
+    
     const container = {
       ...this.data,
     }
@@ -231,11 +233,10 @@ export default class View extends HTMLElement {
         return content;
       }
       const data = getValue(container, matches[1]);
-      content = content.replaceAll(
+      content = content.replace(
         new RegExp(matches[0], "g"), data);
-    }
+      }
   }
-
   connectedCallback() { }
 
   disConnectedCallback() { }

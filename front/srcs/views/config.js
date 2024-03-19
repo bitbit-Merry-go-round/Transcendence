@@ -43,6 +43,36 @@ export default {
         "className": "GameView",
         "fileName": "game_view.html"
       }
+    ],
+    "friend": [ 
+      {
+        "className": "FriendView",
+        "fileName": "friend_view.html"
+      }
+    ],
+    "mode": [ 
+      {
+        "className": "ModeView",
+        "fileName": "mode_view.html"
+      }
+    ],
+    "record": [ 
+      {
+        "className": "RecordView",
+        "fileName": "record_view.html"
+      }
+    ],
+    "tournament": [ 
+      {
+        "className": "TournamentView",
+        "fileName": "tournament_view.html"
+      }
+    ],
+    "match": [ 
+      {
+        "className": "MatchView",
+        "fileName": "match_view.html"
+      }
     ]
   }
 }

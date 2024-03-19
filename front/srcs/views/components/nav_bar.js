@@ -5,7 +5,6 @@ export default class NavBar extends View {
   constructor() {
     super();
   }
-
   connectedCallback() {
     super.connectedCallback();
     console.log("navbar connected");
