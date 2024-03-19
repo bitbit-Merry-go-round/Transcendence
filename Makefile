@@ -4,7 +4,6 @@ DOCKER_VOLUME := $(shell docker volume ls -q)
 PWD := $(shell pwd)
 
 all:
-	sed -i '' 's|^\(FE_VOL_PATH\).*|FE_VOL_PATH=$(PWD)/front/srcs|' "./.env"
 	docker compose up -d
 
 up:
