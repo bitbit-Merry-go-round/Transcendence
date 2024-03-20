@@ -69,7 +69,7 @@ class Router {
 
     const page = new view({
       data: {
-        user: globalData.user
+        ...globalData
       }
     });
     await page.render();

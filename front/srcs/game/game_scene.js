@@ -11,6 +11,8 @@ import GUI from "node_modules/lil-gui/dist/lil-gui.esm.min.js";
 import { Animation, AnimationCurves } from "@/game/animation";
 import { WALL_TYPES, DIRECTION, GameMap } from "@/data/game_map";
 import LeafGenerator from "@/game/leafGenerator";
+import ImageGenerator from "@/utils/image_generator";
+import UserLabel from "@/views/components/user_label";
 
 export const ASSETS = Object.freeze({
   scene: "assets/models/scene/game_scene.glb",
@@ -344,13 +346,42 @@ export default class Scene {
     this.isBallMoving = false;
   }
 
+  async createLabel() {
+    const label = new UserLabel({data: {}});
+    await label.render();
+    const labelSize = {
+      width: Number(label.children[0].style.width.replace("px", "")),
+      height: Number(label.children[0].style.height.replace("px", ""))
+    };
+    const imageGenerator = new ImageGenerator({
+      size: labelSize
+    });
+    imageGenerator.generate(label)
+      .then(canvas => {
+        document.body.appendChild(canvas);
+        const texture = new THREE.Texture(canvas);
+        texture.needsUpdate = true;
+        const plane = new THREE.PlaneGeometry(
+          0.3, 
+          0.3
+        );
+        const mesh = new THREE.Mesh(plane, new THREE.MeshBasicMaterial({
+          map: texture,
+          transparent: true,
+          
+        }));
+        mesh.position.y = 2;
+        mesh.position.z = 1;
+        this.#scene.add(mesh);
+      })
+  
+  }
+
   prepareDisappear() {
-    console.log("disappear");
     this.#bgm.pause();
   }
 
   #load() {
-
     /**
      * Scene
      */
