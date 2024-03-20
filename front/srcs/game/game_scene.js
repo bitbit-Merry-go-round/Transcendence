@@ -73,6 +73,7 @@ export default class Scene {
   #physics;
   #scene;
   #scene_objs = {};
+  /** @type {GameData} */
   #gameData;
   #gameMap;
 
@@ -346,20 +347,22 @@ export default class Scene {
     this.isBallMoving = false;
   }
 
-  async createLabel() {
-    const label = new UserLabel({data: {}});
+  async #createLabel({player, size}) {
+    const label = new UserLabel({data: {
+      name: player.nickname
+    }});
     await label.render();
-    const labelSize = {
-      width: Number(label.children[0].style.width.replace("px", "")),
-      height: Number(label.children[0].style.height.replace("px", ""))
-    };
+    console.log(label);
+    label.children[0].style.width = size.width + "px";
+    label.children[0].style.height = size.height+ "px";
     const imageGenerator = new ImageGenerator({
-      size: labelSize
+      size
     });
-    imageGenerator.generate(label)
+    return imageGenerator.generate(label)
       .then(canvas => {
-        document.body.appendChild(canvas);
         const texture = new THREE.Texture(canvas);
+        texture.minFilter = THREE.NearestFilter;
+        texture.magFilter = THREE.NearestFilter;
         texture.needsUpdate = true;
         const plane = new THREE.PlaneGeometry(
           0.3, 
@@ -370,11 +373,8 @@ export default class Scene {
           transparent: true,
           
         }));
-        mesh.position.y = 2;
-        mesh.position.z = 1;
-        this.#scene.add(mesh);
-      })
-  
+        return mesh;
+      }) 
   }
 
   prepareDisappear() {
@@ -431,7 +431,29 @@ export default class Scene {
           (screenSize.y / sceneSize.y) * 0.65,
           (screenSize.x / sceneSize.x) * 0.8
         );
+        const players = this.#gameData.getPlayers();
+        const labelContainer = screen.parent;
+        const labelSize =  { width: 200, height: 250 };
+
+        this.#createLabel({
+          player: players[0],
+          size: labelSize
+        })
+          .then(label => {
+            label.position.set(-0.6, 1.2, 1.5);
+            label.scale.set(1.5, 1, 1);
+            labelContainer.add(label);
+          })
          
+        this.#createLabel({
+          player: players[1],
+          size: labelSize
+        })
+          .then(label => {
+            label.position.set(0.5, -0.4, 1.5);
+            label.scale.set(1.5, 1, 1);
+            labelContainer.add(label);
+          })
         screen.parent.add(this.#gameScene);
         screen.removeFromParent();
 
