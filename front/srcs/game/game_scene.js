@@ -843,12 +843,12 @@ export default class Scene {
     const positions = [
       {
         x: 0,
-        y: this.#gameSize.height * - 0.4
+        y: this.#gameSize.height * 0.4
       },
       {
         x: 0,
-        y: this.#gameSize.height * 0.4
-      }
+        y: this.#gameSize.height * - 0.4
+      },
     ];
     const meshes = materials.map((material, index) => {
       const mesh = new THREE.Mesh(
