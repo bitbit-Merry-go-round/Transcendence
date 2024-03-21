@@ -1,3 +1,7 @@
-npm install ./srcs/;
+cd ./srcs/ 
+
+npm install
+
+cd ../
 
 nginx;
