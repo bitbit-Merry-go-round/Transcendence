@@ -27,9 +27,11 @@ const globalData = (() =>{
   const heshin = new Player({
     nickname: "heshin"
   });
-  const gameData = new ObservableObject(new GameData({
-    players: [bart, heshin],
-  }));
+  const gameData = new ObservableObject(
+    new GameData({
+      players: [bart, heshin],
+    })
+  );
 
   return ({ user, gameData });
 })();

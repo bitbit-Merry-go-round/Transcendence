@@ -6,6 +6,7 @@ import FriendView from "@/views/friend/friend_view";
 import ModeView from "@/views/mode/mode_view";
 import RecordView from "@/views/record/record_view";
 import TournamentView from "@/views/tournament/tournament_view";
+import TournamentPanel from "@/views/components/tournament_panel";
 import MatchView from "@/views/match/match_view";
 import NavBar from "@/views/components/nav_bar";
 import ProfileCard from "@/views/components/profile_card";
@@ -99,7 +100,8 @@ export const viewConstructors = {
   NavBar,
   ProfileCard,
   MapSelector,
-  UserLabel
+  UserLabel,
+  TournamentPanel
 };
 
 export const routes = [
@@ -110,5 +112,4 @@ export const routes = [
   { path: "/game", view: GameView },
   { path: "/mode", view: ModeView },
   { path: "/match", view: MatchView },
-  { path: "/tournament", view: TournamentView },
 ];

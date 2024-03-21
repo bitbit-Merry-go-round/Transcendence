@@ -62,9 +62,6 @@ class Router {
       else if (destPath == "/") {
         direction = currentPath== "/login" ? NAVIGATE_DRIRECTION.forward: NAVIGATE_DRIRECTION.backward;
       } 
-      else if (currentPath != "/" && this.#pages.prev?.path == destPath) {
-        direction = NAVIGATE_DRIRECTION.backward;
-      }
     }
 
     const page = new view({

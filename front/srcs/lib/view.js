@@ -109,6 +109,7 @@ export default class View extends HTMLElement {
       });
       await view.render();
       elements[i].replaceWith(view);
+
     }
     return this;
   }

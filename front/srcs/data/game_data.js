@@ -36,6 +36,9 @@ export class Player {
  */
 export class GameData {
 
+  /** @type {string} */
+  #gameType;
+
   /** @type {Player[]} */
   #players = [ ];
 
@@ -62,6 +65,13 @@ export class GameData {
    */
   constructor({players, positions = {}}) {
     this.#players = players;
+    if (players.length < 2) {
+      throw "Not enough players";
+    }
+    if (players.length == 2) {
+      this.#gameType = GAME_TYPE.local1on1
+    };
+    
     this.#players.forEach(player => {
       this.scores[player.nickname] = 0;
     });
