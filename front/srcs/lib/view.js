@@ -167,10 +167,7 @@ export default class View extends HTMLElement {
     const container = additionalData? {
       ...this.data,
       ...additionalData
-    }: {
-      ...this.data
-    };
-    
+    }: this.data;    
     let values = getValue(container, keys[1]);
     if (!values || !Array.isArray(values)) {
       console.error(`Data for ${keys[1]} is not array  is it inner loop?`, 
@@ -222,35 +219,6 @@ export default class View extends HTMLElement {
     })
     node.removeAttribute(LOOP_KEY);
   }
-  /** @param {HTMLElement} node */
-  #_expandForLoop(node) {
-    const keys = node.getAttribute(LOOP_KEY).split("in")
-      .map(key => key.trim());
-
-    if (keys.length < 2)  {
-      console.err("Not valid for loop use 'A in B'", node);
-      return;
-    }
-    let values = getValue(this.data, keys[1]);
-    if (!Array.isArray(values)) {
-      console.error(`Data for ${key[1]} is not array `, 
-        values
-      );
-      return ;
-    }
-    
-    const container = {
-      ...this.data,
-    }
-    const template = node.innerHTML;
-    node.innerHTML = "";
-    values.forEach(elem => {
-      container[keys[0]] = elem;
-      node.innerHTML += this.#replaceContent(template, 
-        container );
-      this.#filterCondition(node, container);
-    })
-  }
 
     /** @param {HTMLElement} node
      *  @param {Object} container */
@@ -299,7 +267,7 @@ export default class View extends HTMLElement {
         return content;
       }
       const data = getValue(container, matches[1]);
-      if (data == undefined || null) {
+      if (data == undefined || data == null) {
         return content;
       }
       content = content.replace(

@@ -522,3 +522,44 @@ input[type="range"]::-webkit-slider-thumb {
     cursor: pointer;
     box-shadow: -100vw 0 0 100vw #97B278aa;
 }
+
+.edit-user-message-box {
+    padding-top: 10px;
+    width: 30em;
+    height: 15em;
+}
+
+.edit-user-message-input {
+    /* text-align: start; */
+    vertical-align: top;
+    width: 20em;
+    height: 7em;
+    /* padding-bottom: 6.5em  */
+}
+
+input[type="file"] {
+    position: absolute;
+    width: 0;
+    height: 0;
+    padding: 0;
+    overflow: hidden;
+    border: 0;
+}
+
+.img-wrapper {
+    background-color: #0004;
+    border-radius: 50%;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+}
+.edit-icon {
+    position: absolute;
+    width: 3em;
+    height: 3em;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}

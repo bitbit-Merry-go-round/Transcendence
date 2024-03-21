@@ -23,6 +23,7 @@ export default class GameView extends View {
   constructor({data}) {
     super({data: data.gameData});
     this.#data = data.gameData;
+    console.log(this.#data.currentPlayers);
     this.#data.subscribe("scores", 
       ( /**@type {{ [key: string]: number }} */newScores) => {
         for (let nickname in newScores) {
