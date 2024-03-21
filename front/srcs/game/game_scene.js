@@ -347,9 +347,10 @@ export default class Scene {
     this.isBallMoving = false;
   }
 
-  async #createLabel({player, size}) {
+  async #createLabel({player, size, texts}) {
     const label = new UserLabel({data: {
-      name: player.nickname
+      name: player.nickname,
+      texts
     }});
     await label.render();
     console.log(label);
@@ -435,9 +436,30 @@ export default class Scene {
         const labelContainer = screen.parent;
         const labelSize =  { width: 200, height: 250 };
 
+        const player1Controls = {
+          left: Object.keys(controlMap).find(key => 
+            controlMap[key].player == 0 && controlMap[key].x == -1
+          ),
+          right: Object.keys(controlMap).filter(key => 
+            controlMap[key].player == 0 && controlMap[key].x == 1
+          )
+        }
+        const player2Controls = {
+          left: Object.keys(controlMap).find(key => 
+            controlMap[key].player == 1 && controlMap[key].x == -1
+          ),
+          right: Object.keys(controlMap).filter(key => 
+            controlMap[key].player == 1 && controlMap[key].x == 1
+          )
+        }
+
         this.#createLabel({
           player: players[0],
-          size: labelSize
+          size: labelSize,
+          texts: [
+            "L: " + player1Controls.left,
+            "R: " + player1Controls.right
+          ]
         })
           .then(label => {
             label.position.set(-0.6, 1.2, 1.5);
@@ -447,7 +469,11 @@ export default class Scene {
          
         this.#createLabel({
           player: players[1],
-          size: labelSize
+          size: labelSize,
+          texts: [
+            "L: " + player2Controls.left,
+            "R: " + player2Controls.right
+          ]
         })
           .then(label => {
             label.position.set(0.5, -0.4, 1.5);
@@ -1038,6 +1064,7 @@ export default class Scene {
   #addHelpers() {
 
     this.gui = new GUI();
+    this.gui.close();
     this.configs = {
       envMapIntensity: 1,
       bgmVolume: 0.05,
