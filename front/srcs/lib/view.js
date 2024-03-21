@@ -105,7 +105,7 @@ export default class View extends HTMLElement {
       /** @type{View} */ 
       const viewClass = View.allViews.constructor[className];
       const view =  await new viewClass({
-        data: this.data
+        data: this.data,
       });
       await view.render();
       elements[i].replaceWith(view);
