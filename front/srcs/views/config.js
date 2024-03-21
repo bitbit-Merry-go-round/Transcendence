@@ -36,6 +36,10 @@ export default {
         "className": "UserLabel",
         "fileName": "user_label.html"
       },
+      {
+        "className": "TournamentPanel",
+        "fileName": "tournament_panel.html"
+      },
     ],
     "home": [ 
       {

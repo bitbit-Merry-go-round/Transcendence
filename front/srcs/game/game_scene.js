@@ -432,7 +432,7 @@ export default class Scene {
           (screenSize.y / sceneSize.y) * 0.65,
           (screenSize.x / sceneSize.x) * 0.8
         );
-        const players = this.#gameData.getPlayers();
+        const players = this.#gameData.currentPlayers;
         const labelContainer = screen.parent;
         const labelSize =  { width: 200, height: 250 };
 
@@ -1324,7 +1324,7 @@ export default class Scene {
     /** @type {GameData} */ //@ts-ignore: casting
     const gameData = this.#gameData;
     /** @type {Player[]} */
-    const players = gameData.getPlayers();
+    const players = gameData.currentPlayers;
     if (this.#lostSide != DIRECTION.top && 
       this.#lostSide != DIRECTION.bottom) {
       throw "invalid side " + this.#lostSide;

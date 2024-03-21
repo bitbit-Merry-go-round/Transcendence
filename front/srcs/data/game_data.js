@@ -97,7 +97,7 @@ export class GameData {
     return this.scores[player.nickname];
   }
 
-  getPlayers() {
+  get currentPlayers() {
     return [...this.#players];
   }
 }

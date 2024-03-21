@@ -109,7 +109,6 @@ export default class View extends HTMLElement {
       });
       await view.render();
       elements[i].replaceWith(view);
-
     }
     return this;
   }
@@ -157,8 +156,74 @@ export default class View extends HTMLElement {
     return root;
   }
 
+  #expandForLoop(node, additionalData = null) {
+    const keys = node.getAttribute(LOOP_KEY).split("in")
+      .map(key => key.trim());
+
+    if (keys.length < 2)  {
+      console.err("Not valid for loop use 'A in B'", node);
+      return;
+    }
+    const container = additionalData? {
+      ...this.data,
+      ...additionalData
+    }: {
+      ...this.data
+    };
+    
+    let values = getValue(container, keys[1]);
+    if (!values || !Array.isArray(values)) {
+      console.error(`Data for ${keys[1]} is not array  is it inner loop?`, 
+        values
+      );
+      return ;
+    }
+
+    const template = node.innerHTML;
+    node.innerHTML = "";
+    values.forEach(elem => {
+      container[keys[0]] = elem;
+      node.innerHTML += this.#replaceContent(template, 
+        container );
+      this.#filterCondition(node, container);
+
+
+      const innerElements = [...node.children].filter(
+        elem => {
+          if (elem.hasAttribute(LOOP_KEY))
+            return true;
+          if (elem.children.length == 0) {
+            return false;
+          }
+          if ([...elem.children].find(c => c.hasAttribute(LOOP_KEY))) {
+            return true; 
+          }
+        });
+      if (innerElements.length > 0) {
+        for (let i = 0; i < innerElements.length; i++) {
+          const innerRoot = innerElements[i].hasAttribute(LOOP_KEY) ? innerElements[i]: [...innerElements[i].children].find(c => c.hasAttribute(LOOP_KEY));
+          const innerKeys = innerRoot.getAttribute(LOOP_KEY).split("in")
+            .map(key => key.trim());
+
+          if (innerKeys.length < 2)  {
+            console.err("Not valid for loop use 'A in B'", node);
+            return;
+          }
+          const innerValues = getValue(elem, innerKeys[1]);
+          this.#expandForLoop(innerRoot, 
+            {
+              [innerKeys[1]]: innerValues
+            }
+          );
+        }
+      }
+
+
+    })
+    node.removeAttribute(LOOP_KEY);
+  }
   /** @param {HTMLElement} node */
-  #expandForLoop(node) {
+  #_expandForLoop(node) {
     const keys = node.getAttribute(LOOP_KEY).split("in")
       .map(key => key.trim());
 
@@ -234,6 +299,9 @@ export default class View extends HTMLElement {
         return content;
       }
       const data = getValue(container, matches[1]);
+      if (data == undefined || null) {
+        return content;
+      }
       content = content.replace(
         new RegExp(matches[0], "g"), data);
       }

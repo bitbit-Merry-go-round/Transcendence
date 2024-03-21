@@ -23,12 +23,10 @@ export default class GameView extends View {
   constructor({data}) {
     super({data: data.gameData});
     this.#data = data.gameData;
-    this.#data.players = this.#data.getPlayers();
-    console.log(this.#data.players);
     this.#data.subscribe("scores", 
       ( /**@type {{ [key: string]: number }} */newScores) => {
         for (let nickname in newScores) {
-          const player = this.#data.players.find(p => p.nickname == nickname);
+          const player = this.#data.currentPlayers.find(p => p.nickname == nickname);
           const score = newScores[player.nickname];
           /** @type {HTMLElement} */
           const label = this.querySelector(

@@ -84,7 +84,10 @@ class _ObservableObject {
     if (this.#object.hasOwnProperty(key)) {
       return this.#object[key]; 
     }
-    return undefined;
+    if( Object.getPrototypeOf(this.#object).hasOwnProperty(key)) {
+      return this.#object[key];
+    }
+    return null;
   }
 
   /**
