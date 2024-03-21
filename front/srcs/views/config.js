@@ -7,6 +7,7 @@ import ModeView from "@/views/mode/mode_view";
 import RecordView from "@/views/record/record_view";
 import TournamentView from "@/views/tournament/tournament_view";
 import MatchView from "@/views/match/match_view";
+import EditView from "@/views/edit/edit_view";
 import NavBar from "@/views/components/nav_bar";
 import ProfileCard from "@/views/components/profile_card";
 
@@ -78,6 +79,12 @@ export default {
         "className": "MatchView",
         "fileName": "match_view.html"
       }
+    ],
+    "edit": [ 
+      {
+        "className": "EditView",
+        "fileName": "edit_view.html"
+      }
     ]
   }
 }
@@ -90,6 +97,7 @@ export const viewConstructors = {
   ModeView,
   RecordView,
   TournamentView,
+  EditView,
   MatchView,
   NavBar,
   ProfileCard,
@@ -105,4 +113,5 @@ export const routes = [
   { path: "/mode", view: ModeView },
   { path: "/match", view: MatchView },
   { path: "/tournament", view: TournamentView },
+  { path: "/edit", view: EditView },
 ];
