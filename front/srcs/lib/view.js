@@ -20,6 +20,11 @@ export default class View extends HTMLElement {
   static regexReplace =  /{{([^}}]+)}}/;
   static regexMatch =  /{{([^}}]+)}}/;
 
+  /** @type {{
+   *  [key in string]: Promise[]
+   * }} */
+  static waitingComponents = {};
+
   static async getTemplate() {
     const res = await fetch(this.dirName + this.fileName);
     const text = await res.text(); 
@@ -60,6 +65,8 @@ export default class View extends HTMLElement {
    * >}} */
   #reRenderTriggers = {};
 
+  waitingComponents = [];
+
   /** @param {any} data */
   constructor({data} = {}) {
     super();
@@ -67,12 +74,18 @@ export default class View extends HTMLElement {
     if (data) {
       Object.keys(data).forEach(key => this.#reRenderTriggers[key] = []);
     }
+    this.isReady = new Promise(resolve => this.isReadyResolve = resolve);
+  }
+
+  get waitReady() {
+    return this.isReady;
   }
 
   async render() {
     if (!this.constructor.template) {
       await this.constructor.getTemplate();
     }
+    View.waitingComponents[this.constructor.name] = [];
 
     /** @type {HTMLElement} node */
     this.innerHTML = this.constructor.template;
@@ -107,7 +120,23 @@ export default class View extends HTMLElement {
       const view =  await new viewClass({
         data: this.data,
       });
+      /** @type {HTMLElement} */
+      const html = view;
+      html.dataset["parent"] = this.constructor.name;
       await view.render();
+      if (!View.waitingComponents[this.constructor.name][className]) {
+        View.waitingComponents[this.constructor.name][className] = [];
+      }
+      
+      new Promise(resolve => {
+        View.waitingComponents[this.constructor.name][className].push(
+          {
+            resolver: resolve,
+            isResolved: false
+          }
+        );
+
+      })
       elements[i].replaceWith(view);
     }
     return this;
@@ -237,8 +266,16 @@ export default class View extends HTMLElement {
         new RegExp(matches[0], "g"), data);
       }
   }
-  connectedCallback() { }
+
+  connectedCallback() {
+  }
 
   disConnectedCallback() { }
+
+  async componentsConnected() {
+    if (this.waitingComponents.length > 1) {
+      await Promise.all(this.waitingComponents)
+    }
+  }
 }
 
