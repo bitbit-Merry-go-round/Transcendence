@@ -4,8 +4,6 @@ import { GameData, Player } from "@/data/game_data";
 import ObservableObject from "@/lib/observable_object";
 import { GameMap, WALL_TYPES } from "@/data/game_map";
 
-const WIN_SCORE = 3;
-
 export default class GameView extends View {
 
   /** @type {HTMLCanvasElement} */
@@ -33,7 +31,7 @@ export default class GameView extends View {
           const label = this.querySelector(
             `span[data-player=${nickname}]`);
           label.innerText = score.toString();
-          if (score == WIN_SCORE) {
+          if (score == this.#data.winScore) {
             this.#scene.endGame();
             return;
           }
@@ -94,10 +92,8 @@ export default class GameView extends View {
       }
     }) 
   }
-
-  disConnectedCallback() {
-    console.log("disConnectedCallback");
-    super.disConnectedCallback();
+  disconnectedCallback() {
     this.#scene.prepareDisappear();
+    super.disconnectedCallback();
   }
 }

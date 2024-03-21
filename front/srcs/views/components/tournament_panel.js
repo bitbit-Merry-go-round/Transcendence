@@ -3,11 +3,13 @@ import View from "@/lib/view";
 /** @typedef {Object} Match 
  *  @property {{
  *    name: string,
- *    score: number | null
+ *    score: number | null,
+ *    class: string
  *  }} playerA
  *  @property {{
  *    name: string,
- *    score: number | null
+ *    score: number | null,
+ *    class: string
  *  }} playerB
 */
 
@@ -15,11 +17,13 @@ import View from "@/lib/view";
 const match = {
   playerA:  {
     name: "a",
-    score: 10
+    score: 10,
+    class: "winner",
   },
   playerB: {
     name: "b",
-    score: 12
+    score: 12,
+    class: "looser",
   }
 };
 
@@ -34,47 +38,21 @@ export default class TournamentPanel extends View {
   * }} */
   data;
 
-  constructor() {
-    const data = {
-      rounds: [
-        {
-          playerCounts: 8,
-          matches: [
-            { playerA: { name: "1", score: 12 }, playerB: { name: "2", score: 12 } },
-            { playerA: { name: "3", score: 12 }, playerB: { name: "4", score: 12 } },
-            { playerA: { name: "5", score: 12 }, playerB: { name: "6", score: 12 } },
-            { playerA: { name: "7", score: 12 }, playerB: { name: "8", score: 12 } },
-          ]
-        },
-        {
-          playerCounts: 4,
-          matches: [
-            {
-              playerA: {
-                name: "a",
-                score: 12
-              },
-              playerB: {
-                name: "b",
-                score: 12
-              }
-            },
-            {
-              playerA: {
-                name: "c",
-                score: 12
-              },
-              playerB: {
-                name: "d",
-                score: 12
-              }
-            },
-          ]
-        }
-      ]
-    } 
-    super({data});
-    this.data = data;
+  constructor(params) {
+    const gameData = params?.data?.gameData;
+    if (gameData) {
+      const tournament = gameData.tournament;
+      const rounds = tournament.allRounds;
+      const data = {
+        rounds
+      };
+      super({data});
+      this.data = data;
+    }
+    else {
+      super({data: {}});
+      this.data = {};
+    }
   }
 
   connectedCallback() {

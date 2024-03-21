@@ -380,6 +380,7 @@ export default class Scene {
 
   prepareDisappear() {
     this.#bgm.pause();
+    this.#bgm.currentTime = 0;
   }
 
   #load() {
@@ -522,6 +523,7 @@ export default class Scene {
 
     // bgm
     this.#bgm = new Audio(ASSETS.bgm);
+    this.#bgm.loop = true;
     this.#bgm.volume = 0.05;
     this.#bgm.play()
 

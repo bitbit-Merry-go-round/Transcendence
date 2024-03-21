@@ -3,6 +3,7 @@
     #tournament-panel-container,
     ul {
       display: flex;
+      padding: 0;
     }
 
     ul {
@@ -12,8 +13,11 @@
       padding: 0;
     }
 
+    li {
+    }
+
     .game + li {
-      flex-grow: 1;
+      flex-grow: 1.2;
     }
 
     li:first-child,
@@ -29,6 +33,11 @@
       font-weight: bold;
     }
 
+    .looser {
+      color: grey;
+      font-size: 10px;
+    }
+
     .game span {
       float: right;
       margin-right: 5px;
@@ -38,20 +47,29 @@
       border-bottom: 1px solid #aaa;
     }
 
+    .game-top.winner {
+      border-bottom: 3px solid #aaa;
+    }
+
     .game-top + li {
       border-right: 1px solid #aaa;
-      min-height: 40px;
+      min-height: 5em;
     }
 
     .game-bottom {
       border-top: 1px solid #aaa;
     }
+
+    .game-bottom.winner {
+      border-top: 3px solid #aaa;
+    }
+
   </style>
   <div id="tournament-panel-container" data-for="round in rounds">
     <ul data-for="match in matches">
         <li>&nbsp;</li>
-        <li class="game game-top winner">{{match.playerA.name}}<span>{{match.playerA.score}}</span></li>
+        <li class="game game-top {{match.playerA.class}}"> {{match.playerA.name}}<span>{{match.playerA.score}}</span></li>
         <li>&nbsp;</li>
-        <li class="game game-bottom ">{{match.playerB.name}}<span>{{match.playerB.score}}</span></li>
+        <li class="game game-bottom {{match.playerB.class}}">{{match.playerB.name}}<span>{{match.playerB.score}}</span></li>
     </ul>
 </tournament-panel>

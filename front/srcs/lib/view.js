@@ -19,6 +19,7 @@ export default class View extends HTMLElement {
   };
   static regexReplace =  /{{([^}}]+)}}/;
   static regexMatch =  /{{([^}}]+)}}/;
+  isDisconnected = false;
 
   static async getTemplate() {
     const res = await fetch(this.dirName + this.fileName);
@@ -214,8 +215,6 @@ export default class View extends HTMLElement {
           );
         }
       }
-
-
     })
     node.removeAttribute(LOOP_KEY);
   }
@@ -276,6 +275,6 @@ export default class View extends HTMLElement {
   }
   connectedCallback() { }
 
-  disConnectedCallback() { }
+  disconnectedCallback() { }
 }
 

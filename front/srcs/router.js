@@ -18,10 +18,10 @@ class Router {
 
   static _shared;
   static get transitionDistX() {
-    return 50;
+    return 30;
   }
   static get transitionOpacity() {
-    return 0.5;
+    return 0.7;
   }
 
   /** @type {{
