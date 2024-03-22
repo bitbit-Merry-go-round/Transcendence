@@ -8,6 +8,12 @@
 
 import { isEmptyObject } from "@/utils/typeutils";
 
+export const GAME_TYPE = Object.freeze({
+  local1on1: "LOCAL_1ON1",
+  localTournament: "LOCAL_TOURNAMENT",
+  remote: "REMOTE"
+});
+
 /**
  * Player.
  */

@@ -4,7 +4,7 @@ export default class FriendView extends View {
 
 
   constructor({data}) {
-    
+
     super();
     this.data = data
   }
@@ -39,7 +39,7 @@ export default class FriendView extends View {
       const clickedList = e.target.closest('li');
       const statusBadge = clickedList.querySelector('.status-circle-sm');
       statusBadge.classList.toggle('status-offline');
-      
+
       profileCardModal.querySelector('img').src = clickedList.querySelector('img').src;
       profileCardModal.querySelector('.user-level').textContent = clickedList.querySelector('.user-level').textContent;
       profileCardModal.querySelector('.user-name').textContent = clickedList.querySelector('.user-name').textContent;
@@ -48,4 +48,5 @@ export default class FriendView extends View {
       profileCardModal.style.display = 'flex';
     })
   }
+
 }

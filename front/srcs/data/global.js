@@ -1,5 +1,6 @@
 import ObservableObject from "@/lib/observable_object";
 import User, { createProfile } from "@/data/user";
+import { GameData, Player } from "./game_data";
 
 const globalData = (() =>{
   const user = new ObservableObject(new User({
@@ -20,7 +21,17 @@ const globalData = (() =>{
     ],
   }))
 
-  return ({ user });
+  const bart = new Player({
+    nickname: "bart"
+  });
+  const heshin = new Player({
+    nickname: "heshin"
+  });
+  const gameData = new ObservableObject(new GameData({
+    players: [bart, heshin],
+  }));
+
+  return ({ user, gameData });
 })();
 
 export default globalData;

@@ -10,6 +10,7 @@ import MatchView from "@/views/match/match_view";
 import EditView from "@/views/edit/edit_view";
 import NavBar from "@/views/components/nav_bar";
 import ProfileCard from "@/views/components/profile_card";
+import UserLabel from "@/views/components/user_label";
 
 /**
  * fileName for view class MUST contain '_' or '-' (Web components requirement)
@@ -30,7 +31,11 @@ export default {
       {
         "className": "MapSelector",
         "fileName": "map_selector.html"
-      }
+      },
+      {
+        "className": "UserLabel",
+        "fileName": "user_label.html"
+      },
     ],
     "home": [ 
       {
@@ -101,7 +106,8 @@ export const viewConstructors = {
   MatchView,
   NavBar,
   ProfileCard,
-  MapSelector
+  MapSelector,
+  UserLabel
 };
 
 export const routes = [

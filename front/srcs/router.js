@@ -69,7 +69,7 @@ class Router {
 
     const page = new view({
       data: {
-        user: globalData.user
+        ...globalData
       }
     });
     await page.render();
@@ -137,25 +137,25 @@ class Router {
     let nextAnimations = null;
     const nextPage = document.createElement("div");
     const prevPage = document.getElementById("app");
-
-    if (this.#pages.prev.hasNavbar && 
-      this.#pages.current.hasNavbar) {
-      const prevContent = this.#getContent(this.#pages.prev.view);
-      const nextContent = this.#getContent(this.#pages.current.view);
-      if (prevContent && nextContent) {
-        prevContent.animate(
-          outgoingAnimation.keyframe,
-          outgoingAnimation.option
-        );
-        nextContent.animate(
-          incomingAnimation.keyframe,
-          incomingAnimation.option
-        );
-        prevAnimations = prevContent.getAnimations();
-        nextAnimations = nextContent.getAnimations();
+    const navbarPreserved = this.#pages.prev.hasNavbar && 
+      this.#pages.current.hasNavbar;
+    const prevContent = navbarPreserved ? this.#getContent(this.#pages.prev.view): null;
+    const nextContent = navbarPreserved ? this.#getContent(this.#pages.current.view): null;
+    if (navbarPreserved && prevContent && nextContent) {
+      const prevNavbar = prevPage.querySelector("nav-bar");
+      prevNavbar.remove();
+      prevContent.animate(
+        outgoingAnimation.keyframe,
+        outgoingAnimation.option
+      );
+      nextContent.animate(
+        incomingAnimation.keyframe,
+        incomingAnimation.option
+      );
+      prevAnimations = prevContent.getAnimations();
+      nextAnimations = nextContent.getAnimations();
       }
-    }
-    else if (prevAnimations == null) {
+    else {
       nextPage.animate(
         incomingAnimation.keyframe,
         incomingAnimation.option
@@ -171,13 +171,13 @@ class Router {
     document.body.appendChild(nextPage);
     Promise.all(prevAnimations
       .map(animation => animation.finished))
-      .then(() => prevPage.remove())
-
+      .then(() => {
+          prevPage.remove();
+      })
     Promise.all(nextAnimations
       .map(animation => animation.finished))
       .then(() => {
         nextPage.id = "app";
-
       })
     }
   /** @param {View} page */
