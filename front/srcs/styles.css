@@ -199,6 +199,8 @@ ul {
 
 .friend-list {
     box-sizing: border-box;
+    box-shadow: 0px 0px 10px #444;
+    border-radius: 10px;
     width: 50em;
     height: 30em;
     margin-right: 1em;
@@ -297,7 +299,8 @@ ul {
     box-sizing: border-box;
     background-color: #B1C59A;
     justify-content: center;
-    border-radius: 1em;
+    box-shadow: 0px 0px 10px #444;
+    border-radius: 10px;
     margin: 0px;
     padding: 10px;
     width: 50em;
