@@ -10,9 +10,10 @@ export default class RecordView extends View {
 
   connectedCallback() {
     super.connectedCallback();
-    const profileCardModalBtn = document.getElementById('profileCardModalBtn');
-    const profileCardModal = document.getElementById('profileCardModal');
-    const modalCloseBtn = document.querySelector('.btn-close');
+    const DOMRecordView = document.querySelector('record-view');
+    const profileCardModalBtn = DOMRecordView.querySelector('#profileCardModalBtn');
+    const profileCardModal = DOMRecordView.querySelector('#profileCardModal');
+    const modalCloseBtn = DOMRecordView.querySelector('.btn-close');
     profileCardModalBtn.addEventListener('click', () => {
       profileCardModal.querySelector('img').src = "https://media.istockphoto.com/id/1251434169/ko/%EC%82%AC%EC%A7%84/%EC%97%B4%EB%8C%80-%EC%9E%8E-%EC%A0%95%EA%B8%80%EC%9D%98-%EC%A7%99%EC%9D%80-%EB%85%B9%EC%83%89-%EB%8B%A8%ED%92%8D-%EC%9E%90%EC%97%B0-%EB%B0%B0%EA%B2%BD.jpg?s=612x612&w=0&k=20&c=-v5nlfyzPmVxWkzUVcZ8-LJ7edlQIpbT6Tf1O-eAXEs="
       profileCardModal.querySelector('.user-level').textContent = 'Lv.20';
