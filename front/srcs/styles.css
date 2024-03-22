@@ -139,7 +139,8 @@ body {
 
 .user-avatar {
     border-radius: 50%;
-    width: 60%;
+    width: 12em;
+    height: 12em;
 }
 
 .user-message {
@@ -447,6 +448,11 @@ ul {
 
 .match-player-name {
     font-size: 1.5em;
+}
+
+.user-avatar-match {
+    border-radius: 50%;
+    width: 60%;
 }
 
 .game-play {
