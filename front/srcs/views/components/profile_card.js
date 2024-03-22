@@ -11,8 +11,8 @@ export default class ProfileCard extends View {
 
   connectedCallback() {
     super.connectedCallback();
-    const profileCard = document.querySelector('.profile-card');
-    
+    const profileCard = this.querySelector('.profile-card');
+   
     profileCard.addEventListener('mousemove', e => {
       const cardX = profileCard.offsetLeft;
       const cardY = profileCard.offsetTop;
