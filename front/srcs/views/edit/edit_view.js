@@ -10,6 +10,24 @@ export default class EditView extends View {
   connectedCallback() {
     super.connectedCallback();
 
+    const DOMEditView = document.querySelector('edit-view');
+    const profileCardModalBtn = DOMEditView.querySelector('#profileCardModalBtn');
+    const profileCardModal = DOMEditView.querySelector('#profileCardModal');
+    const modalCloseBtn = DOMEditView.querySelector('.btn-close');
+    const editBtn = profileCardModal.querySelector('.btn-to-edit');
+    profileCardModalBtn.addEventListener('click', () => {
+      editBtn.textContent = '정보변경';
+      editBtn.href = '/edit';
+      profileCardModal.style.display = 'flex';
+    });
+    modalCloseBtn.addEventListener('click', () => {
+      profileCardModal.style.display = 'none';
+    });
+    profileCardModal.addEventListener('click', e => {
+      if (e.target === e.currentTarget)
+        profileCardModal.style.display = 'none';
+    });
+
     const editProfileImg = document.querySelector('.edit-profile-img');
     const profileImg = editProfileImg.querySelector('.img-profile');
     const imgWrapper = editProfileImg.querySelector('.img-wrapper');
@@ -27,8 +45,6 @@ export default class EditView extends View {
     imgInput.addEventListener('input', e => {
       if (imgInput.files && imgInput.files[0]) {
         profileImg.src = URL.createObjectURL(file.files[0]);;
-      } else {
-        profileImg.src = "srcs/assets/imac.png";
       }
     })
   }
