@@ -1,7 +1,6 @@
 import View from "@/lib/view";
 import Scene from "@/game/game_scene";
 import { GameData, Player } from "@/data/game_data";
-import Observable from "@/lib/observable";
 import ObservableObject from "@/lib/observable_object";
 import { GameMap, WALL_TYPES } from "@/data/game_map";
 
@@ -14,10 +13,6 @@ export default class GameView extends View {
   /** @type {Scene} */
   #scene;
   /** @type {ObservableObject} */
-  #gameData;
-  /** @type {{
-   *  players: Player[]
-   * }} */
   #data;
   #isPaused = true;
   /** @type {HTMLElement} */
@@ -26,19 +21,11 @@ export default class GameView extends View {
   #gameMap;
 
   constructor({data}) {
-    super({data});
-    this.#data = data;
-    const bart = new Player({
-      nickname: "bart"
-    });
-    const heshin = new Player({
-      nickname: "heshin"
-    });
-    this.#data.players = [ bart, heshin ];
-    this.#gameData = new ObservableObject(new GameData({
-      players: [bart, heshin],
-    }));
-    this.#gameData.subscribe("scores", 
+    super({data: data.gameData});
+    this.#data = data.gameData;
+    this.#data.players = this.#data.getPlayers();
+    console.log(this.#data.players);
+    this.#data.subscribe("scores", 
       ( /**@type {{ [key: string]: number }} */newScores) => {
         for (let nickname in newScores) {
           const player = this.#data.players.find(p => p.nickname == nickname);
@@ -85,7 +72,7 @@ export default class GameView extends View {
     this.#canvas.height = container.offsetHeight;
     this.#scene = new Scene({
       canvas: this.#canvas,
-      gameData: this.#gameData,
+      gameData: this.#data,
       gameMap: this.#gameMap
     });
     this.#startButton = this.querySelector("#start-button");

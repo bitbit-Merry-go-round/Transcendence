@@ -16,9 +16,9 @@ export default class HomeView extends View {
 
   connectedCallback() {
     super.connectedCallback();
-    const profileCardModalBtn = document.getElementById('profileCardModalBtn');
-    const profileCardModal = document.getElementById('profileCardModal');
-    const modalCloseBtn = document.querySelector('.btn-close');
+    const profileCardModalBtn = this.querySelector('#profileCardModalBtn');
+    const profileCardModal = this.querySelector('#profileCardModal');
+    const modalCloseBtn = this.querySelector('.btn-close');
     profileCardModalBtn.addEventListener('click', () => {
       profileCardModal.style.display = 'flex';
     });
