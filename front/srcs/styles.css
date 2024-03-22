@@ -139,8 +139,7 @@ body {
 
 .user-avatar {
     border-radius: 50%;
-    height: 12em;
-    width: 12em;
+    width: 60%;
 }
 
 .user-message {
@@ -157,6 +156,10 @@ body {
     color: #899681;
     height: 5em;
     width: 90%;
+}
+
+.setting-container {
+    height: 40%;
 }
 
 .score {
@@ -417,8 +420,19 @@ ul {
 
 /* match */
 .match-player-card {
-    height: 32em;
-    width: 22em;
+    overflow: hidden;
+    height: 100%;
+    width: 20%;
+}
+
+.match-container {
+    height: 80%;
+    width: 100%;
+}
+
+.match-card-container {
+    height: 50%;
+    width: 100%;
 }
 
 .game-config {
