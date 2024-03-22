@@ -10,10 +10,9 @@ export default class EditView extends View {
   connectedCallback() {
     super.connectedCallback();
 
-    const DOMEditView = document.querySelector('edit-view');
-    const profileCardModalBtn = DOMEditView.querySelector('#profileCardModalBtn');
-    const profileCardModal = DOMEditView.querySelector('#profileCardModal');
-    const modalCloseBtn = DOMEditView.querySelector('.btn-close');
+    const profileCardModalBtn = this.querySelector('#profileCardModalBtn');
+    const profileCardModal = this.querySelector('#profileCardModal');
+    const modalCloseBtn = this.querySelector('.btn-close');
     const editBtn = profileCardModal.querySelector('.btn-to-edit');
     profileCardModalBtn.addEventListener('click', () => {
       editBtn.textContent = '정보변경';
@@ -28,7 +27,7 @@ export default class EditView extends View {
         profileCardModal.style.display = 'none';
     });
 
-    const editProfileImg = document.querySelector('.edit-profile-img');
+    const editProfileImg = this.querySelector('.edit-profile-img');
     const profileImg = editProfileImg.querySelector('.img-profile');
     const imgWrapper = editProfileImg.querySelector('.img-wrapper');
     const imgInput = editProfileImg.querySelector('input');
