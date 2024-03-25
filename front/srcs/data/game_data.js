@@ -31,8 +31,24 @@ export const GAME_TYPE = Object.freeze({
 /** Tournament. */
 export class Tournament {
 
-   /** @type {Match} */
-  #_currentMatch;
+  /** @param {string[]} names */
+  static hasDuplicatedName(names) {
+    /** @type {Set<string>} */
+    const nameSet = new Set();
+    for (let name of names) {
+      if (nameSet.has(name))
+        return true;
+      else 
+        nameSet.add(name);
+    }
+    return false;
+  }
+
+  /** @type {number} */
+  #_currentMatchIndex;
+
+  /** @type {number} */
+  #_winScore;
 
   /** @type {{
    *    numberOfPlayers: number,
@@ -51,11 +67,24 @@ export class Tournament {
 
   /** @returns {Match} */
   get currentMatch() {
-    return {...this.#_currentMatch};
+    return {...this.#_currentRound.matches[this.#_currentMatchIndex]};
+  }
+
+  /** @param {{
+   *  player: Player, 
+   *  score: number
+   *  }} params
+   */
+  setScore({player, score}) {
+    const match = this.#_currentRound.matches[this.#_currentMatchIndex];
+    if (match.playerA.name == player.nickname) 
+      match.playerA.score = score;
+    else if (match.playerB.name == player.nickname) 
+      match.playerB.score = score;
   }
 
   get currentPlayers() {
-    const playerNames = [this.#_currentMatch.playerA.name, this.#_currentMatch.playerB.name];
+    const playerNames = [this.currentMatch.playerA.name, this.currentMatch.playerB.name];
     return playerNames.map(name => this.#allPlayers.find(p => p.nickname == name));
   }
 
@@ -67,19 +96,80 @@ export class Tournament {
     return {...this.#_currentRound};
   }
 
+  goToNextMatch() {
+    if (!this.isCurrentMatchFinished)
+      throw ("current match is not finished");
+
+    if (this.#_currentMatchIndex + 1 < this.#_currentRound.matches.length) 
+      this.#_currentMatchIndex += 1;
+    else if (this.isLastRound)
+      console.error ("tournament is finished");
+    else {
+      this.#goToNextRound();
+      this.#_currentMatchIndex = 0;
+    }
+    this.#_currentRound.matches[this.#_currentMatchIndex].playerA.score = 0;
+    this.#_currentRound.matches[this.#_currentMatchIndex].playerB.score = 0;
+  }
+
+  get isCurrentMatchFinished() {
+    const match = this.currentMatch;
+    return (match.playerA.score >= this.#_winScore ||
+      match.playerB.score >= this.#_winScore);
+  }
+
+  get isLastRound() {
+    return this.currentRound.numberOfPlayers == 2;
+  }
+
+  get winnerByDefault() {
+    if (this.currentMatch.playerB.name == "")
+      return this.currentMatch.playerA;
+    else if(this.currentMatch.playerA.name == "") 
+      return this.currentMatch.playerB;
+
+    return null;
+  }
+
+  #goToNextRound() {
+    const nameOfWinners = this.currentRound.matches.reduce(
+      /** @param {string[]} arr
+       * @param {Match} match */
+    (names, match) => {
+      if (match.playerA.score > match.playerB.score)
+        names.add(match.playerA.name);
+      else 
+        names.add(match.playerB.name);
+      return names;
+    }, new Set);
+
+    const newRound= this.#createRound(
+      this.#allPlayers.filter(
+        player => nameOfWinners.has(player.nickname)
+      )
+    );
+    this.#_allRounds.push(newRound);
+    this.#_currentRound = newRound;
+  }
+
   /**
    * constructor.
    * @param {{
-   *  players: Player[]
+   *  players: Player[],
+   *  winScore: number
    * }} params
    */
-  constructor({players}) {
+  constructor({ players, winScore }) {
     this.#allPlayers = players;
+    this.#_winScore = winScore;
     this.#_currentRound = this.#createRound(players);
-    this.#_currentMatch = this.#_currentRound.matches[0];
+    this.#_currentMatchIndex = 0;
     this.#_allRounds = [this.#_currentRound];
+    this.#_currentRound.matches[this.#_currentMatchIndex].playerA.score = 0;
+    this.#_currentRound.matches[this.#_currentMatchIndex].playerB.score = 0;
   }
 
+  /** @param { Player[] } players */
   #createRound(players) {
     let numberOfPlayers = players.length;
     while (numberOfPlayers % 2 != 0)
@@ -136,22 +226,22 @@ export class GameData {
   static createLocalGame() {
     return new GameData({
       players: [
-        { nickname: generateRandomName() },
-        { nickname: generateRandomName() }
-      ]
+        new Player({ nickname: generateRandomName() }),
+        new Player({ nickname: generateRandomName() })
+      ],
+      type: GAME_TYPE.local1on1
     })
   }
 
   /** @param {string[]} playerNames */
   static createTournamentGame(playerNames) {
-    const players = playerNames.map(nickname => ({
-        nickname
-    }
-    ));
-    const game = new GameData({ players });
-    game.#_gameType = GAME_TYPE.localTournament;
+    const players = playerNames.map(
+      nickname => new Player({nickname})
+    );
+    const game = new GameData({ players, type: GAME_TYPE.localTournament });
     game.#_tournament = new Tournament({
-      players 
+      players,
+      winScore: game.winScore
     });
     return game;
   }
@@ -163,7 +253,7 @@ export class GameData {
     return this.#_gameType;
   }
 
-  #_winScore = 1;
+  #_winScore = 2;
   get winScore() {
     return this.#_winScore;
   }
@@ -171,18 +261,14 @@ export class GameData {
   /** @type {Player[]} */
   #players = [ ];
 
+  /** @type {Match} */
+  #_currentMatch;
+
   /** @type {{
    *   [key: string]: number
    * }}
    */
   positions = {};
-
-  /**
-   * @type {{
-   *   [key: string]: number
-   * }}
-   */
-  scores = {};
 
   /** @type {Tournament | null} */
   #_tournament;
@@ -191,31 +277,35 @@ export class GameData {
     return this.#_tournament;
   }
 
+  get currentMatch() {
+    if (this.#_gameType == GAME_TYPE.localTournament) {
+      return this.#_tournament.currentMatch;
+    }
+    return this.#_currentMatch;
+  }
+
   /**
    * @param {{
    *  players: Player[],
    *  positions?: {
    *    [key: string]: number
    *  } 
+   *  type: string
    * }} args
    */
-  constructor({players, positions = {}}) {
+  constructor({players, positions = {}, type}) {
     this.#players = players;
     if (players.length < 2) {
       throw "Not enough players";
     }
-    if (players.length == 2) {
-      this.#_gameType = GAME_TYPE.local1on1
-    };
-    
-    this.#players.forEach(player => {
-      this.scores[player.nickname] = 0;
-    });
-    if (!isEmptyObject(positions))  {
+    this.#_gameType = type; 
+    if (isEmptyObject(positions)) 
       this.setPositions(players);
-    }
-    else {
+    else 
       this.positions = positions;
+
+    if (type == GAME_TYPE.local1on1) {
+      this.#setCurrentMatch();
     }
   }
 
@@ -226,11 +316,56 @@ export class GameData {
     })
   }
 
+  /** @param {{
+   *  player: Player, 
+   *  score: number
+   *  }} params
+   */
+  setScore({player, score}) {
+    const currentMatch = this.currentMatch;
+    if (currentMatch.playerA.name != player.nickname &&
+      currentMatch.playerB.name != player.nickname) {
+      throw "player to set score is not playing now";
+    }
+    switch (this.#_gameType) {
+      case GAME_TYPE.local1on1:
+        if (this.#_currentMatch.playerA.name == player.nickname) {
+          this.#_currentMatch.playerA.score = score;
+        }
+        else {
+          this.#_currentMatch.playerB.score = score;
+        }
+        break;
+
+      case GAME_TYPE.localTournament:
+        this.#_tournament.setScore({ player, score });
+        break;
+      default:
+        console.error("not implemented");
+        break;
+    }
+  }
+
   /**
    * @param {Player} player
    */
   getScore(player) {
-    return this.scores[player.nickname];
+    const match = this.currentMatch;
+    if (player.nickname == match.playerA.name)
+      return match.playerA.score;
+    else if (player.nickname == match.playerB.name)
+      return match.playerB.score;
+    else 
+      throw "player to get score is not playing now";
+  }
+
+  get scores() {
+    const match = this.currentMatch;
+    const scores = {
+      [match.playerA.name]: match.playerA.score,
+      [match.playerB.name]: match.playerB.score
+    };
+    return scores;
   }
 
   get currentPlayers() {
@@ -238,6 +373,24 @@ export class GameData {
       return [...this.#players];
     else if(this.#_gameType == GAME_TYPE.localTournament) {
       return this.#_tournament.currentPlayers;
+    }
+  }
+
+  #setCurrentMatch() {
+    const playerA = Object.keys(this.positions).find(name => this.positions[name] == 0);
+    const playerB = Object.keys(this.positions).find(name => this.positions[name] == 1);
+
+    this.#_currentMatch = {
+      playerA: {
+        name: playerA,
+        score: 0,
+        class: ""
+      },
+      playerB: {
+        name: playerB,
+        score: 0,
+        class: ""
+      }
     }
   }
 }

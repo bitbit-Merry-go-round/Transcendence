@@ -1,3 +1,4 @@
+import { GameData } from "@/data/game_data";
 import View from "@/lib/view";
 
 /** @typedef {Object} Match 
@@ -37,26 +38,43 @@ export default class TournamentPanel extends View {
    *     }[]
   * }} */
   data;
+  onUpdated;
+  defaultBoardStyle;
 
   constructor(params) {
+    /** @type {GameData} */
     const gameData = params?.data;
     if (gameData) {
-      const tournament = gameData.tournament;
-      const rounds = tournament.allRounds;
-      const data = {
-        rounds
-      };
-      super({data});
-      this.data = data;
+      const rounds = gameData.tournament.allRounds;
+      super({data: { rounds }});
+      this.data = { rounds };
+      this.onUpdated = params?.onUpdated ?? null;
+      //@ts-ignore
+      gameData.subscribe("scores", () => {
+        this.updatePanel(gameData.tournament.allRounds)
+      })
     }
     else {
-      super({data: {}});
-      this.data = {};
+      console.error("no data for TournamentPanel");
     }
   }
 
-  connectedCallback() {
-    super.connectedCallback();
+  async updatePanel(newRounds) {
+    this.data = { rounds: newRounds };
+    await this.render();
+    if (this.onUpdated)
+      this.onUpdated();
+  }
+
+  didRendered() {
+    super.didRendered();
+    if (this.defaultBoardStyle) {
+      /** @type {HTMLElement} */ //@ts-ignore
+      const board = this.children[0];
+      for (let key in this.defaultBoardStyle) {
+        board.style[key] = this.defaultBoardStyle[key];
+      }
+    }
     this.querySelectorAll("ul")
       .forEach(ul => {
         const space = document.createElement("li");
@@ -64,5 +82,4 @@ export default class TournamentPanel extends View {
         ul.appendChild(space)
       }) 
   }
-
 }

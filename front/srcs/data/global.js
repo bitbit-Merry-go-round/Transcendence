@@ -22,14 +22,15 @@ const globalData = (() =>{
     ],
   }))
 
-  const game = GameData.createTournamentGame(
-    [
-      generateRandomName(),  
-      generateRandomName(),  
-      generateRandomName(),  
-      generateRandomName(),  
-    ]
-  )
+    const game = GameData.createTournamentGame(
+      [
+        generateRandomName(),  
+        generateRandomName(),  
+        generateRandomName(),  
+        generateRandomName(),  
+      ]
+    )
+  //const game = GameData.createLocalGame();
 
   const gameData = new ObservableObject(game);
 

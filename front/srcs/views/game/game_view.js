@@ -13,28 +13,48 @@ export default class GameView extends View {
   #scene;
   /** @type {ObservableObject} */
   #data;
+  /** @type {GameData} */
+  #gameData;
   #isPaused = true;
-  /** @type {HTMLElement} */
+  /** @type {HTMLButtonElement} */
   #startButton;
-  /** @type {HTMLElement} */
+  /** @type {HTMLButtonElement} */
   #resetButton;
   /** @type{GameMap} */
   #gameMap;
+  /** @type {TournamentPanel} */
+  #tournamentPanel;
 
   constructor({data}) {
     super({data: data.gameData});
     this.#data = data.gameData;
+    //@ts-ignore
+    this.#gameData = data.gameData;
     this.#data.subscribe("scores", 
       ( /**@type {{ [key: string]: number }} */newScores) => {
-        for (let player of this.#data.currentPlayers) {
+        /** @type {GameData} */
+        for (let player of this.#gameData.currentPlayers) {
           const score = newScores[player.nickname];
-          
+          /** @type {HTMLSpanElement} */
           const label = this.querySelector(
-            `span[data-player=${player.nickname}]`);
+          `span[data-player=${player.nickname}]`);
           label.innerText = score.toString();
-          if (score == this.#data.winScore) {
+          if (score == this.#gameData.winScore) {
             this.#scene.endGame();
-            return;
+            switch (this.#gameData.gameType) {
+                case GAME_TYPE.local1on1:
+                  // TODO: go to next view
+                return;
+              case GAME_TYPE.localTournament:
+                const tournament = this.#gameData.tournament;
+                if (!tournament.isLastRound)
+                  tournament.goToNextMatch(); 
+                else {
+                  return ;
+                }
+                // TODO: next match button?
+                setTimeout(() => this.#playNextMatch(), 5000)
+            }
           }
         }
         this.#isPaused = true;
@@ -107,24 +127,59 @@ export default class GameView extends View {
         this.#resetButton.disabled = true;
     }) 
 
-    if (this.#data.gameType == GAME_TYPE.localTournament) {
+    /** @type {GameData} */ //@ts-ignore
+    if (this.#gameData.gameType == GAME_TYPE.localTournament) {
       this.#showTournamentBoard();
     }
   }
 
+  #showNextMatch() {
+    /** @type {GameData} */ //@ts-ignore
+    const nextPlayers = this.#gameData.currentPlayers;
+    /** @type {NodeListOf<HTMLSpanElement>}*/
+    const labels = this.querySelectorAll(".player-nickname");
+    labels[0].innerText = nextPlayers[0].nickname;
+    labels[1].innerText = nextPlayers[1].nickname;
+    /** @type {NodeListOf<HTMLSpanElement>}*/
+    const scoresLabels = this.querySelectorAll(".score-placeholder");
+    scoresLabels[0].innerText = "0";
+    scoresLabels[0].dataset["player"] = nextPlayers[0].nickname;
+    scoresLabels[1].innerText = "0";
+    scoresLabels[1].dataset["player"] = nextPlayers[1].nickname;
+  }
+
   async #showTournamentBoard() {
-    const panel = new TournamentPanel({data:this.#data});
+    const panel = new TournamentPanel({
+      data:this.#data,
+      onUpdated : () => this.#updatedTournamentBoard(panel)
+    });
+    
+    panel.defaultBoardStyle = {
+      display: "block",
+      width:  "1200px",
+      height: "800px",
+    };
     await panel.render();
-    this.appendChild(panel);    
+    this.#tournamentPanel = panel;
     /** @type {HTMLElement} */ //@ts-ignore
     const board = panel.children[0];
-    board.style.display = "block";
-    board.style.width = "1200px";
-    board.style.height = "800px";
     this.#scene.createBoard(board);
   }
   disconnectedCallback() {
     this.#scene.prepareDisappear();
     super.disconnectedCallback();
+  }
+
+  async #updatedTournamentBoard(panel) {
+    /** @type {HTMLElement} */ //@ts-ignore
+    const board = panel.children[0];
+    this.#scene.updateBoard(board);
+  }
+
+  #playNextMatch() {
+    this.#scene.moveCameraToGamePosition(() => {
+      this.#showNextMatch();
+      this.#scene.changePlayer(this.#gameData.currentPlayers);
+    })
   }
 }

@@ -93,7 +93,8 @@ export default class Scene {
 
   /** @type {{
    *  container: THREE.Group,
-   *  board: THREE.Object3D
+   *  board: THREE.Object3D,
+   *  generator: ImageGenerator
    * }}
    */
   #tournamentBoard = null;
@@ -105,9 +106,9 @@ export default class Scene {
   #controls;
 
   cameraPositions = { 
-    start: { x: 0, y: 80, z: 30 },
+    start: { x: 0, y: 70, z: 30 },
     startRotate: { x: 0, y: 20, z: 10 },
-    play: { x: 0.2, y: 1.8, z: 0.60 },
+    play: { x: 0.2, y: 1.8, z: 0.75 },
   };
 
   cameraRotations = {
@@ -317,7 +318,7 @@ export default class Scene {
    *  canvas: HTMLCanvasElement,
    *  gameData: ObservableObject,
    *  gameMap: GameMap,
-   *  stuckHandler: ((boolean) => void) | null
+   *  stuckHandler: ((isStuck:boolean) => void) | null
    * }} params
    */
   constructor({canvas, gameData, gameMap, stuckHandler = null}) {
@@ -326,7 +327,7 @@ export default class Scene {
     this.#gameData = gameData;
     this.#gameMap = gameMap;
     if (stuckHandler) {
-      this.#stuckHandler = (isStuck) => {
+      this.#stuckHandler = /**@param {boolean} isStuck */ (isStuck) => {
         stuckHandler(isStuck);
       }
     }
@@ -354,6 +355,9 @@ export default class Scene {
   }
 
   changePlayer(players) {
+    if (this.#gameData.gameType == GAME_TYPE.local1on1) {
+      throw "Invalid call change player";
+    }
     this.#updateLabel({
       player: players[0],
       position: "TopLeft"}
@@ -396,6 +400,8 @@ export default class Scene {
       speed: 0.01,
       curve: AnimationCurves.easein,
       onEnded: () => {
+        if (this.#gameData.gameType != GAME_TYPE.localTournament)
+          return ;
         /** @type {THREE.Object3D} */
         const target = this.#tournamentBoard.board;
         this.#rotateCameraTo({
@@ -426,7 +432,7 @@ export default class Scene {
     this.isBallMoving = false;
   }
 
-  moveCameraToGamePosition() {
+  moveCameraToGamePosition(onMoved) {
     this.#moveCamera({
       dest: {...this.cameraPositions.play},
       curve: AnimationCurves.easeout,
@@ -435,7 +441,23 @@ export default class Scene {
     this.#animateCameraRotation({
       dest: {...this.cameraRotations.play},
       speed: 0.015,
+      onEnded: onMoved
     })
+  }
+
+  updateBoard(content) {
+    this.#tournamentBoard.generator.generate(content)
+      .then(canvas =>  {
+        const texture = new THREE.Texture(canvas);
+        texture.needsUpdate = true;
+        /** @type {THREE.Mesh} */ //@ts-ignore
+        const board = this.#tournamentBoard.board;
+        /** @type {THREE.MeshBasicMaterial} */ //@ts-ignore
+        const material = board.material;
+        material.map = texture
+        material.needsUpdate = true;
+        return ;
+      });
   }
 
   /** @param {HTMLElement} content */
@@ -452,25 +474,24 @@ export default class Scene {
           o => o.name == "Board"
         ); 
         const scene = gltf.scene;
-        this.#tournamentBoard= {
-          container: scene,
-          board,
-        };
-        scene.rotation.y = Math.PI * 0.4;
-        scene.position.set(-2.5, 0, 1);
-        board.scale.x = -0.9;
-        board.rotation.y = Math.PI;
-        this.#scene.add(scene);
         const width = content.style.width;
         const height = content.style.height;
         const size = {
           width: Number(width.replace("px", "")),
           height: Number(height.replace("px", "")),
         };
-        const imageGenerator = new ImageGenerator({
-          size
-        });
-        imageGenerator.generate(content)
+        this.#tournamentBoard = {
+          container: scene,
+          board,
+          generator: new ImageGenerator({ size })
+        };
+        scene.rotation.y = Math.PI * 0.4;
+        board.scale.x = -0.8;
+        scene.position.set(-2.5, 0, 1);
+        board.position.z -= 0.1;
+        board.rotation.y = Math.PI;
+        this.#scene.add(scene);
+        this.#tournamentBoard.generator.generate(content)
           .then(canvas => {
             const texture = new THREE.Texture(canvas);
             texture.needsUpdate = true;
@@ -559,10 +580,10 @@ export default class Scene {
       texture.minFilter = THREE.NearestFilter;
       texture.magFilter = THREE.NearestFilter;
       texture.needsUpdate = true;
-      mesh.material = new THREE.MeshBasicMaterial({
-        map: texture,
-        transparent: true 
-      });
+        /** @type {THREE.MeshBasicMaterial} */ //@ts-ignore
+      const material = mesh.material;
+      material.map = texture
+      material.needsUpdate = true;
     })
   }
 
@@ -686,7 +707,7 @@ export default class Scene {
         );
         const screenPos = new THREE.Vector3();
         this.#gameScene.getWorldPosition(screenPos);
-        this.#controls.target = screenPos;
+        // this.#controls.target = screenPos;
         this.#camera.lookAt(0, 0, 0);
         this.#moveCamera({
           dest: {...this.cameraPositions.startRotate},
@@ -695,16 +716,7 @@ export default class Scene {
           onEnded: () => {
             this.#sceneParticle.isPlaying = false;
             this.#gameParticle.isPlaying = true;
-          
-            this.#moveCamera({
-              dest: {...this.cameraPositions.play},
-              curve: AnimationCurves.easeout,
-              speed: 0.015,
-            });
-            this.#animateCameraRotation({
-              dest: {...this.cameraRotations.play},
-              speed: 0.015
-            })
+            this.moveCameraToGamePosition(); 
           }
         });
       },
@@ -1225,9 +1237,9 @@ export default class Scene {
       150
     );
     this.#scene.add(this.#camera);
-    this.#controls = new OrbitControls(this.#camera, this.#canvas)
+    //this.#controls = new OrbitControls(this.#camera, this.#canvas)
 
-    this.#controls.enableDamping = true
+    //this.#controls.enableDamping = true
     return this;
   }
 
@@ -1537,7 +1549,6 @@ export default class Scene {
    * }} args
    */
   #updateObjects({frameTime, frameSlice}) {
-
     this.#peddles.forEach((peddle, index) => {
       const control = this.#peddleControls[index];
       this.#physics.setState(peddle.physicsId,
@@ -1595,9 +1606,13 @@ export default class Scene {
     }
     const winSide = this.#lostSide == DIRECTION.top ? DIRECTION.bottom: DIRECTION.top;
     const winPlayer = players[PLAYER_POSITION[winSide]];
-    const newScores = {...gameData.scores}
-    newScores[winPlayer.nickname] += 1;
-    gameData.scores = newScores;
+    
+    gameData.setScore({
+      player: winPlayer, 
+      score: gameData.getScore(winPlayer) + 1
+    })
+    //@ts-ignore
+    this.#gameData.valueChanged("scores");
     return this;
   }
 
@@ -1613,7 +1628,7 @@ export default class Scene {
 
   #startRender() {
     const tick = (() => {
-      this.#controls.update()
+      //this.#controls.update()
       const elapsed = this.#time.clock.getElapsedTime();
       let frameTime = elapsed - this.#time.elapsed;
       this.#time.elapsed = elapsed;

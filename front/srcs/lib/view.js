@@ -83,6 +83,7 @@ export default class View extends HTMLElement {
       .#expandForLoops(this)
       .#filterCondition(this, this.data)
       .#fillData(this);
+    this.didRendered();
   }
 
   reRender() {
@@ -276,5 +277,6 @@ export default class View extends HTMLElement {
   connectedCallback() { }
 
   disconnectedCallback() { }
+  didRendered() {}
 }
 
