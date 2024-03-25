@@ -12,7 +12,7 @@
       margin-top: 0.2em;
       height: auto;
     }
-    #start-button{
+    .top-bar-button{
       display: inline-block;
       text-align: center;
       visibility: hidden;
@@ -31,10 +31,10 @@
       box-shadow: 0 .2em gray; 
       cursor: pointer;
     }
-    #start-button>span {
+    .top-bar-button>span {
       display: none;
     }
-    #start-button:hover>span {
+    .top-bar-button:hover>span {
       display: inline-block;
       position: absolute;
       top: 4em;
@@ -78,8 +78,10 @@
         data-player={{player.nickname}}>0</span>
     </div>
     <p></p>
-    <button id="start-button">Start
+    <button id="start-button" class="top-bar-button">Start
       <span>You can press enter </span></button>
+    <button id="reset-button" class="top-bar-button">Reset
+      <span>Reset ball position</span></button>
   </div>
   <div class="canvas_container">
     <canvas class="game_canvas"></canvas>

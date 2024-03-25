@@ -1,8 +1,9 @@
 import View from "@/lib/view";
 import Scene from "@/game/game_scene";
-import { GameData, Player } from "@/data/game_data";
+import { GameData, GAME_TYPE, Player } from "@/data/game_data";
 import ObservableObject from "@/lib/observable_object";
 import { GameMap, WALL_TYPES } from "@/data/game_map";
+import TournamentPanel from "../components/tournament_panel";
 
 export default class GameView extends View {
 
@@ -15,21 +16,21 @@ export default class GameView extends View {
   #isPaused = true;
   /** @type {HTMLElement} */
   #startButton;
+  /** @type {HTMLElement} */
+  #resetButton;
   /** @type{GameMap} */
   #gameMap;
 
   constructor({data}) {
     super({data: data.gameData});
     this.#data = data.gameData;
-    console.log(this.#data.currentPlayers);
     this.#data.subscribe("scores", 
       ( /**@type {{ [key: string]: number }} */newScores) => {
-        for (let nickname in newScores) {
-          const player = this.#data.currentPlayers.find(p => p.nickname == nickname);
+        for (let player of this.#data.currentPlayers) {
           const score = newScores[player.nickname];
-          /** @type {HTMLElement} */
+          
           const label = this.querySelector(
-            `span[data-player=${nickname}]`);
+            `span[data-player=${player.nickname}]`);
           label.innerText = score.toString();
           if (score == this.#data.winScore) {
             this.#scene.endGame();
@@ -38,7 +39,6 @@ export default class GameView extends View {
         }
         this.#isPaused = true;
         this.#startButton.style.visibility = "visible";
-      
     })
     this.#gameMap = new GameMap({
       safeWalls: [],
@@ -70,7 +70,11 @@ export default class GameView extends View {
     this.#scene = new Scene({
       canvas: this.#canvas,
       gameData: this.#data,
-      gameMap: this.#gameMap
+      gameMap: this.#gameMap,
+      stuckHandler: (isStuck) => {
+        this.#resetButton.style.visibility = isStuck ? "visible": "hidden";
+        this.#resetButton.disabled = !isStuck;
+      }
     });
     this.#startButton = this.querySelector("#start-button");
     setTimeout(() => {
@@ -78,6 +82,11 @@ export default class GameView extends View {
     }, 3000);
     this.#startButton
       .addEventListener("click", () => {
+        this.#scene.changePlayer([
+          new Player({nickname: "hello"}),
+          new Player({nickname: "bart"}),
+        ])
+
       if (this.#isPaused) {
         this.#scene.startGame();
         this.#isPaused = false;
@@ -91,6 +100,28 @@ export default class GameView extends View {
         this.#startButton.style.visibility = "hidden";
       }
     }) 
+    this.#resetButton = this.querySelector("#reset-button");
+    this.#resetButton.addEventListener("click", () => {
+      this.#scene.resetBall();
+      this.#resetButton.style.visibility = "hidden";
+        this.#resetButton.disabled = true;
+    }) 
+
+    if (this.#data.gameType == GAME_TYPE.localTournament) {
+      this.#showTournamentBoard();
+    }
+  }
+
+  async #showTournamentBoard() {
+    const panel = new TournamentPanel({data:this.#data});
+    await panel.render();
+    this.appendChild(panel);    
+    /** @type {HTMLElement} */ //@ts-ignore
+    const board = panel.children[0];
+    board.style.display = "block";
+    board.style.width = "1200px";
+    board.style.height = "800px";
+    this.#scene.createBoard(board);
   }
   disconnectedCallback() {
     this.#scene.prepareDisappear();

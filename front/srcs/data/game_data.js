@@ -149,7 +149,7 @@ export class GameData {
     }
     ));
     const game = new GameData({ players });
-    game.#gameType = GAME_TYPE.localTournament;
+    game.#_gameType = GAME_TYPE.localTournament;
     game.#_tournament = new Tournament({
       players 
     });
@@ -157,9 +157,13 @@ export class GameData {
   }
 
   /** @type {string} */
-  #gameType;
+  #_gameType;
 
-  #_winScore = 3;
+  get gameType() {
+    return this.#_gameType;
+  }
+
+  #_winScore = 1;
   get winScore() {
     return this.#_winScore;
   }
@@ -201,7 +205,7 @@ export class GameData {
       throw "Not enough players";
     }
     if (players.length == 2) {
-      this.#gameType = GAME_TYPE.local1on1
+      this.#_gameType = GAME_TYPE.local1on1
     };
     
     this.#players.forEach(player => {
@@ -230,9 +234,9 @@ export class GameData {
   }
 
   get currentPlayers() {
-    if (this.#gameType == GAME_TYPE.local1on1)
+    if (this.#_gameType == GAME_TYPE.local1on1)
       return [...this.#players];
-    else if(this.#gameType == GAME_TYPE.localTournament) {
+    else if(this.#_gameType == GAME_TYPE.localTournament) {
       return this.#_tournament.currentPlayers;
     }
   }

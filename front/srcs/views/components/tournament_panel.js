@@ -39,7 +39,7 @@ export default class TournamentPanel extends View {
   data;
 
   constructor(params) {
-    const gameData = params?.data?.gameData;
+    const gameData = params?.data;
     if (gameData) {
       const tournament = gameData.tournament;
       const rounds = tournament.allRounds;
