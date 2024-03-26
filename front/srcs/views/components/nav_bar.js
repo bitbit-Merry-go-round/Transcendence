@@ -12,8 +12,11 @@ export default class NavBar extends View {
     
     // 로그인 이후에 알고있게 함으로써 처리?? 브라우저 스토리지나 쿠키
     const user = 'jeseo'; 
-
-    await fetch(`http://${window.location.hostname}:8000/users/${user}/profile`)
+    
+    await fetch(`http://${window.location.hostname}:8000/users/${user}/profile`, {
+      mode: "cors",
+      credentials: "include"
+    })
       .then(res => res.json())
       .then(res => {
         userName.textContent = `Lv.${res.level} ${res.uid}`;
