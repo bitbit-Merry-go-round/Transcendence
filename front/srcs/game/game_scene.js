@@ -1138,8 +1138,6 @@ export default class Scene {
 
     const gameAmbientLight = new THREE.AmbientLight(this.lightConfigs.ambientColor, this.lightConfigs.ambientIntensity);
     const gameDirectionalLight = new THREE.DirectionalLight(
-      this.lightConfigs.directionalcolor,
-      this.lightConfigs.directionalIntensity
     );
     gameDirectionalLight.castShadow = true;
     gameDirectionalLight.shadow.mapSize.set(1024, 1024);

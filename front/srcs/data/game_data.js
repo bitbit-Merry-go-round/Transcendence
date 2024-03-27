@@ -1,5 +1,6 @@
 import { isEmptyObject } from "@/utils/typeutils";
 import { generateRandomName } from "@/utils/random_name";
+import PowerUp from "@/data/power_up";
 
 /**
  * @typedef {Object} GameResult
@@ -210,7 +211,25 @@ export class Player {
   nickname;
 
   /** @type {GameResult[]} */
-  records = []
+  records = [];
+
+  #_powerUps = [];
+
+  get powerUps() {
+    return [...this.#_powerUps];
+  }
+  
+  get numberOfPowerUps() {
+    return this.#_powerUps.length;
+  }
+
+  getPowerUp(powerUp) {
+    this.#_powerUps.push(powerUp);  
+  }
+
+  usePowerUp() {
+    return this.#_powerUps.shift();
+  }
 
   /** @params {string} nickname */
   constructor({nickname}) {
