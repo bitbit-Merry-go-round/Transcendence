@@ -62,11 +62,26 @@ export default class FriendView extends View {
         const userName = profileCardModal.querySelector('.user-name');
         const userScore = profileCardModal.querySelector('.score');
         const stateMessage = profileCardModal.querySelector('.state-message');
+        const addFriendBtn = profileCardModal.querySelector('.btn-add-friend');
         userLevel.textContent = `Lv.${res.level}`;
         userName.textContent = `${res.uid}`
         userAvatar.src = `data:image;base64,${res.avatar}`;
         userScore.textContent = `${res.wins} 승 ${res.loses} 패`;
         stateMessage.textContent = `${res.message}`;
+        
+        // get이 아니라 delete로 보낼 수 있어야 함. 자꾸 GET을 보내려고 한다.
+        addFriendBtn.classList.add('btn-del-friend');
+        addFriendBtn.textContent = '친구삭제';
+        addFriendBtn.href = '';
+        addFriendBtn.removeAttribute('data-link');
+        console.dir(addFriendBtn);
+        addFriendBtn.addEventListener('click', () => {
+          const me = 'jeseo';
+          fetch(`http://${window.location.hostname}:8000/users/${me}/friends/${user}`), {
+            method: 'DELETE',
+          }
+        })
+
         profileCardModal.style.display = 'flex';
       });
     })

@@ -172,6 +172,11 @@ body {
     border-color: #97B278;
 }
 
+.btn-del-friend {
+    background-color: rgb(232, 96, 96); 
+    border-color: rgb(232, 96, 96); 
+}
+
 .btn-record {
     background-color: #756655;
     border-color: #756655;
