@@ -41,18 +41,60 @@ export default class FriendView extends View {
   }  
   
   _friendModalToggler() {
+    const profileCardModalBtn = document.getElementById('profileCardModalBtn');
+    const profileCardModal = document.getElementById('profileCardModal');
     const friendGroup = this.querySelector('ul');
 
-    const profileCardModal = this.querySelector('#profileCardModal');
-    friendGroup.addEventListener('click', e => {
+    friendGroup.addEventListener('click', async (e) => {
       if (e.target === e.currentTarget)
-        return ;
+      return ;
       const clickedList = e.target.closest('li');
+      const user = clickedList.getAttribute('data-user');
       
-      profileCardModal.querySelector('img').src = clickedList.querySelector('img').src;
-      profileCardModal.querySelector('.user-level').textContent = clickedList.querySelector('.user-level').textContent;
-      profileCardModal.querySelector('.user-name').textContent = clickedList.querySelector('.user-name').textContent;
-      profileCardModal.style.display = 'flex';
+      await fetch(`http://${window.location.hostname}:8000/users/${user}/profile`, {
+        mode: "cors",
+        credentials: "include"
+      })
+      .then(res => res.json())
+      .then(res => {
+        const userAvatar = profileCardModal.querySelector('.user-avatar');
+        const userLevel = profileCardModal.querySelector('.user-level');
+        const userName = profileCardModal.querySelector('.user-name');
+        const userScore = profileCardModal.querySelector('.score');
+        const stateMessage = profileCardModal.querySelector('.state-message');
+        userLevel.textContent = `Lv.${res.level}`;
+        userName.textContent = `${res.uid}`
+        userAvatar.src = `data:image;base64,${res.avatar}`;
+        userScore.textContent = `${res.wins} 승 ${res.loses} 패`;
+        stateMessage.textContent = `${res.message}`;
+        profileCardModal.style.display = 'flex';
+      });
+    })
+  }
+
+  _bindProfileCardWithUser() {
+    const profileCardModalBtn = document.getElementById('profileCardModalBtn');
+    const profileCardModal = document.getElementById('profileCardModal');
+    const user = 'jeseo';
+
+    profileCardModalBtn.addEventListener('click', async () => {
+      await fetch(`http://${window.location.hostname}:8000/users/${user}/profile`, {
+        mode: "cors",
+        credentials: "include"
+      })
+      .then(res => res.json())
+      .then(res => {
+        const userAvatar = profileCardModal.querySelector('.user-avatar');
+        const userLevel = profileCardModal.querySelector('.user-level');
+        const userName = profileCardModal.querySelector('.user-name');
+        const userScore = profileCardModal.querySelector('.score');
+        const stateMessage = profileCardModal.querySelector('.state-message');
+        userLevel.textContent = `Lv.${res.level}`;
+        userName.textContent = `${res.uid}`
+        userAvatar.src = `data:image;base64,${res.avatar}`;
+        userScore.textContent = `${res.wins} 승 ${res.loses} 패`;
+        stateMessage.textContent = `${res.message}`;
+      });
     })
   }
 
@@ -61,6 +103,7 @@ export default class FriendView extends View {
 
     this._friendModalToggler();
     this._fetchFriendList();
+    this._bindProfileCardWithUser();
 
   }
 

@@ -39,7 +39,6 @@ export default class NavBar extends View {
         const userName = this.querySelector('p');
         const userImg = this.querySelector('#profileCardModalBtn');
     
-        console.log('profileInfo', res)
         userName.textContent = `Lv.${res.level} ${res.uid}`;
         userImg.src = `data:image;base64,${res.avatar}`;
       });
@@ -61,6 +60,7 @@ export default class NavBar extends View {
         userLevel.textContent = `Lv.${res.level}`;
         userName.textContent = `${res.uid}`
         userAvatar.src = `data:image;base64,${res.avatar}`;
+        userScore.textContent = `${res.wins} 승 ${res.loses} 패`;
         stateMessage.textContent = `${res.message}`;
       });
   }
