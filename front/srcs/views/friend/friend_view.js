@@ -7,7 +7,6 @@ export default class FriendView extends View {
     this.data = data
   }
 
-
   async _fetchFriendList() {
     const friendGroup = this.querySelector('ul');
     const user = 'jeseo';
@@ -18,18 +17,19 @@ export default class FriendView extends View {
     .then(res => {
       if (res.length === 0)
       {
-        friendGroup.firstChild.textContent = "친구를 검색하여 추가해보세요🌱";
-        friendGroup.firstChild.classList.add('align-items-center', 'justify-content-center');
+        friendGroup.classList.add('justify-content-center', 'align-items-center');
+        friendGroup.textContent = "친구를 검색하여 추가해보세요🌱";
         return ;
       }
       else
       {
-        console.log(res);
         for (const friend of res) {
           const friendElement = friendGroup.firstChild.cloneNode(true);
           friendElement.querySelector('img').src = `data:image;base64,${friend.avatar}`;
           if (friend.status === 'OF')
+          {
             friendElement.querySelector('.status-circle-sm').classList.add('status-offline');
+          }
           friendElement.querySelector('.user-level').textContent = `Lv.${friend.level}`;
           friendElement.querySelector('.user-name').textContent = `${friend.uid}`;
           friendElement.setAttribute('data-user', `${friend.uid}`);
@@ -37,24 +37,47 @@ export default class FriendView extends View {
         }
         friendGroup.removeChild(friendGroup.firstChild);
       }
-    })
+    });
   }  
   
-  _friendModalToggler() {
-    const profileCardModalBtn = document.getElementById('profileCardModalBtn');
-    const profileCardModal = document.getElementById('profileCardModal');
-    const friendGroup = this.querySelector('ul');
+  async _deleteBtnHandler(user, event) {
+    const me = 'jeseo';
+    fetch(`http://${window.location.hostname}:8000/users/${me}/friends/${user}`, {
+      method: 'DELETE',
+    });
+  }
 
-    friendGroup.addEventListener('click', async (e) => {
+  _friendModalClose(handler) {
+    const profileCardModal = this.querySelector('#profileCardModal');
+    const modalCloseBtn = this.querySelector('.btn-close');
+    const friendDeleteBtn = profileCardModal.querySelector('.btn-to-edit');
+    modalCloseBtn.addEventListener('click', () => {
+      profileCardModal.style.display = 'none';
+      friendDeleteBtn.removeEventListener('click', handler);
+      console.log('deleted');
+    });
+    profileCardModal.addEventListener('click', e => {
       if (e.target === e.currentTarget)
+      {
+        profileCardModal.style.display = 'none';
+        friendDeleteBtn.removeEventListener('click', handler);
+        console.log('deleted');
+      }
+    });
+  }
+
+  async _modalEventHandler(e) {
+    if (e.target === e.currentTarget)
       return ;
-      const clickedList = e.target.closest('li');
-      const user = clickedList.getAttribute('data-user');
-      
-      await fetch(`http://${window.location.hostname}:8000/users/${user}/profile`, {
-        mode: "cors",
-        credentials: "include"
-      })
+    const clickedList = e.target.closest('li');
+    const user = clickedList.getAttribute('data-user');
+    const profileCardModal = document.getElementById('profileCardModal');
+    const _deleteBtnHandler = this._deleteBtnHandler.bind(this, user);
+    
+    await fetch(`http://${window.location.hostname}:8000/users/${user}/profile`, {
+      mode: "cors",
+      credentials: "include"
+    })
       .then(res => res.json())
       .then(res => {
         const userAvatar = profileCardModal.querySelector('.user-avatar');
@@ -69,22 +92,19 @@ export default class FriendView extends View {
         userScore.textContent = `${res.wins} 승 ${res.loses} 패`;
         stateMessage.textContent = `${res.message}`;
         
-        // get이 아니라 delete로 보낼 수 있어야 함. 자꾸 GET을 보내려고 한다.
         addFriendBtn.classList.add('btn-del-friend');
         addFriendBtn.textContent = '친구삭제';
         addFriendBtn.href = '';
-        addFriendBtn.removeAttribute('data-link');
-        console.dir(addFriendBtn);
-        addFriendBtn.addEventListener('click', () => {
-          const me = 'jeseo';
-          fetch(`http://${window.location.hostname}:8000/users/${me}/friends/${user}`), {
-            method: 'DELETE',
-          }
-        })
 
+        addFriendBtn.addEventListener('click', _deleteBtnHandler);
         profileCardModal.style.display = 'flex';
-      });
-    })
+    });
+    this._friendModalClose(_deleteBtnHandler);
+  }
+
+  _friendModalToggler() {
+    const friendGroup = this.querySelector('ul');
+    friendGroup.addEventListener('click', this._modalEventHandler.bind(this));
   }
 
   _bindProfileCardWithUser() {
@@ -119,7 +139,5 @@ export default class FriendView extends View {
     this._friendModalToggler();
     this._fetchFriendList();
     this._bindProfileCardWithUser();
-
   }
-
 }
