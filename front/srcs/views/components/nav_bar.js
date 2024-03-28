@@ -4,7 +4,6 @@ export default class NavBar extends View {
   
   constructor() {
     super();
-    // 컴포넌트 안에서 fetch 해온 데이터를 사용할 수 있게 하기.    
   }
   
   _modalToggler() {
@@ -36,10 +35,14 @@ export default class NavBar extends View {
     })
       .then(res => res.json())
       .then(res => {
-        const userName = this.querySelector('p');
+        const userLevelId = this.querySelector('.user-level-id');
         const userImg = this.querySelector('#profileCardModalBtn');
-    
-        userName.textContent = `Lv.${res.level} ${res.uid}`;
+        if (!userLevelId)
+        {
+          // 왜 this 아래 아무것도 없는지 의아.
+          return;
+        }
+        userLevelId.textContent = `Lv.${res.level} ${res.uid}`;
         userImg.src = `data:image;base64,${res.avatar}`;
       });
   }
@@ -53,12 +56,15 @@ export default class NavBar extends View {
       .then(res => res.json())
       .then(res => {
         const userAvatar = this.querySelector('.user-avatar');
-        const userLevel = this.querySelector('.user-level');
-        const userName = this.querySelector('.user-name');
+        const userLevelId = this.querySelector('.user-level-id');
         const userScore = this.querySelector('.score');
         const stateMessage = this.querySelector('.state-message');
-        userLevel.textContent = `Lv.${res.level}`;
-        userName.textContent = `${res.uid}`
+        if (!userLevelId)
+        {
+          // 왜 this 아래 아무것도 없는지 의아.
+          return;
+        }
+        userLevelId.textContent = `Lv.${res.level} ${res.uid}`
         userAvatar.src = `data:image;base64,${res.avatar}`;
         userScore.textContent = `${res.wins} 승 ${res.loses} 패`;
         stateMessage.textContent = `${res.message}`;
