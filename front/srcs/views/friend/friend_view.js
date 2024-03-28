@@ -54,14 +54,12 @@ export default class FriendView extends View {
     modalCloseBtn.addEventListener('click', () => {
       profileCardModal.style.display = 'none';
       friendDeleteBtn.removeEventListener('click', handler);
-      console.log('deleted');
     });
     profileCardModal.addEventListener('click', e => {
       if (e.target === e.currentTarget)
       {
         profileCardModal.style.display = 'none';
         friendDeleteBtn.removeEventListener('click', handler);
-        console.log('deleted');
       }
     });
   }
@@ -124,11 +122,14 @@ export default class FriendView extends View {
         const userName = profileCardModal.querySelector('.user-name');
         const userScore = profileCardModal.querySelector('.score');
         const stateMessage = profileCardModal.querySelector('.state-message');
+        const addFriendBtn = profileCardModal.querySelector('.btn-add-friend');
         userLevel.textContent = `Lv.${res.level}`;
         userName.textContent = `${res.uid}`
         userAvatar.src = `data:image;base64,${res.avatar}`;
         userScore.textContent = `${res.wins} 승 ${res.loses} 패`;
         stateMessage.textContent = `${res.message}`;
+        addFriendBtn.classList.remove('btn-del-friend');
+        addFriendBtn.href = '/edit';
       });
     })
   }
