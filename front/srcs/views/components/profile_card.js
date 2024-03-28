@@ -4,13 +4,13 @@ import User from "@/data/user";
 
 export default class ProfileCard extends View {
 
+
   constructor() {
     /** @type {ObservableObject} user */
     super();
   }
 
-  connectedCallback() {
-    super.connectedCallback();
+  _profileCardEffect() {
     const profileCard = this.querySelector('.profile-card');
    
     profileCard.addEventListener('mousemove', e => {
@@ -30,5 +30,11 @@ export default class ProfileCard extends View {
     profileCard.addEventListener('mouseleave', function() {
         profileCard.style.transform = 'translate(-50%, -50%) perspective(1000px) rotateX(0deg) rotateY(0deg)';
     });
+  }
+  
+  connectedCallback() {
+    super.connectedCallback();
+
+    this._profileCardEffect();
   }
 }
