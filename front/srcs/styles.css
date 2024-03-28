@@ -208,7 +208,9 @@ ul {
     border-radius: 10px;
     width: 50em;
     height: 30em;
+    margin-left: 1em;
     margin-right: 1em;
+    padding: 10px;
 }
 
 .scroll {
