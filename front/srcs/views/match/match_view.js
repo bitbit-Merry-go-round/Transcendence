@@ -19,8 +19,8 @@ export default class MatchView extends View {
     super.connectedCallback();
     const mapModalBtn = this.querySelector('#confMapBtn');
     const mapModal = this.querySelector("#map-modal");
-    const paddleModalBtn = document.getElementById('confPaddleBtn');
-    const paddleModal = document.querySelector('.paddle-wrap');
+    const paddleModalBtn = this.querySelector('#confPaddleBtn');
+    const paddleModal = this.querySelector('.paddle-wrap');
 
     mapModalBtn.addEventListener("click", () => {
       mapModal.style.display = "block";
