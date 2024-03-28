@@ -30,6 +30,10 @@ export default class FriendView extends View {
           {
             friendElement.querySelector('.status-circle-sm').classList.add('status-offline');
           }
+          else
+          {
+            friendElement.querySelector('.status-circle-sm').classList.remove('status-offline');
+          }
           friendElement.querySelector('.user-level').textContent = `Lv.${friend.level}`;
           friendElement.querySelector('.user-name').textContent = `${friend.uid}`;
           friendElement.setAttribute('data-user', `${friend.uid}`);
@@ -111,6 +115,9 @@ export default class FriendView extends View {
     const user = 'jeseo';
 
     profileCardModalBtn.addEventListener('click', async () => {
+      const addFriendBtn = profileCardModal.querySelector('.btn-add-friend');
+      addFriendBtn.classList.remove('btn-del-friend');
+      addFriendBtn.href = '/edit';
       await fetch(`http://${window.location.hostname}:8000/users/${user}/profile`, {
         mode: "cors",
         credentials: "include"
@@ -122,14 +129,11 @@ export default class FriendView extends View {
         const userName = profileCardModal.querySelector('.user-name');
         const userScore = profileCardModal.querySelector('.score');
         const stateMessage = profileCardModal.querySelector('.state-message');
-        const addFriendBtn = profileCardModal.querySelector('.btn-add-friend');
         userLevel.textContent = `Lv.${res.level}`;
         userName.textContent = `${res.uid}`
         userAvatar.src = `data:image;base64,${res.avatar}`;
         userScore.textContent = `${res.wins} 승 ${res.loses} 패`;
         stateMessage.textContent = `${res.message}`;
-        addFriendBtn.classList.remove('btn-del-friend');
-        addFriendBtn.href = '/edit';
       });
     })
   }
