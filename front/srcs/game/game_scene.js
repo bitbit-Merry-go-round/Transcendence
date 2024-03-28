@@ -19,6 +19,7 @@ export const ASSETS = Object.freeze({
   scene: "assets/models/scene/game_scene.glb",
   leaf: "assets/models/leaf/leaf.gltf",
   board: "assets/models/board/board.glb",
+  laurel_wreath: "assets/models/laurel_wreath/scene.gltf",
   bgm: "assets/sound/bgm1.mp3",
   hitSound: "assets/sound/hit.mp3",
   winSound: "assets/sound/win.mp3",
@@ -72,6 +73,9 @@ const controlMap = {
  * Game Scene.
  */
 export default class Scene {
+
+  // debug
+  #isDebug = false;
 
   #physics;
   #scene;
@@ -274,6 +278,9 @@ export default class Scene {
    * }} */
   #loadedTextures = { };
 
+  /** @type {THREE.Object3D} */
+  #trophy;
+
   #gameSize = {
     width: 100,
     height: 100,
@@ -393,12 +400,29 @@ export default class Scene {
     this.isBallMoving = false;
     const cameraDest = { ...this.cameraPositions.play };
     cameraDest.z += 0.5;
-    this.#moveCamera({
-      dest: cameraDest,
-      speed: 0.01,
-      curve: AnimationCurves.easein,
-      onEnded: () =>  this.#showLeaves()
+    this.#showLeaves();
+    if (this.#gameData.gameType == GAME_TYPE.localTournament &&
+    this.#gameData.tournament.isLastRound) {
+      cameraDest.z += 3;
+      this.#moveObject({
+        target: this.#camera,
+        dest: cameraDest,
+        speed: 0.005,
+        curve: AnimationCurves.easein,
+        onEnded: () => {
+          this.#gameParticle.remove();
+          this.#showTrophy();
+        }
+      });
+    }
+    else {
+      this.#moveObject({
+        target: this.#camera,
+        dest: cameraDest,
+        speed: 0.01,
+        curve: AnimationCurves.easein
     });
+    }
   }
 
   #showLeaves() {
@@ -425,7 +449,8 @@ export default class Scene {
     const cameraDest = { ...this.cameraPositions.play };
     cameraDest.x -= 1.0;
     cameraDest.z += 1.5;
-    this.#moveCamera({
+    this.#moveObject({
+      target: this.#camera,
       dest: cameraDest,
       speed: 0.01,
       curve: AnimationCurves.easein,
@@ -446,16 +471,62 @@ export default class Scene {
   }
 
   goToGamePosition(onEnded) {
-    this.#moveCamera({
+    this.#moveObject({
+      target: this.#camera,
       dest: {...this.cameraPositions.play},
       curve: AnimationCurves.easeout,
       speed: 0.015,
     });
-    this.#animateCameraRotation({
+    this.#animateRotation({
+      target: this.#camera,
       dest: {...this.cameraRotations.play},
       speed: 0.015,
       onEnded: onEnded
     })
+  }
+
+  #showTrophy(onEnded) {
+    if (!this.#trophy) {
+      console.error("trophy is not loaded");
+      return ;
+    }
+    this.#trophy.position.set(
+      this.#camera.position.x,
+      this.#camera.position.y + 0.5, 
+      this.#camera.position.z - 1.5
+    )
+    const spotLight = new THREE.SpotLight(new THREE.Color("white"));
+    spotLight.intensity = 100;
+    spotLight.distance = 5;
+    spotLight.angle = Math.PI * 0.1;
+    spotLight.position.set(
+      this.#trophy.position.x,
+      this.#trophy.position.y + 1,
+      this.#trophy.position.z
+    );
+    spotLight.target = this.#trophy;
+    this.#trophy.visible = true;
+    this.#scene.add(spotLight);
+    const dest = new THREE.Vector3().copy(this.#trophy.position);
+    dest.y -= 0.5;
+    this.#moveObject({
+      target: this.#trophy,
+      dest,
+      speed: 0.01,
+      onEnded: () => {
+        this.#animateRotation({
+          target:this.#trophy,
+          speed: 0.001,
+          dest: {
+            x: this.#trophy.rotation.x,
+            y: this.#trophy.rotation.y + Math.PI * 2.0,
+            z: this.#trophy.rotation.z
+          },
+          repeat: true
+        });
+
+      }
+    });
   }
 
   updateBoard(content) {
@@ -720,9 +791,11 @@ export default class Scene {
         );
         const screenPos = new THREE.Vector3();
         this.#gameScene.getWorldPosition(screenPos);
-        // this.#controls.target = screenPos;
+        if (this.#isDebug)
+          this.#controls.target = screenPos;
         this.#camera.lookAt(0, 0, 0);
-        this.#moveCamera({
+        this.#moveObject({
+          target: this.#camera,
           dest: {...this.cameraPositions.startRotate},
           speed: 0.008,
           curve: AnimationCurves.easein,
@@ -746,10 +819,22 @@ export default class Scene {
     this.#bgm.volume = 0.05;
     this.#bgm.play()
 
+    if (this.#gameData.gameType == GAME_TYPE.localTournament) {
+      this.#gltfLoader.load(ASSETS.laurel_wreath,
+        (gltf) => {
+          gltf.scene.scale.set(0.1, 0.1, 0.1);
+          gltf.scene.position.set(1, 2, 2);
+          this.#trophy = gltf.scene;
+          this.#trophy.visible = false;
+          this.#scene.add(this.#trophy);
+        })
+    }
+
     return this;
   }
 
   /** @param {{
+   *    target: THREE.Object3D,
    *    dest: {
    *      x: number, y: number, z: number
    *    },
@@ -760,9 +845,9 @@ export default class Scene {
    *    }) => void
    * }} params
    */
-  #moveCamera({dest, speed, curve = AnimationCurves.smoothstep, onEnded = () => {}}) {
+  #moveObject({target, dest, speed, curve = AnimationCurves.smoothstep, onEnded = () => {}}) {
     const animation = new Animation({
-      start: this.#camera.position.clone(),
+      start: target.position.clone(),
       end: new THREE.Vector3(
         dest.x, 
         dest.y,
@@ -770,13 +855,13 @@ export default class Scene {
       ),
       curve,
       repeat: false,
-      key: "cameraMove"
+      key: target.name + "Move"
     })
     this.#animations.push({
       animation,
       speed,
       onProgress: (pos) => { //@ts-ignore 
-        this.#camera.position.set(pos.x, pos.y, pos.z);
+        target.position.set(pos.x, pos.y, pos.z);
       },
       onEnded,
       key: animation.key
@@ -820,38 +905,41 @@ export default class Scene {
   }
 
   /** @param {{
+   *    target: THREE.Object3D,
    *    dest: {
    *      x: number, y: number, z: number
    *    },
    *    speed: number,
    *    curve?: (t: number) => number,
+   *    repeat?: boolean,
    *    onEnded?: (last:{
    *      x: number, y: number, z: number
    *    }) => void
    * }} params
    */
-  #animateCameraRotation({dest, speed, 
-    curve = AnimationCurves.smoothstep, onEnded = () => {}}) {
+  #animateRotation({
+    target,
+    dest, 
+    speed, 
+    curve = AnimationCurves.smoothstep, 
+    repeat = false,
+    onEnded = () => {}}) {
     const animation = new Animation({
-      start: new THREE.Vector3( 
-        this.#camera.rotation.x,
-        this.#camera.rotation.y,
-        this.#camera.rotation.z,
-      ),
+      start: new THREE.Vector3().copy(target.rotation),
       end: new THREE.Vector3(
-        dest.x, 
+        dest.x,
         dest.y,
         dest.z
       ),
       curve,
-      repeat: false,
-      key: "cameraRotate"
+      repeat,
+      key: target.name + "rotate"
     })
     this.#animations.push({
       animation,
       speed,
       onProgress: (rotation) => { //@ts-ignore 
-        this.#camera.rotation.set(rotation.x, rotation.y, rotation.z);
+        target.rotation.set(rotation.x, rotation.y, rotation.z);
       },
       onEnded,
       key: animation.key
@@ -1246,9 +1334,10 @@ export default class Scene {
       150
     );
     this.#scene.add(this.#camera);
-    //this.#controls = new OrbitControls(this.#camera, this.#canvas)
-
-    //this.#controls.enableDamping = true
+    if (this.#isDebug) {
+      this.#controls = new OrbitControls(this.#camera, this.#canvas);
+      this.#controls.enableDamping = true;
+    }
     return this;
   }
 
@@ -1317,7 +1406,8 @@ export default class Scene {
    * Dev tool
    */
   #addHelpers() {
-
+    if (!this.#isDebug)
+      return this;
     this.gui = new GUI();
     this.gui.close();
     this.configs = {
@@ -1637,7 +1727,8 @@ export default class Scene {
 
   #startRender() {
     const tick = (() => {
-      //this.#controls.update()
+      if (this.#isDebug)
+        this.#controls.update()
       const elapsed = this.#time.clock.getElapsedTime();
       let frameTime = elapsed - this.#time.elapsed;
       this.#time.elapsed = elapsed;
