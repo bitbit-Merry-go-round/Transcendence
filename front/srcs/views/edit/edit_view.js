@@ -51,13 +51,32 @@ export default class EditView extends View {
     btnSave.addEventListener('click', async () => {
       const reader = new FileReader();
       const file = imgInput.files[0];
+      const url = `http://${window.location.hostname}:8000/users/${user}/profile/`;
 
-      // 파일이 없다면 기존 이미지?
+      if (!file)
+      {
+        const headers = {
+          "Content-Type": "application/json",
+        };
+        const body = JSON.stringify({
+          "message" : `${messageInput.value}`
+        });
+
+        fetch(url, {
+          method: 'PATCH',
+          headers: headers,
+          body: body
+        })
+        .then(() => {
+          alert(`${user}'s profile is successfully edited!`);
+          history.back();
+        });
+        return ;
+      }
 
       reader.addEventListener('load', (e) => {
         const fileData = btoa(e.target.result);
 
-        const url = `http://${window.location.hostname}:8000/users/${user}/profile/`;
         const headers = {
           "Content-Type": "application/json",
         };
