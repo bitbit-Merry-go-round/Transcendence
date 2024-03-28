@@ -272,7 +272,7 @@ export class GameData {
     return this.#_gameType;
   }
 
-  #_winScore = 2;
+  #_winScore = 1;
   get winScore() {
     return this.#_winScore;
   }

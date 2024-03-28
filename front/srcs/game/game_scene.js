@@ -1,8 +1,8 @@
 import * as THREE from "three";
 import Physics from "@/game/physics";
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-import PhysicsEntity from "@/game/physicsEntity";
 import { EPSILON } from "@/game/physicsUtils";
+import PhysicsEntity from "@/game/physicsEntity";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { GameData, Player, GAME_TYPE } from "@/data/game_data";
 import ParticleGenerator from "@/game/particleGenerator";
@@ -385,34 +385,23 @@ export default class Scene {
     if (this.#ball.mesh)  {
       this.#removeBall();
     }
-    const cameraDest = {
-      x: this.#camera.position.x,
-      y: this.#camera.position.y,
-      z: this.#camera.position.z + 1.5,
-    }
     const sound = new Audio(
       ASSETS.winSound
     );
     sound.volume = 0.8;
     sound.play();
+    this.isBallMoving = false;
+    const cameraDest = { ...this.cameraPositions.play };
+    cameraDest.z += 0.5;
     this.#moveCamera({
       dest: cameraDest,
       speed: 0.01,
       curve: AnimationCurves.easein,
-      onEnded: () => {
-        if (this.#gameData.gameType != GAME_TYPE.localTournament)
-          return ;
-        /** @type {THREE.Object3D} */
-        const target = this.#tournamentBoard.board;
-        this.#rotateCameraTo({
-          target,
-          speed: 0.01,
-          curve: AnimationCurves.easein
-        })
-      }
+      onEnded: () =>  this.#showLeaves()
     });
-    
-    // leaf
+  }
+
+  #showLeaves() {
     const container = new THREE.Mesh(
       new THREE.BoxGeometry(),
       new THREE.MeshBasicMaterial({
@@ -429,10 +418,34 @@ export default class Scene {
       endY: -1,
       container
     });
-    this.isBallMoving = false;
+    return this;
   }
 
-  moveCameraToGamePosition(onMoved) {
+  showTournamentBoard(onEnded) {
+    const cameraDest = { ...this.cameraPositions.play };
+    cameraDest.x -= 1.0;
+    cameraDest.z += 1.5;
+    this.#moveCamera({
+      dest: cameraDest,
+      speed: 0.01,
+      curve: AnimationCurves.easein,
+      onEnded: () => {
+        /** @type {THREE.Object3D} */
+        const target = this.#tournamentBoard.board;
+        const targetPos = new THREE.Vector3();
+        target.getWorldPosition(targetPos);
+        targetPos.z += 0.5;
+        this.#rotateCameraTo({
+          targetPos,
+          speed: 0.01,
+          curve: AnimationCurves.easein,
+          onEnded: onEnded
+        })
+      }
+    });
+  }
+
+  goToGamePosition(onEnded) {
     this.#moveCamera({
       dest: {...this.cameraPositions.play},
       curve: AnimationCurves.easeout,
@@ -441,7 +454,7 @@ export default class Scene {
     this.#animateCameraRotation({
       dest: {...this.cameraRotations.play},
       speed: 0.015,
-      onEnded: onMoved
+      onEnded: onEnded
     })
   }
 
@@ -716,7 +729,7 @@ export default class Scene {
           onEnded: () => {
             this.#sceneParticle.isPlaying = false;
             this.#gameParticle.isPlaying = true;
-            this.moveCameraToGamePosition(); 
+            this.goToGamePosition(); 
           }
         });
       },
@@ -772,7 +785,7 @@ export default class Scene {
   }
 
   /** @param {{
-   *    target: THREE.Object3D,
+   *    target: THREE.Vector3,
    *    speed: number,
    *    curve?: (t: number) => number,
    *    onEnded?: (last:{
@@ -780,10 +793,8 @@ export default class Scene {
    *    }) => void
    * }} params 
    * */
-  #rotateCameraTo({target, speed, 
+  #rotateCameraTo({targetPos, speed, 
     curve = AnimationCurves.smoothstep, onEnded = () => {}}) {
-    const targetPos = new THREE.Vector3();
-    target.getWorldPosition(targetPos);
     const qCamera = this.#camera.quaternion.clone();
     this.#camera.lookAt(targetPos);
     const dest = this.#camera.quaternion.clone();
