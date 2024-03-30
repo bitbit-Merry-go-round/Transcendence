@@ -95,10 +95,16 @@ export default class Asset {
         case (Asset.type.gltf):
           this.#loaded[path] = 
             await this.#gltfLoader.loadAsync(path)
+            .catch(err => {
+              console.error(err);
+            })
           break;
         case (Asset.type.texture):
           this.#loaded[path] = 
             await this.#textureLoader.loadAsync(path)
+            .catch(err => {
+              console.error(err);
+            })
           break;
       }
     this.#_loadedCount.value += 1;

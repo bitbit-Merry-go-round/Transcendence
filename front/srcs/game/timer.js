@@ -8,6 +8,7 @@ export default class Timer {
   #lastElapsedTime;
   #callbacks;
 
+  /** @returns {number} */
   get elapsedTime() {
     return this.#lastElapsedTime.value;
   }

@@ -50,6 +50,15 @@ export default class Scene {
   /** @type {OrbitControls} */
   #controls;
 
+
+  /** @type {{
+   *    raycaster: THREE.Raycaster,
+   *    pointer: THREE.Vector2,
+   *    lastMovedTime: number,
+   *    threshold: number,
+   *    hovering: "BOOMBOX" | "KEYBOARD" | "MAC" | null
+   * }} */
+  #mouseHandler;
   cameraPositions = { 
     start: { x: 0, y: 70, z: 30 },
     startRotate: { x: 0, y: 20, z: 10 },
@@ -60,8 +69,19 @@ export default class Scene {
     play: { x: -0.26, y: 0, z: 0}
   };
 
-  /** @type {HTMLAudioElement} */
+  /** @type {{
+   *  list: HTMLAudioElement[],
+   *  current: HTMLAudioElement,
+   *  volume: number, 
+   * }}
+   */
   #bgm;
+
+  /** @type {{
+   *  mesh: THREE.Group,
+   *  light: THREE.SpotLight,
+   * }} */
+  #boombox;
 
   /** @type {THREE.WebGLRenderer} */
   #renderer;
@@ -179,8 +199,8 @@ export default class Scene {
       height: canvas.height
     };
     this
-      .#loadAsset()
-      .#init();
+      .#init()
+      .#loadAsset();
     this.#gameScene.init();
     this
       .#loadLeaf()
@@ -216,20 +236,19 @@ export default class Scene {
       this.#gameScene.removeBall();
     }
     /** @type {HTMLAudioElement} */
-    const sound = Asset.shared.get("AUDIO", ASSET_PATH.winSound
-    );
+    const sound = Asset.shared.get("AUDIO", ASSET_PATH.winSound);
     sound.volume = 0.8;
-    this.#bgm.volume = 0.05;
+    this.#bgm.current.volume -= 0.1;
     sound.play();
     sound.addEventListener("ended", () => {
-      this.#bgm.volume = 0.2;
-    })
+      this.#bgm.current.volume = this.#bgm.volume;
+    });
     this.isBallMoving = false;
     const cameraDest = { ...this.cameraPositions.play };
     cameraDest.z += 0.5;
     this.#showLeaves();
-    if (this.#gameData.gameType == GAME_TYPE.localTournament &&
-    this.#gameData.tournament.isLastRound) {
+    if (this.#gameData.gameType == GAME_TYPE.localTournament 
+      && this.#gameData.tournament.isLastRound) {
       cameraDest.z += 3;
       this.#moveObject({
         target: this.#camera,
@@ -238,7 +257,16 @@ export default class Scene {
         curve: AnimationCurves.easein,
         onEnded: () => {
           this.#gameScene.removeParticle();
-          this.#showTrophy();
+          this.#showTrophy(() => {
+          const sound = Asset.shared.get("AUDIO",
+            ASSET_PATH.tournamentWin);
+          sound.volume = 0.8;
+          this.#bgm.current.volume -= 0.1;
+          sound.play();
+          sound.addEventListener("ended", () => {
+            this.#bgm.current.volume = this.#bgm.volume;
+          })
+          });
         }
       });
     }
@@ -342,6 +370,7 @@ export default class Scene {
       dest,
       speed: 0.01,
       onEnded: () => {
+        onEnded();
         this.#animateRotation({
           target:this.#trophy,
           curve: AnimationCurves.linear,
@@ -519,8 +548,8 @@ export default class Scene {
   }
 
   prepareDisappear() {
-    this.#bgm.pause();
-    this.#bgm.currentTime = 0;
+    this.#bgm.current.pause();
+    this.#bgm.current.currentTime = 0;
   }
 
   #loadAsset() {
@@ -553,11 +582,8 @@ export default class Scene {
 
 
         /** @type {THREE.Mesh} */
-        let screen;
-        mac.traverse(obj => {
-          if (obj.name == "screen") //@ts-ignore
-            screen = obj
-        });
+        const screen = mac.children[0].children[0].children[1]
+
         const screenBox= new THREE.Box3().setFromObject(screen);
         const screenSize = {
           x: screenBox.max.x - screenBox.min.x,
@@ -605,6 +631,22 @@ export default class Scene {
         this.#gameScene.getWorldPosition(screenPos);
         if (this.#isDebug)
           this.#controls.target = screenPos;
+
+        this.#loadboomBox(boombox => {
+          boombox.scale.set(
+            0.5,
+            0.5,
+            0.5
+          );
+          boombox.position.set(
+            mac.position.x - 0.6,
+            mac.position.y + 0.33,
+            mac.position.z
+          );
+          boombox.rotateY(Math.PI * 0.1);
+          this.#scene.add(boombox);
+        })
+
         this.#camera.lookAt(0, 0, 0);
         this.#moveObject({
           target: this.#camera,
@@ -616,6 +658,29 @@ export default class Scene {
             this.goToGamePosition(); 
           }
         });
+      }
+    })
+    return this;
+  }
+
+  /** @param {(boombox: THREE.Group) => void} onLoad */
+  #loadboomBox(onLoad) {
+    Asset.shared.load({
+      type: "GLTF",
+      path: ASSET_PATH.boombox,
+      onLoad: (gltf) => {
+        this.#boombox = {
+          mesh: gltf.scene,
+          light: new THREE.SpotLight(
+            new THREE.Color("green"),
+            0.1
+          )
+        };
+        this.#boombox.light.position.y = 1;
+        this.#boombox.light.position.z = 0.3;
+        this.#boombox.light.target = this.#boombox.mesh;
+        this.#boombox.mesh.add(this.#boombox.light);
+        onLoad(this.#boombox.mesh);
       }
     })
     return this;
@@ -762,7 +827,8 @@ export default class Scene {
       .#setCamera()
       .#setRenderer()
       .#setPlayerLabels()
-      .#addResizeCallback();
+      .#setMouseCallback()
+      .#setResizeCallback();
     return this;
   }
 
@@ -815,12 +881,47 @@ export default class Scene {
   }
 
   #setBgm() {
-    this.#bgm = Asset.shared.get("AUDIO", ASSET_PATH.bgm);
-    this.#bgm.loop = true;
-    this.#bgm.volume = 0.2;
-    this.#bgm.play();
-    console.log(this.#bgm)
+    const list = ASSET_PATH.bgms.map(
+      bgm => Asset.shared.get(
+        "AUDIO", bgm.path
+    ));
+    this.#bgm = {
+      list,
+      current: list[0],
+      volume: 0.2
+    };
+    this.#playBgm();
     return this;
+  }
+
+  #nextBgm() {
+    this.#bgm.current.pause();
+    this.#bgm.current.currentTime = 0;
+    const currentIndex = this.#bgm.list.findIndex(bgm =>
+      bgm.src == this.#bgm.current.src
+    );
+    if (currentIndex == -1 || 
+      currentIndex == this.#bgm.list.length - 1) {
+      this.#bgm.current = this.#bgm.list[0];
+    }
+    else {
+      this.#bgm.current = this.#bgm.list[currentIndex + 1];
+    }
+    this.#playBgm();
+  }
+
+  #playBgm() {
+    this.#bgm.current.loop = false;
+    this.#bgm.current.volume = this.#bgm.volume;
+    this.#bgm.current.play();
+    this.#bgm.current.addEventListener("ended", 
+      (event) => {
+        /** @type {HTMLAudioElement} */ //@ts-ignore
+        const ended = event.target;
+        if (this.#bgm.current.src == ended.src) {
+          this.#nextBgm();
+        }
+      });
   }
 
   #setCamera() {
@@ -853,7 +954,53 @@ export default class Scene {
     return this;
   }
 
-  #addResizeCallback() {
+  #setMouseCallback() {
+    this.#mouseHandler = {
+      raycaster: new THREE.Raycaster(),
+      pointer: new THREE.Vector2(),
+      lastMovedTime: this.#timer.elapsedTime,
+      hovering: null,
+      threshold: 0.1 
+    };
+    this.#canvas.addEventListener("mousemove", 
+      (event) => {
+        const elapsedTime = this.#timer.elapsedTime;
+        if (!this.#boombox || 
+          elapsedTime - this.#mouseHandler.lastMovedTime < this.#mouseHandler.threshold)  {
+          return ;
+        }
+        this.#mouseHandler.lastMovedTime = elapsedTime;
+        this.#mouseHandler.pointer.set(
+          event.clientX / this.#windowSize.width * 2 - 1, 
+          -(event.clientY / this.#windowSize.height) * 2 + 1
+        );
+        this.#mouseHandler.raycaster.setFromCamera(
+          this.#mouseHandler.pointer,
+          this.#camera
+        );
+        const intersect = this.#mouseHandler.raycaster.intersectObject(
+          this.#boombox.mesh
+        );
+        if (intersect.length > 0) {
+          this.#boombox.light.intensity = 10;
+          this.#mouseHandler.hovering = "BOOMBOX";
+        }
+        else {
+          this.#boombox.light.intensity = 1;
+          this.#mouseHandler.hovering = null;
+        }
+      }
+    );
+
+    this.#canvas.addEventListener("click", () => {
+      if (this.#mouseHandler.hovering == "BOOMBOX") {
+        this.#nextBgm();
+      }
+    })
+    return this;
+  }
+
+  #setResizeCallback() {
     const resizeCallback = (() => {
 
       const width = this.#canvas.parentElement.offsetWidth;
