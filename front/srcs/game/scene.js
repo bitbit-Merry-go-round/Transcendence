@@ -1,14 +1,11 @@
 import * as THREE from "three";
-import Physics from "@/game/physics";
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-import { EPSILON } from "@/game/physics_utils";
 import GameData,{ GAME_TYPE } from "@/data/game_data";
 import Player from "@/data/player";
 import ParticleGenerator from "@/game/particle_generator";
 import ObservableObject from "@/lib/observable_object";
-import GUI from "node_modules/lil-gui/dist/lil-gui.esm.min.js";
 import { Animation, AnimationCurves } from "@/game/animation";
-import { DIRECTION, GameMap } from "@/data/game_map";
+import { GameMap } from "@/data/game_map";
 import LeafGenerator from "@/game/leaf_generator";
 import ImageGenerator from "@/utils/image_generator";
 import UserLabel from "@/views/components/user_label";
@@ -16,11 +13,7 @@ import ASSET_PATH from "@/assets/path";
 import Asset from "@/game/asset";
 import GameScene from "@/game/game_scene";
 import Timer from "@/game/timer";
-
-const FRAME_TIME_THRESHOLD = 0.01;
-const MAX_PEDDLE_SPEED = 50;
-const PEDDLE_ACCEL = 10;
-const PEDDLE_DECEL_RATIO = 0.5;
+import GUI from "node_modules/lil-gui/dist/lil-gui.esm.min.js";
 
 /**
  * Game Scene.
@@ -34,9 +27,6 @@ export default class Scene {
   #scene_objs = {};
   /** @type {GameData} */
   #gameData;
-
-  /** @type {"TOP" | "BOTTOM" | null} */
-  #lostSide = null;
 
   /** @type {GameScene} */
   #gameScene;
@@ -96,77 +86,6 @@ export default class Scene {
   /** @type {Timer} */
   #timer;
 
-  /** @type {{
-   *    mesh: THREE.Mesh,
-   *    physicsId: number
-   *  }[]}
-   */
-  #objects = [];
-
-  /**
-   * @type {{
-   *  mesh: THREE.Mesh | null,
-   *  physicsId: number | null,
-   * }} 
-   */
-  #ball = { mesh: null, physicsId: null };
-
-  ballColor = 0xff0000;
-  #ballRadiusInGame = 3;
-  #ballSpeed = 40;
-  #ballStartDirection = {
-    x: DIRECTION.left,
-    y: DIRECTION.bottom
-  };
-
-  /**
-   * @type {{
-   *  [key: number]: THREE.Mesh // physicsId: Mesh
-   * }} 
-   */
-  #walls = {}; 
-  #wallTextureRepeat = 0.05;
-  
-  /** @type {number} */
-  wallColor = 0x00ff00;
-
-  #safeWallHitCount = 0;
-
-  /** @type {{
-   *    mesh: THREE.Mesh,
-   *    physicsId: number
-   *  }[]}
-   */
-  #peddles = [];
-
-  /** @type {{
-   *    pressed: {
-   *      player: number,
-   *      x: number,
-   *      y: number,
-   *      key: string | null,
-   *    }
-   *   }[]}
-   */
-  #peddleControls = [
-    {
-      pressed: {
-        player: 0,
-        x: 0,
-        y: 0,
-        key: null
-      }
-    }, 
-    {
-      pressed: {
-        player: 1,
-        x: 0,
-        y: 0,
-        key: null
-      }
-    }
-  ];
-
   isBallMoving = false;
   peddleColors = {
     "player1": 0x00ffff,
@@ -177,12 +96,6 @@ export default class Scene {
     width: 0.15,
     height: 0.015
   };
-
-  /** @type {{
-   *  desc: string,
-   *  id: number
-   * }[]} */
-  #eventsIds = [];
 
   /**
    * Effect
@@ -218,17 +131,6 @@ export default class Scene {
   /** @type {THREE.Object3D} */
   #trophy;
 
-  #gameSize = {
-    width: 100,
-    height: 100,
-    depth: 1
-  };
-
-  #depth = {
-    wall: 5,
-    peddle: 3
-  };
-
   /** @type {{
    *  topLeft:{
    *    generator: ImageGenerator,
@@ -248,8 +150,6 @@ export default class Scene {
    * }}
    */
   #playerLabels;
-
-  #stuckHandler;
 
   /**
    * @params {Object} params
@@ -283,7 +183,6 @@ export default class Scene {
       .#init();
     this.#gameScene.init();
     this
-      .#addHelpers()
       .#loadLeaf()
       .#startRender();
   }
@@ -305,7 +204,7 @@ export default class Scene {
   }
 
   resetBall() {
-    if (this.#ball.mesh) {
+    if (this.#gameScene.ball.mesh) {
       this.#gameScene.removeBall();
     }
     this.#gameScene.addBall();
@@ -313,13 +212,18 @@ export default class Scene {
   }
 
   endGame() {
-    if (this.#ball.mesh)  {
+    if (this.#gameScene.ball.mesh)  {
       this.#gameScene.removeBall();
     }
+    /** @type {HTMLAudioElement} */
     const sound = Asset.shared.get("AUDIO", ASSET_PATH.winSound
     );
     sound.volume = 0.8;
+    this.#bgm.volume = 0.05;
     sound.play();
+    sound.addEventListener("ended", () => {
+      this.#bgm.volume = 0.2;
+    })
     this.isBallMoving = false;
     const cameraDest = { ...this.cameraPositions.play };
     cameraDest.z += 0.5;
@@ -864,7 +768,6 @@ export default class Scene {
 
 
   #setLights() {
-
     const gameAmbientLight = new THREE.AmbientLight(this.lightConfigs.ambientColor, this.lightConfigs.ambientIntensity);
     const gameDirectionalLight = new THREE.DirectionalLight(
     );
@@ -914,8 +817,9 @@ export default class Scene {
   #setBgm() {
     this.#bgm = Asset.shared.get("AUDIO", ASSET_PATH.bgm);
     this.#bgm.loop = true;
-    this.#bgm.volume = 0.05;
-    this.#bgm.play()
+    this.#bgm.volume = 0.2;
+    this.#bgm.play();
+    console.log(this.#bgm)
     return this;
   }
 
@@ -970,112 +874,6 @@ export default class Scene {
     return this;
   }
 
-  /*
-   * Dev tool
-   */
-  #addHelpers() {
-    if (!this.#isDebug)
-      return this;
-    this.gui = new GUI();
-    this.gui.close();
-    this.configs = {
-      envMapIntensity: 1,
-      bgmVolume: 0.05,
-      effectVolume: 0.8,
-    };
-
-    const axesHelper = new THREE.AxesHelper(5);
-    axesHelper.setColors(
-      new THREE.Color(0xffffff), 
-      new THREE.Color(0xffffff), 
-      new THREE.Color(0xffffff)
-    )
-    this.#scene.add(axesHelper);
-    const gameAxesHelper = new THREE.AxesHelper(5);
-    gameAxesHelper.setColors(
-      new THREE.Color(0x0000ff), 
-      new THREE.Color(0x0000ff), 
-      new THREE.Color(0x0000ff)
-    );
-    this.#gameScene.add(gameAxesHelper); 
-
-
-    const sound = this.gui.addFolder("sound");
-
-    sound.add(this.configs, "bgmVolume")
-      .min(0)
-      .max(1)
-      .step(0.001)
-      .onChange(volume => {
-        this.#bgm.volume = volume;
-      })
-
-    const color = this.gui.addFolder("color");
-
-    color.addColor(this, "ballColor")
-      .onChange(newColor => {
-        if (this.#ball.mesh)
-          this.#ball.mesh.material.color.set(newColor);
-      })
-
-    color.addColor(this, "wallColor")
-      .onChange(newColor => {
-        Object.entries(this.#walls) 
-          .forEach(([id, mesh]) => {
-            mesh.material.color.set(newColor);
-          })
-
-      })
-
-    Object.entries(this.peddleColors).forEach(([player], index) => {
-      color.addColor(this.peddleColors, player) 
-        .onChange(newColor => {
-          this.#peddles[index].mesh.material.color.set(newColor);
-        })
-    })
-
-    const light = this.gui.addFolder("light");
-
-    light.add(this.configs, "envMapIntensity")
-      .min(0)
-      .max(3)
-      .step(0.001)
-      .onChange((intensity) => {
-        this.#scene.traverse(child => {
-          if (child.isMesh && child.material.isMeshStandardMaterial) {
-            child.material.envMapIntensity = intensity;
-          }
-        })
-      })
-    light.addColor(this.lightConfigs, "ambientColor")
-      .onChange(color => {
-        this.#lights.ambientLight.color.set(color);
-      })
-
-    light.addColor(this.lightConfigs, "directionalColor")
-      .onChange(color => {
-        this.#lights.directionalLight.color.set(color);
-      })
-
-    light.add(this.lightConfigs, "ambientIntensity")
-      .min(0).max(5)
-      .step(0.01)
-      .onChange(value => this.#lights.ambientLight.intensity = value);
-
-    light.add(this.lightConfigs, "directionalIntensity")
-      .min(0).max(5)
-      .step(0.01)
-      .onChange(value => this.#lights.directionalLight.intensity = value);
-
-    const background = this.gui.addFolder("background");
-    background.add(this.#scene, "backgroundBlurriness")
-      .min(0).max(1).step(0.001);
-    background.add(this.#scene, "backgroundIntensity")
-      .min(0).max(1).step(0.001);
-
-    return this;
-  }
-
   #loadLeaf() {
     this.#leaf = new LeafGenerator();
     this.#leaf.load();
@@ -1106,5 +904,48 @@ export default class Scene {
         }
       })
     this.#animations = this.#animations.filter(e => !e.animation.isFinished);
+  }
+
+  _addHelper() {
+
+    this.gui = new GUI();
+    const sound = this.gui.addFolder("sound");
+
+    const configs = {
+      bgmVolume: 0.3,
+      effectVolume: 0.8,
+    };
+    sound.add(configs, "bgmVolume")
+      .min(0)
+      .max(1)
+      .step(0.001)
+      .onChange(volume => {
+        this.#bgm.volume = volume;
+      })
+
+
+    const light = this.gui.addFolder("light");
+
+    light.addColor(this.lightConfigs, "ambientColor")
+      .onChange(color => {
+        this.#lights.ambientLight.color.set(color);
+      })
+
+    light.addColor(this.lightConfigs, "directionalColor")
+      .onChange(color => {
+        this.#lights.directionalLight.color.set(color);
+      })
+
+    light.add(this.lightConfigs, "ambientIntensity")
+      .min(0).max(5)
+      .step(0.01)
+      .onChange(value => this.#lights.ambientLight.intensity = value);
+
+    light.add(this.lightConfigs, "directionalIntensity")
+      .min(0).max(5)
+      .step(0.01)
+      .onChange(value => this.#lights.directionalLight.intensity = value);
+
+    return this;
   }
 }

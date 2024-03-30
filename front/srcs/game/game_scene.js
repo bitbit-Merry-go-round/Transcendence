@@ -4,11 +4,11 @@ import ASSET_PATH from "@/assets/path";
 import Physics from "@/game/physics";
 import { EPSILON } from "@/game/physics_utils";
 import PhysicsEntity from "@/game/physics_entity";
-import GameData,{ GAME_TYPE } from "@/data/game_data";
+import GameData  from "@/data/game_data";
 import Player, { PLAYER_POSITION } from "@/data/player";
 import ParticleGenerator from "@/game/particle_generator";
-import ObservableObject from "@/lib/observable_object";
 import { WALL_TYPES, DIRECTION, GameMap } from "@/data/game_map";
+import GUI from "node_modules/lil-gui/dist/lil-gui.esm.min.js";
 import { resizeTexture } from "@/utils/three_util";
 import Timer from "./timer";
 
@@ -21,6 +21,7 @@ const SAFE_WALL_STUCK_THRESHOLD = 4;
 
 export default class GameScene extends THREE.Group {
 
+  /** @type {Physics} */
   #physics;
   /** @type {GameData} */
   #gameData;
@@ -30,7 +31,7 @@ export default class GameScene extends THREE.Group {
   #hitSound = {
     sound: Asset.shared.get("AUDIO", ASSET_PATH.hitSound),
     lastPlayed: 0,
-    volume: 0.8
+    volume: 1
   };
 
   /** @type {{
@@ -50,6 +51,9 @@ export default class GameScene extends THREE.Group {
    * }} 
    */
   #ball = { mesh: null, physicsId: null };
+  get ball() {
+    return {...this.#ball};
+  }
 
   ballColor = 0xff0000;
   #ballRadiusInGame = 3;
@@ -541,7 +545,7 @@ export default class GameScene extends THREE.Group {
   #addEvents() {
 
     const hitSoundEventId = this.#physics.addCollisionCallback(
-      (collider, collidee, time) => {
+      (collider, collidee, _time) => {
         if (Math.abs(this.#timer.elapsedTime - this.#hitSound.time) < SOUND_EFFECT_THRESHOLD)
           return false;
         if (collider.isShape("CIRCLE") || collidee.isShape("CIRCLE")) {
@@ -549,7 +553,7 @@ export default class GameScene extends THREE.Group {
         }
         return false;
       },
-      (collider, collidee, time) => {
+      () => {
         this.#hitSound.sound.currentTime = 0;
         this.#hitSound.sound.volume = this.#hitSound.volume;
         this.#hitSound.sound.play();
@@ -558,14 +562,14 @@ export default class GameScene extends THREE.Group {
     );
 
     const hitBallEffectId = this.#physics.addCollisionCallback(
-      (collider, collidee, time) => {
+      (collider, collidee, _time) => {
 
         if (!collider.isShape("CIRCLE") && !collidee.isShape("CIRCLE")) {
           return false;
         }
         return (collider.data?.isPeddle || collidee.data?.isPeddle);
       },
-      (collider, collidee, time) => {
+      (collider, collidee, _time) => {
         if (this.#stuckHandler && this.#safeWallHitCount > SAFE_WALL_STUCK_THRESHOLD) {
           this.#stuckHandler(false);
         }
@@ -579,7 +583,7 @@ export default class GameScene extends THREE.Group {
     )
 
     const safeWallEventId = this.#physics.addCollisionCallback(
-      (collider, collidee, time) => {
+      (collider, collidee, _time) => {
 
         if (!this.#stuckHandler) 
           return false;
@@ -588,7 +592,7 @@ export default class GameScene extends THREE.Group {
         } 
         return (collidee.data?.wallType == WALL_TYPES.safe) ;
       },
-      (collider, collidee, time) => {
+      (_collider, _collidee, _time) => {
         this.#safeWallHitCount += 1;
         if (this.#safeWallHitCount > SAFE_WALL_STUCK_THRESHOLD) {
           this.#stuckHandler(true); 
@@ -597,7 +601,7 @@ export default class GameScene extends THREE.Group {
     )
 
     const ballOutEventId = this.#physics.addCollisionCallback(
-      (collider, collidee, time) => {
+      (collider, collidee, _time) => {
 
         if (!collider.isShape("CIRCLE") && !collidee.isShape("CIRCLE")) {
           return false;
@@ -605,7 +609,7 @@ export default class GameScene extends THREE.Group {
         return (collidee.data && collidee.data.wallType &&
           collidee.data.wallType == WALL_TYPES.trap);
       },
-      (collider, collidee, time) => {
+      (_collider, collidee, _time) => {
         this.#lostSide = collidee.data.direction;
         if (this.#stuckHandler && this.#safeWallHitCount > SAFE_WALL_STUCK_THRESHOLD) {
           this.#stuckHandler(false);
@@ -694,5 +698,42 @@ export default class GameScene extends THREE.Group {
       const position = states[physicsId].position;
       mesh.position.set(position.x, position.y, mesh.position.z);
     })
+  }
+
+  _addHelper() {
+    this.gui = new GUI();
+    this.gui.close();
+
+    const color = this.gui.addFolder("color");
+
+    color.addColor(this, "ballColor")
+      .onChange(newColor => {
+        if (this.#ball.mesh)
+          this.#ball.mesh.material.color.set(newColor);
+      })
+
+    color.addColor(this, "wallColor")
+      .onChange(newColor => {
+        Object.entries(this.#walls) 
+          .forEach(([id, mesh]) => {
+            mesh.material.color.set(newColor);
+          })
+
+      })
+
+    Object.entries(this.peddleColors).forEach(([player], index) => {
+      color.addColor(this.peddleColors, player) 
+        .onChange(newColor => {
+          this.#peddles[index].mesh.material.color.set(newColor);
+        })
+    })
+
+    const axesHelper = new THREE.AxesHelper(5);
+    axesHelper.setColors(
+      new THREE.Color(0xffffff), 
+      new THREE.Color(0xffffff), 
+      new THREE.Color(0xffffff)
+    )
+    this.add(axesHelper);
   }
 }
