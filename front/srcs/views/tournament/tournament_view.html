@@ -1,4 +1,18 @@
 <tournament-view class="d-flex view">
+  <style>
+    .vibration {
+      background-color: rgb(255, 240, 240);
+      animation: vibration .1s infinite;
+    }
+    @keyframes vibration {
+      from {
+        transform: rotate(0.5deg);
+      }
+      to {
+        transform: rotate(-0.5deg);
+      }
+    }
+  </style>
   <div class="mb-auto ms-5 mt-5">
     <div class="page-header d-flex justify-content-between">
       <h1 class="page-name tournament-view">토너먼트</h1>
@@ -7,15 +21,22 @@
       </button>
     </div>
     <div class="d-flex justify-content-center align-self-center">
+      <div id="multiple-error" style="display: none; position: absolute; top: auto; color: rgb(250 109 109);">중복된 이름을 사용하지 마시오!</div>
       <div class="d-flex flex-column p-4 tournament-box justify-content-between">
-        <input type="text" name="player1" placeholder="player 1" class="input-player my-2 ">
-        <input type="text" name="player2" placeholder="player 2" class="input-player my-2 ">
-        <input type="text" name="player3" placeholder="player 3" class="input-player my-2 ">
-        <input type="text" name="player4" placeholder="player 4" class="input-player my-2 ">
+        <input id="player1" type="text" name="player1" placeholder="player 1" class="input-player my-2 ">
+        <input id="player2" type="text" name="player2" placeholder="player 2" class="input-player my-2 ">
+        <input id="player3" type="text" name="player3" placeholder="player 3" class="input-player my-2 ">
+        <input id="player4" type="text" name="player4" placeholder="player 4" class="input-player my-2 ">
       </div>
     </div>
     <div class="d-flex justify-content-end my-4 tournament-footer">
-      <a href="/game" class="btn btn-primary btn-tournament" data-link>확인</a>
+      <div class="btn btn-primary btn-tournament" data-link>확인</div>
+      <a href="/game" id="move-to-game" data-link></a>
     </div>
   </div>
 </tournament-view>
+
+
+
+
+
