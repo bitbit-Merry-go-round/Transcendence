@@ -6,11 +6,13 @@ import FriendView from "@/views/friend/friend_view";
 import ModeView from "@/views/mode/mode_view";
 import RecordView from "@/views/record/record_view";
 import TournamentView from "@/views/tournament/tournament_view";
+import TournamentPanel from "@/views/components/tournament_panel";
 import MatchView from "@/views/match/match_view";
 import EditView from "@/views/edit/edit_view";
 import NavBar from "@/views/components/nav_bar";
 import ProfileCard from "@/views/components/profile_card";
 import UserLabel from "@/views/components/user_label";
+import ColorPicker from "@/views/components/color_picker";
 
 /**
  * fileName for view class MUST contain '_' or '-' (Web components requirement)
@@ -35,6 +37,14 @@ export default {
       {
         "className": "UserLabel",
         "fileName": "user_label.html"
+      },
+      {
+        "className": "TournamentPanel",
+        "fileName": "tournament_panel.html"
+      },
+      {
+        "className": "ColorPicker",
+        "fileName": "color_picker.html"
       },
     ],
     "home": [ 
@@ -107,7 +117,9 @@ export const viewConstructors = {
   NavBar,
   ProfileCard,
   MapSelector,
-  UserLabel
+  UserLabel,
+  TournamentPanel,
+  ColorPicker,
 };
 
 export const routes = [
