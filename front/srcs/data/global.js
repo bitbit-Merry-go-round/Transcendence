@@ -1,6 +1,7 @@
 import ObservableObject from "@/lib/observable_object";
 import User, { createProfile } from "@/data/user";
-import { GameData, Player } from "@/data/game_data";
+import GameData from "@/data/game_data";
+import Player from "@/data/player";
 import { generateRandomName } from "@/utils/random_name.js";
 
 const globalData = (() =>{

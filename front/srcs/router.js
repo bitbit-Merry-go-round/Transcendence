@@ -16,7 +16,7 @@ export const NAVIGATE_DRIRECTION = Object.freeze({
 
 class Router {
 
-  static _shared;
+  static #_shared;
   static get transitionDistX() {
     return 30;
   }
@@ -36,16 +36,16 @@ class Router {
   };
 
   static get shared() {
-    if (!this._shared) {
+    if (!this.#_shared) {
       return new Router();
     }
-    return this._shared;
+    return this.#_shared;
   }
 
   constructor() {
-    if (Router._shared) 
-      return Router._shared
-    Router._shared = this;
+    if (Router.#_shared) 
+      return Router.#_shared
+    Router.#_shared = this;
   }
 
   /** @param {new ({}) => View} view

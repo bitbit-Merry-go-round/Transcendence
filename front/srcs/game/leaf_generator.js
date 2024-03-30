@@ -1,15 +1,12 @@
 import * as THREE from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { Animation, AnimationCurves } from "@/game/animation";
 import { Vector3 } from "three";
+import Asset from "@/game/asset";
+import ASSET_PATH from "@/assets/path";
 
 /** LeafGenerator. */
 export default class LeafGenerator {
 
-  /** @type {GLTFLoader} */
-  #loader;
-  /** @type {string} */
-  #path;
   /** @type {THREE.Group} */
   #cacheLeaf = null;
   leafScale = 0.001;
@@ -30,16 +27,8 @@ export default class LeafGenerator {
    * }} */
   #leaves = {};
 
-  /**
-   * constructor.
-   * @param {{
-   *  loader: GLTFLoader,
-   *  path: string
-   * }} params
-   */
-  constructor({loader, path}) {
-    this.#loader = loader;
-    this.#path = path; 
+  /** constructor. */
+  constructor() {
     this.duration = 1.5;
   }
 
@@ -175,11 +164,11 @@ export default class LeafGenerator {
    * load.
    */
   load() {
-    // leaf
-    this.#loader.load(this.#path, 
-      (gltf) => {
+    Asset.shared.load({
+      type: "GLTF",
+      path: ASSET_PATH.leaf,
+      onLoad: (gltf) => {
         const leaf = gltf.scene;
-
         const material = new THREE.MeshLambertMaterial({
           color: "#4CAF50"
         });
@@ -191,7 +180,7 @@ export default class LeafGenerator {
           }
         })
         this.#cacheLeaf = leaf;
-      },
-    );
+      }
+    })
   }
 }

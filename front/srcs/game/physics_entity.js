@@ -1,4 +1,4 @@
-import { distSquared2D, isEqualF, isEqual2D } from "@/game/physicsUtils";
+import { distSquared2D, isEqualF, isEqual2D } from "@/game/physics_utils";
 
 export class PhysicsType {
 
@@ -34,7 +34,7 @@ export default class PhysicsEntity {
   * */
   position; 
   /** @type {{ x: Number, y: Number }} */
-  veolocity;
+  velocity;
   /** @type {{ x: Number, y: Number }} */
   acceleration;
   /** @type {string} */
@@ -66,7 +66,7 @@ export default class PhysicsEntity {
       x: centerX - width * 0.5, 
       y: centerY - height * 0.5
     };
-    this.veolocity = { x: 0, y: 0 };
+    this.velocity = { x: 0, y: 0 };
     this.acceleration = { x: 0, y: 0 };
     if (this.#shape == PhysicsType.SHAPES.CIRCLE &&
     this.#size.width != this.#size.height) {
@@ -171,6 +171,14 @@ export default class PhysicsEntity {
     return this.#size.height; 
   }
 
+  setWidth(width) {
+    this.#size.width = width;
+  }
+
+  setHeight(height) {
+    this.#size.height = height;
+  }
+
   /** @param {"CIRCLE" | "RECTANGLE"} shapeName 
    *  @returns Boolean
    * */
@@ -189,7 +197,7 @@ export default class PhysicsEntity {
   }
 
   get isMoving() {
-    return !isEqual2D(this.veolocity, {x: 0, y: 0});
+    return !isEqual2D(this.velocity, {x: 0, y: 0});
   }
 }  
 

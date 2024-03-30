@@ -17,12 +17,6 @@ export default class ParticleGenerator {
   /** @type {THREE.Group} */
   #particleContainer;
 
-   /** @type {THREE.Texture[]} */
-  #particlesTextures = [];
-
-  /** @type {THREE.TextureLoader} */
-  textureLoader;
-
   /** @type {number} */
   count;
 
@@ -71,7 +65,6 @@ export default class ParticleGenerator {
    * constructor.
    *
    * @params {{
-   *   textureLoader: THREE.TextureLoader,
    *   size: {
    *    x: number,
    *    y: number,
@@ -88,13 +81,11 @@ export default class ParticleGenerator {
    * }}
    */
   constructor({
-    textureLoader,
     count,
     particleSize,
     maxSize = null,
     computeDepth = false,
   }) {
-    this.textureLoader = textureLoader;
     this.count = count;
     this.particleSize = particleSize;
     this.#particleContainer = new THREE.Group();

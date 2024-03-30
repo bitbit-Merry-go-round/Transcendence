@@ -1,9 +1,11 @@
 import View from "@/lib/view";
-import Scene from "@/game/game_scene";
-import { GameData, GAME_TYPE, Player } from "@/data/game_data";
+import Scene from "@/game/scene";
+import GameData,{ GAME_TYPE } from "@/data/game_data";
 import ObservableObject from "@/lib/observable_object";
 import { GameMap, WALL_TYPES } from "@/data/game_map";
 import TournamentPanel from "@/views/components/tournament_panel";
+import * as PU from "@/data/power_up";
+import Asset from "@/game/asset";
 
 export default class GameView extends View {
 
@@ -58,10 +60,21 @@ export default class GameView extends View {
         centerY: 70
       }
     ], WALL_TYPES.safe);
+    this.#gameData.givePowerUpTo({
+      powerUp: PU.BUFFS.peddleSpeed,
+      player: this.#gameData.currentPlayers[0]
+    })
+    this.#gameData.givePowerUpTo({
+      powerUp: PU.BUFFS.peddleSize,
+      player: this.#gameData.currentPlayers[1]
+    })
   }
 
   connectedCallback() {
     super.connectedCallback();
+    Asset.shared.onLoaded(() => {
+      console.log(`Asset load ${Asset.shared.loadedPercentage * 100}%`);
+    })
     this.#createScene()
     .#initButtons()
     .#initEvents();
@@ -69,6 +82,9 @@ export default class GameView extends View {
     if (this.#gameData.gameType == GAME_TYPE.localTournament) {
       this.#initTournament();
     }
+    this.#data.subscribe("powerUps", (powerup) => {
+      console.log("power up changed", powerup);
+    })
   }
 
   #createScene() {
@@ -198,8 +214,7 @@ export default class GameView extends View {
     scoresLabels[0].dataset["player"] = nextPlayers[0].nickname;
     scoresLabels[1].innerText = "0";
     scoresLabels[1].dataset["player"] = nextPlayers[1].nickname;
-
-    this.#scene.changePlayer(this.#gameData.currentPlayers);
+    this.#scene.updateLabels();
   }
 
   async #showTournamentBoard() {
@@ -233,7 +248,6 @@ export default class GameView extends View {
 
   /** @param {{ [key: string]: number }} newScores) */
   #onScoreUpdate(newScores) {
-    console.log("on score update");
     /** @type {GameData} */
     for (let player of this.#gameData.currentPlayers) {
       const score = newScores[player.nickname];
