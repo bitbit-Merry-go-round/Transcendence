@@ -1,26 +1,22 @@
 import View from "@/lib/view";
-import Observable from "@/lib/observable";
-import binding from "@/lib/binding";
-import BindedView from "@/lib/binded_view";
-import ObservableObject from "@/lib/observable_object";
+import httpRequest from "@/utils/httpRequest";
 
-export default class LoginView extends BindedView {
-
-  #user;
+export default class LoginView extends View {
 
   constructor({data}) {
-    const user = data.user;
-    super({
-      data,
-      bindingParams:{}});
-    this.#user = user;
+    super({data});
+  }
+
+  _getJWT(data) {
+    console.log('jwt:', data);
+    window.localStorage.setItem('access_token', data.access);
+    window.localStorage.setItem('refresh_token', data.refresh);
   }
 
   connectedCallback() {
     super.connectedCallback();
-    this.#user.subscribe("profile", () => this.reRender());
-    // document.getElementById('login-button').addEventListener('click', () => {
-    //   alert('login failed');
-    // });
+    const url = `http://localhost:8000/users/42/login`;
+
+    httpRequest('GET', url, null, this._getJWT);
   }
 }
