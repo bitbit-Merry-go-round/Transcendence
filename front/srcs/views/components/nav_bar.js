@@ -37,7 +37,7 @@ export default class NavBar extends View {
       // 왜 this 아래 아무것도 없는지 의아.
       return;
     }
-    userLevelId.textContent = `Lv.${data.level} ${data.uid}`
+    userLevelId.textContent = `Lv.${data.level} ${data.username}`
     userAvatar.src = `data:image;base64,${data.avatar}`;
     userScore.textContent = `${data.wins} 승 ${data.loses} 패`;
     stateMessage.textContent = `${data.message}`;
@@ -51,7 +51,7 @@ export default class NavBar extends View {
       // 왜 this 아래 아무것도 없는지 의아.
       return;
     }
-    userLevelId.textContent = `Lv.${data.level} ${data.uid}`;
+    userLevelId.textContent = `Lv.${data.level} ${data.username}`;
     userImg.src = `data:image;base64,${data.avatar}`;
     this._initModalData(data);
   }
