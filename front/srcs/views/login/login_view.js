@@ -8,9 +8,8 @@ export default class LoginView extends View {
   }
 
   _getJWT(data) {
-    console.log('jwt:', data);
-    window.localStorage.setItem('access_token', data.access);
-    window.localStorage.setItem('refresh_token', data.refresh);
+    window.localStorage.setItem('access_token', data.access_token);
+    window.localStorage.setItem('refresh_token', data.refresh_token);
     document.getElementById('move-to-home').click();
   }
 
