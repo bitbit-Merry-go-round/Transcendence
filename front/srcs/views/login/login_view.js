@@ -6,20 +6,21 @@ export default class LoginView extends View {
   constructor({data}) {
     super({data});
   }
+  
+  _setJWT(data) {
+    console.log('data', data);
+    window.localStorage.setItem('access', data.access);
+    window.localStorage.setItem('refresh', data.refresh);
+    document.getElementById('move-to-home').click();
+  }
 
   async _getJWT(queryString) {
     const authCode = new URLSearchParams(queryString).get('code');
     const uri = `http://127.0.0.1:8000/users/42/callback?code=${authCode}`;
   
     await httpRequest('GET', uri, null, this._setJWT);
-    document.getElementById('move-to-home').click();
   }
 
-  _setJWT(data) {
-    console.log('data', data);
-    window.localStorage.setItem('access', data.access);
-    window.localStorage.setItem('refresh', data.refresh);
-  }
 
   connectedCallback() {
     super.connectedCallback();
