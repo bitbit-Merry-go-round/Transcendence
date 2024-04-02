@@ -17,7 +17,10 @@ export default class LoginView extends View {
   async _getJWT(queryString) {
     const authCode = new URLSearchParams(queryString).get('code');
     const uri = `http://127.0.0.1:8000/users/42/callback?code=${authCode}`;
-  
+
+    const loadingWrap = this.querySelector('.loading-wrap');
+    loadingWrap.style.display = 'flex';
+
     await httpRequest('GET', uri, null, this._setJWT);
   }
 
