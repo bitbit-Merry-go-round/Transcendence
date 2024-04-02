@@ -1,4 +1,5 @@
 import View from "@/lib/view";
+import httpRequest from "@/utils/httpRequest";
 
 export default class FriendView extends View {
 
@@ -12,9 +13,7 @@ export default class FriendView extends View {
     const user = 'jeseo';
     const url = `http://${window.location.hostname}:8000/users/${user}/friends/`;
     
-    await fetch(url)
-    .then(res => res.json())
-    .then(res => {
+    httpRequest('GET', url, null, (res) => {
       if (res.length === 0)
       {
         friendGroup.classList.add('justify-content-center', 'align-items-center');
@@ -35,20 +34,22 @@ export default class FriendView extends View {
             friendElement.querySelector('.status-circle-sm').classList.remove('status-offline');
           }
           friendElement.querySelector('.user-level').textContent = `Lv.${friend.level}`;
-          friendElement.querySelector('.user-name').textContent = `${friend.uid}`;
-          friendElement.setAttribute('data-user', `${friend.uid}`);
+          friendElement.querySelector('.user-name').textContent = `${friend.username}`;
+          friendElement.setAttribute('data-user', `${friend.username}`);
           friendGroup.appendChild(friendElement);
         }
         friendGroup.removeChild(friendGroup.firstChild);
       }
-    });
+    })
   }  
   
   async _deleteBtnHandler(user, event) {
     const me = 'jeseo';
-    fetch(`http://${window.location.hostname}:8000/users/${me}/friends/${user}`, {
-      method: 'DELETE',
-    });
+    const url = `http://${window.location.hostname}:8000/users/${me}/friends/${user}`;
+    
+    await httpRequest('DELETE', url, null, () => {
+      alert(`Your friend <${user}> is deleted!`);
+    })
   }
 
   _friendModalClose(handler) {
@@ -75,33 +76,29 @@ export default class FriendView extends View {
     const user = clickedList.getAttribute('data-user');
     const profileCardModal = document.getElementById('profileCardModal');
     const _deleteBtnHandler = this._deleteBtnHandler.bind(this, user);
+    const url = `http://${window.location.hostname}:8000/users/${user}/profile`;
     
-    await fetch(`http://${window.location.hostname}:8000/users/${user}/profile`, {
-      mode: "cors",
-      credentials: "include"
-    })
-      .then(res => res.json())
-      .then(res => {
-        const userAvatar = profileCardModal.querySelector('.user-avatar');
-        const userLevel = profileCardModal.querySelector('.user-level');
-        const userName = profileCardModal.querySelector('.user-name');
-        const userScore = profileCardModal.querySelector('.score');
-        const stateMessage = profileCardModal.querySelector('.state-message');
-        const addFriendBtn = profileCardModal.querySelector('.btn-add-friend');
-        userLevel.textContent = `Lv.${res.level}`;
-        userName.textContent = `${res.uid}`
-        userAvatar.src = `data:image;base64,${res.avatar}`;
-        userScore.textContent = `${res.wins} 승 ${res.loses} 패`;
-        stateMessage.textContent = `${res.message}`;
-        
-        addFriendBtn.classList.add('btn-del-friend');
-        addFriendBtn.textContent = '친구삭제';
-        addFriendBtn.href = '';
+    await httpRequest('GET', url, null, () => {
+      const userAvatar = profileCardModal.querySelector('.user-avatar');
+      const userLevel = profileCardModal.querySelector('.user-level');
+      const userName = profileCardModal.querySelector('.user-name');
+      const userScore = profileCardModal.querySelector('.score');
+      const stateMessage = profileCardModal.querySelector('.state-message');
+      const addFriendBtn = profileCardModal.querySelector('.btn-add-friend');
+      userLevel.textContent = `Lv.${res.level}`;
+      userName.textContent = `${res.username}`
+      userAvatar.src = `data:image;base64,${res.avatar}`;
+      userScore.textContent = `${res.wins} 승 ${res.loses} 패`;
+      stateMessage.textContent = `${res.message}`;
+      
+      addFriendBtn.classList.add('btn-del-friend');
+      addFriendBtn.textContent = '친구삭제';
+      addFriendBtn.href = '';
 
-        addFriendBtn.addEventListener('click', _deleteBtnHandler);
-        profileCardModal.style.display = 'flex';
-    });
-    this._friendModalClose(_deleteBtnHandler);
+      addFriendBtn.addEventListener('click', _deleteBtnHandler);
+      profileCardModal.style.display = 'flex';
+    })
+    await this._friendModalClose(_deleteBtnHandler);
   }
 
   _friendModalToggler() {
@@ -118,29 +115,27 @@ export default class FriendView extends View {
       const addFriendBtn = profileCardModal.querySelector('.btn-add-friend');
       addFriendBtn.classList.remove('btn-del-friend');
       addFriendBtn.href = '/edit';
-      await fetch(`http://${window.location.hostname}:8000/users/${user}/profile`, {
-        mode: "cors",
-        credentials: "include"
-      })
-      .then(res => res.json())
-      .then(res => {
-        const userAvatar = profileCardModal.querySelector('.user-avatar');
-        const userLevel = profileCardModal.querySelector('.user-level');
-        const userName = profileCardModal.querySelector('.user-name');
-        const userScore = profileCardModal.querySelector('.score');
-        const stateMessage = profileCardModal.querySelector('.state-message');
-        userLevel.textContent = `Lv.${res.level}`;
-        userName.textContent = `${res.uid}`
-        userAvatar.src = `data:image;base64,${res.avatar}`;
-        userScore.textContent = `${res.wins} 승 ${res.loses} 패`;
-        stateMessage.textContent = `${res.message}`;
+
+      const url = `http://${window.location.hostname}:8000/users/${user}/profile`;
+
+      await httpRequest('GET', url, null, (res) => {
+          const userAvatar = profileCardModal.querySelector('.user-avatar');
+          const userLevel = profileCardModal.querySelector('.user-level');
+          const userName = profileCardModal.querySelector('.user-name');
+          const userScore = profileCardModal.querySelector('.score');
+          const stateMessage = profileCardModal.querySelector('.state-message');
+          userLevel.textContent = `Lv.${res.level}`;
+          userName.textContent = `${res.username}`
+          userAvatar.src = `data:image;base64,${res.avatar}`;
+          userScore.textContent = `${res.wins} 승 ${res.loses} 패`;
+          stateMessage.textContent = `${res.message}`;
+        });
       });
-    })
-  }
-
-  connectedCallback() {
-    super.connectedCallback();
-
+    }
+    
+    connectedCallback() {
+      super.connectedCallback();
+      
     this._friendModalToggler();
     this._fetchFriendList();
     this._bindProfileCardWithUser();
