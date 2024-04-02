@@ -1,5 +1,6 @@
 
 import View from "@/lib/view";
+import httpRequest from "@/utils/httpRequest";
 
 export default class EditView extends View {
   constructor({data}) {
@@ -15,15 +16,11 @@ export default class EditView extends View {
     const imgContainer = editProfileImg.querySelector('.test');
     
     const user = 'jeseo';
+    const url = `http://${window.location.hostname}:8000/users/${user}/profile`
 
-    await fetch(`http://${window.location.hostname}:8000/users/${user}/profile`, {
-      mode: "cors",
-      credentials: "include"
+    await httpRequest('GET', url, null, (data) => {
+      profileImg.src = `data:image;base64,${data.avatar}`;
     })
-      .then(res => res.json())
-      .then(res => {
-        profileImg.src = `data:image;base64,${res.avatar}`;
-      });
 
     imgContainer.addEventListener('mouseenter', e => {
       imgWrapper.style.display = 'block';
@@ -55,45 +52,27 @@ export default class EditView extends View {
 
       if (!file)
       {
-        const headers = {
-          "Content-Type": "application/json",
-        };
         const body = JSON.stringify({
           "message" : `${messageInput.value}`
         });
-
-        fetch(url, {
-          method: 'PATCH',
-          headers: headers,
-          body: body
-        })
-        .then(() => {
+        await httpRequest('PATCH', url, body, () => {
           alert(`${user}'s profile is successfully edited!`);
           history.back();
-        });
+        })
         return ;
       }
 
-      reader.addEventListener('load', (e) => {
+      reader.addEventListener('load', async (e) => {
         const fileData = btoa(e.target.result);
 
-        const headers = {
-          "Content-Type": "application/json",
-        };
         const body = JSON.stringify({
           "avatar": `${fileData}`,
           "message" : `${messageInput.value}`
         });
-
-        fetch(url, {
-          method: 'PATCH',
-          headers: headers,
-          body: body
-        })
-        .then(() => {
+        await httpRequest('PATCH', url, body, () => {
           alert(`${user}'s profile is successfully edited!`);
           history.back();
-        });
+        })
       });
       reader.readAsBinaryString(file);
     });
