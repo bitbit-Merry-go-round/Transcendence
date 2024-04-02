@@ -210,29 +210,16 @@ export default class GameView extends View {
       /** @type {HTMLElement} */ //@ts-ignore
       const container = containers[i];
       colorPicker.render().then (() => {
-        colorPicker.style.zIndex = "1";
         colorPicker.addEventListener("mouseenter", () => {
           /** @type{HTMLElement} */
           const picker = colorPicker.querySelector("#picker"); 
-          picker.style.width = pickerSize.width * 1.5 + "px";
-          picker.style.height= pickerSize.height * 1.5 + "px"; 
         });
 
         colorPicker.addEventListener("mouseleave", () => {
           /** @type{HTMLElement} */
           const picker = colorPicker.querySelector("#picker"); 
-          picker.style.width = pickerSize.width + "px";
-          picker.style.height= pickerSize.height + "px"; 
         });
-        
-        if (i == 0) {
-          container.insertBefore(
-            colorPicker,
-            container.querySelector(".player-nickname")
-          );
-        }
-        else 
-          container.appendChild(colorPicker);
+        container.appendChild(colorPicker);
       }
       );
     }

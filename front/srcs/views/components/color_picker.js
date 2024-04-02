@@ -64,7 +64,7 @@ export default class ColorPicker extends View {
     /** @type {HTMLElement} */
     this.#container = this.querySelector("#picker-container");
     this.#container.style.width = this.#size.width + "px";
-    this.#container.style.height= this.#size.height+ "px";
+    this.#container.style.height= this.#size.height + "px";
 
     this.#drawColors()
       .then(() => {
@@ -103,10 +103,8 @@ export default class ColorPicker extends View {
     geometry.setAttribute
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     camera.position.z = 1;
-    const vertex = await fetch("srcs/shader/color_picker_v.glsl");
-    const frag = await fetch("srcs/shader/color_picker_f.glsl");
-    const vertexShader = await vertex.text();
-    const fragmentShader = await frag.text();
+    const vertexShader = ColorPicker.#shader.vertex;
+    const fragmentShader = ColorPicker.#shader.fragment;
     const u_resolution = new THREE.Vector2(
       this.#size.width,
       this.#size.height
@@ -127,7 +125,8 @@ export default class ColorPicker extends View {
       alpha: false
     });
     this.#renderer.setPixelRatio( window.devicePixelRatio );
-    this.#renderer.setSize(this.#size.width, this.#size.height);
+    this.#renderer.setSize(this.#size.width, 
+      this.#size.height);
     this.#picker = this.#renderer.domElement;
     this.#picker.id = "picker";
     this.#container.appendChild(this.#picker);
@@ -135,9 +134,9 @@ export default class ColorPicker extends View {
   }
 
   #addEventListener() {
-    this.#picker.addEventListener("click", 
+    this.#container.addEventListener("click", 
       event => {
-        this.#pickColor(event.offsetX, event.offsetY);
+        this.#pickColor(event.offsetX + 4, event.offsetY + 4);
       })
     //this.#picker.addEventListener("mousemove", 
     //  event => {
@@ -158,7 +157,8 @@ export default class ColorPicker extends View {
       y: normalized.y - 0.5
     };
     let angle = Math.atan2(toCenter.y, toCenter.x);
-    const radius = Math.sqrt(toCenter.x * toCenter.x + toCenter.y * toCenter.y) * 2.0;
+    let radius = Math.sqrt(toCenter.x * toCenter.x + toCenter.y * toCenter.y) * 3.5;
+    radius = Math.max(0.9, radius);
     if (angle < 0) {
       angle += Math.PI * 2.0;
     }
