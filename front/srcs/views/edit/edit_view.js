@@ -53,7 +53,7 @@ export default class EditView extends View {
           "message" : `${messageInput.value}`
         });
         await httpRequest('PATCH', url, body, () => {
-          alert(`${user}'s profile is successfully edited!`);
+          alert(`profile is successfully edited!`);
           history.back();
         })
         return ;
@@ -67,7 +67,7 @@ export default class EditView extends View {
           "message" : `${messageInput.value}`
         });
         await httpRequest('PATCH', url, body, () => {
-          alert(`${user}'s profile is successfully edited!`);
+          alert(`profile is successfully edited!`);
           history.back();
         })
       });
