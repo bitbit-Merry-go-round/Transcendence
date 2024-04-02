@@ -17,7 +17,6 @@ export default function httpRequest(method, url, body, success, fail = fetch_fai
         Authorization: "Bearer " + localStorage.getItem("access"),
         "Content-Type": "application/json"
     };
-    console.log('header: ', headers);
 
     fetch(url, {
         method: method,
