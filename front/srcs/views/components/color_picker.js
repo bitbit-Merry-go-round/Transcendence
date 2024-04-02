@@ -11,34 +11,49 @@ const DEFAULT_SIZE = {
 
 export default class ColorPicker extends View {
 
+  /** @type {{
+   *  vertex: string,
+   *  fragment: string
+   * }} */ //@ts-ignore
+  static #shader = {};
+  /** @type {Promise<boolean>} */
+  static #shaderLoaded;
   /** @type {{ width: number, height: number }} */
   #size;
   /** @type {HTMLDivElement} */
   #container;
   /** @type {HTMLCanvasElement} */
   #picker;
-  /** @type {{
-   *  vertex: string,
-   *  fragment: string
-   * }} */
-  #shader;
-  /** @type {Promise<boolean>} */
-  #shaderLoaded;
   #material;
   #renderer;
   #pickedColor;
+  #onPickColor;
 
-  constructor(param) {
+  /** @param {{ 
+   *   color?: Observable,
+   *   onPickColor: 
+   *   (color: {r: number, g: number, b: number}) => void,
+   *   size?: {
+   *    width: number,
+   *    height:number
+   *   },
+   *   }} params */
+  constructor({color= null, onPickColor, size = DEFAULT_SIZE}) {
     super();
-    this.#size = param?.size ?? DEFAULT_SIZE;
-    //@ts-ignore
-    this.#shader = {};
-    this.#loadShaders();
-    this.#pickedColor = new Observable({
-      r: 255,
-      g: 255,
-      b: 255
-    });
+    if (!ColorPicker.#shaderLoaded)
+      ColorPicker.#loadShaders();
+    if (color) {
+      this.#pickedColor = color;
+    }
+    else {
+      this.#pickedColor = new Observable({
+        r: 255,
+        g: 255,
+        b: 255
+      });
+    }
+    this.#onPickColor = onPickColor;
+    this.#size = size ?? DEFAULT_SIZE;
     this.#pickedColor.subscribe(color => {
       this.#onColorChange(color)
     })
@@ -52,14 +67,19 @@ export default class ColorPicker extends View {
     this.#container.style.height= this.#size.height+ "px";
 
     this.#drawColors()
-      .then(() => this.#addEventListener());
+      .then(() => {
+        this.#addEventListener();
+        const color = this.#pickedColor.value;
+        this.#picker.style.borderColor = 
+          `rgba(${color.r}, ${color.g}, ${color.b}, 1)`;
+      });
   }
 
-  #loadShaders() {
+  static #loadShaders() {
     const vertex = fetch("srcs/shader/color_picker_v.glsl")
       .then(res => res.text())
       .then(text => {
-        this.#shader.vertex = text;
+        ColorPicker.#shader.vertex = text;
         return true;
       });
     const frag = fetch("srcs/shader/color_picker_f.glsl")
@@ -70,11 +90,11 @@ export default class ColorPicker extends View {
       });
     this.#shaderLoaded = Promise
       .all([vertex, frag])
-      .then(res => res.indexOf(false) == -1);
+      .then(res => res.indexOf(false) == -1);  
   }
 
   async #drawColors() {
-    const isLoaded = await this.#shaderLoaded;
+    const isLoaded = await ColorPicker.#shaderLoaded;
     if (!isLoaded) {
       console.error("shader not loaded");
       return ;
@@ -115,14 +135,14 @@ export default class ColorPicker extends View {
   }
 
   #addEventListener() {
-    this.#picker.addEventListener("mousemove", 
-      event => {
-      console.log("mousemove", event.clientX, event.clientY);
-    })
     this.#picker.addEventListener("click", 
       event => {
         this.#pickColor(event.offsetX, event.offsetY);
-    })
+      })
+    //this.#picker.addEventListener("mousemove", 
+    //  event => {
+    //    console.log("mousemove", event.clientX, event.clientY);
+    //  })
   }
 
   /** @param {number} pointX 
@@ -144,10 +164,10 @@ export default class ColorPicker extends View {
     }
     const color = hsb2rgb(
       new THREE.Vector3(
-      angle/(Math.PI * 2.0), 
-      radius,
-      1.0
-    ));
+        angle/(Math.PI * 2.0), 
+        radius,
+        1.0
+      ));
     color.multiplyScalar(255);
     this.#pickedColor.value = {
       r: color.x,
@@ -157,8 +177,10 @@ export default class ColorPicker extends View {
   }
 
   #onColorChange(color) {
-    console.log("color changed", color)
     this.#picker.style.borderColor = 
       `rgba(${color.r}, ${color.g}, ${color.b}, 1)`;
+    if (this.#onPickColor) {
+      this.#onPickColor(color);
+    }
   }
 }

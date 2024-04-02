@@ -177,10 +177,10 @@ export default class Scene {
    *  canvas: HTMLCanvasElement,
    *  gameData: ObservableObject,
    *  gameMap: GameMap,
-   *  stuckHandler: ((isStuck:boolean) => void) | null
+   *  stuckHandler: ((isStuck:boolean) => void) | null,
    * }} params
    */
-  constructor({canvas, gameData, gameMap, stuckHandler = null}) {
+  constructor({canvas, gameData, gameMap, stuckHandler = null }) {
     this.#canvas = canvas;
     //@ts-ignore
     this.#gameData = gameData;
@@ -207,7 +207,12 @@ export default class Scene {
       .#startRender();
   }
 
-  updateLabels() {
+  showNextMatch() {
+    this.#updateLabels();
+    this.#gameScene.updatePeddleColors();
+  }
+
+  #updateLabels() {
     this.#updateLabel({
       player: this.#gameData.currentPlayers[0],
       position: "TopLeft"}
@@ -216,6 +221,7 @@ export default class Scene {
       player: this.#gameData.currentPlayers[1],
       position: "BottomRight"}
     );
+    return this;
   }
 
   startGame() {
@@ -229,6 +235,18 @@ export default class Scene {
     }
     this.#gameScene.addBall();
     this.isBallMoving = true;
+  }
+
+  /** @param {Player} player */
+  getPlayerColor(player) {
+    return this.#gameScene.getPeddleColor(player);
+  }
+
+  /** @param {Player} player 
+   *  @param {{r: number, g: number, b: number}} color
+   */
+  setPlayerColor(player, color) {
+    this.#gameScene.setPeddleColor(player, color); 
   }
 
   endGame() {

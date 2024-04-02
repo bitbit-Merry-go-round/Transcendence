@@ -6,6 +6,8 @@ import { GameMap, WALL_TYPES } from "@/data/game_map";
 import TournamentPanel from "@/views/components/tournament_panel";
 import * as PU from "@/data/power_up";
 import Asset from "@/game/asset";
+import ColorPicker from "@/views/components/color_picker.js";
+import Observable from "@/lib/observable";
 
 export default class GameView extends View {
 
@@ -32,6 +34,8 @@ export default class GameView extends View {
   #tournamentPanel;
   /** @type {boolean} */
   #isReadyToPlay = false;
+  /** @type {Observable[]} */
+  #pickerColors = [];
 
   constructor({data}) {
     super({data: data.gameData});
@@ -75,9 +79,11 @@ export default class GameView extends View {
     Asset.shared.onLoaded(() => {
       console.log(`Asset load ${Asset.shared.loadedPercentage * 100}%`);
     })
-    this.#createScene()
-    .#initButtons()
-    .#initEvents();
+    this
+      .#createScene()
+      .#addColorPicker()
+      .#initButtons()
+      .#initEvents();
     /** @type {GameData} */ //@ts-ignore
     if (this.#gameData.gameType == GAME_TYPE.localTournament) {
       this.#initTournament();
@@ -182,6 +188,57 @@ export default class GameView extends View {
     return this;
   }
 
+  #addColorPicker() {
+    const containers = this.querySelectorAll(".container-for-player");  
+    const pickerSize = {
+      width: 50,
+      height: 50
+    };
+    for (let i = 0; i < containers.length; ++i) {
+      const playerColor = new Observable(this.#scene.getPlayerColor(this.#gameData.currentPlayers[i]));
+        this.#pickerColors.push(playerColor);
+      const colorPicker = new ColorPicker({
+        color: playerColor,
+        onPickColor: (color) => {
+          this.#scene.setPlayerColor(
+            this.#gameData.currentPlayers[i],
+            color
+          );
+        },
+        size: pickerSize
+      }) ;
+      /** @type {HTMLElement} */ //@ts-ignore
+      const container = containers[i];
+      colorPicker.render().then (() => {
+        colorPicker.style.zIndex = "1";
+        colorPicker.addEventListener("mouseenter", () => {
+          /** @type{HTMLElement} */
+          const picker = colorPicker.querySelector("#picker"); 
+          picker.style.width = pickerSize.width * 1.5 + "px";
+          picker.style.height= pickerSize.height * 1.5 + "px"; 
+        });
+
+        colorPicker.addEventListener("mouseleave", () => {
+          /** @type{HTMLElement} */
+          const picker = colorPicker.querySelector("#picker"); 
+          picker.style.width = pickerSize.width + "px";
+          picker.style.height= pickerSize.height + "px"; 
+        });
+        
+        if (i == 0) {
+          container.insertBefore(
+            colorPicker,
+            container.querySelector(".player-nickname")
+          );
+        }
+        else 
+          container.appendChild(colorPicker);
+      }
+      );
+    }
+    return this;
+  }
+
   #initEvents() {
     window.addEventListener("keypress", event => {
       if (event.key == "Enter" && this.#isPaused) {
@@ -192,7 +249,6 @@ export default class GameView extends View {
         this.#startButton.style.visibility = "hidden";
       }
     }) 
-
     return this;
   }
 
@@ -214,7 +270,11 @@ export default class GameView extends View {
     scoresLabels[0].dataset["player"] = nextPlayers[0].nickname;
     scoresLabels[1].innerText = "0";
     scoresLabels[1].dataset["player"] = nextPlayers[1].nickname;
-    this.#scene.updateLabels();
+    this.#scene.showNextMatch();
+    for (let [i, player] of this.#gameData.currentPlayers.entries()) {
+      const color = this.#scene.getPlayerColor(player);
+      this.#pickerColors[i].value = color;
+    }
   }
 
   async #showTournamentBoard() {
@@ -268,7 +328,7 @@ export default class GameView extends View {
             }
             tournament.goToNextMatch(); 
             this.#tournamentButton.disabled = false;
-            this.#tournamentButton.style.opacity = 1;
+            this.#tournamentButton.style.opacity = "1";
             this.#startButton.disabled = true;
             this.#startButton.style.visibility = "hidden";
             this.#isReadyToPlay = false;

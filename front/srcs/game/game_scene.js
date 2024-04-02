@@ -125,10 +125,14 @@ export default class GameScene extends THREE.Group {
   /**
    * Constants
    */
-  peddleColors = {
-    "player1": 0x00ffff,
-    "player2": 0xffff00,
-  };
+  /** @type {{
+   *  [key in string]: {
+   *    r: number,
+   *    g: number, 
+   *    b: number
+   *  }
+   * }}*/
+  #peddleColors = { };
 
   peddleSizeInGame = {
     width: 0.15,
@@ -246,6 +250,58 @@ export default class GameScene extends THREE.Group {
   removeParticle() {
     this.#gameParticle.remove();
   }
+
+  /** @param {Player} player */
+  getPeddleColor(player) {
+    return this.#peddleColors[player.nickname];
+  }
+
+  /** @param {Player} player 
+   *  @param {{r: number, g: number, b: number}} color
+   */
+  setPeddleColor(player, color) {
+    let mesh;
+    this.#peddleColors[player.nickname] = color;
+    if (player.nickname == this.#gameData.currentPlayers[0].nickname)
+      mesh = this.#peddles[0].mesh; 
+    else if (player.nickname == this.#gameData.currentPlayers[1].nickname)
+      mesh = this.#peddles[1].mesh; 
+    else {
+      console.error("player to set color not playing");
+      return ;
+    }
+    /** @type {THREE.MeshStandardMaterial} */ //@ts-ignore
+    const material = mesh.material;
+    material.color.r = color.r / 255;
+    material.color.g = color.g / 255;
+    material.color.b = color.b / 255;
+  }
+
+  updatePeddleColors() {
+    for (let player of this.#gameData.currentPlayers) {
+      let color = this.#peddleColors[player.nickname];
+      if (!color)  {
+        color = {
+          r: Math.random() * 255,
+          g: Math.random() * 255,
+          b: Math.random() * 255
+        };
+        this.#peddleColors[player.nickname] = color;
+      }
+      let mesh  
+      if (player.nickname == 
+        this.#gameData.currentPlayers[0].nickname)
+        mesh = this.#peddles[0].mesh; 
+      else         
+        mesh = this.#peddles[1].mesh; 
+      /** @type {THREE.MeshStandardMaterial} */ //@ts-ignore
+      const material = mesh.material;
+      material.color.r = color.r / 255;
+      material.color.r = color.r / 255;
+      material.color.r = color.r / 255;
+    }
+  }
+
 
   #addWalls() {
     const sizes = this.#gameMap.wallSizes;
@@ -395,7 +451,7 @@ export default class GameScene extends THREE.Group {
 
     return material;
   }
-
+  
   #setBackground() {
 
     const size = {
@@ -456,9 +512,19 @@ export default class GameScene extends THREE.Group {
       this.#depth.peddle
     );
 
-    const materials = Object.entries(this.peddleColors).map(([_, color]) => {
+    this.#gameData.currentPlayers.forEach(
+    player => {
+      this.#peddleColors[player.nickname] = {
+        r: Math.random() * 255,
+        g: Math.random() * 255,
+        b: Math.random() * 255
+      };
+    });
+
+    const materials = Object.entries(this.#peddleColors).map(([_, color]) => {
       return new THREE.MeshStandardMaterial({
-        color: color,
+        color: new THREE.Color(
+          `rgb(${Math.floor(color.r)}, ${Math.floor(color.g)}, ${Math.floor(color.b)})`),
         metalness: 0.3,
         roughness: 0.5,
       })
@@ -718,11 +784,10 @@ export default class GameScene extends THREE.Group {
           .forEach(([id, mesh]) => {
             mesh.material.color.set(newColor);
           })
-
       })
 
-    Object.entries(this.peddleColors).forEach(([player], index) => {
-      color.addColor(this.peddleColors, player) 
+    Object.entries(this.#peddleColors).forEach(([player], index) => {
+      color.addColor(this.#peddleColors, player) 
         .onChange(newColor => {
           this.#peddles[index].mesh.material.color.set(newColor);
         })
