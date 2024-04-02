@@ -57,8 +57,7 @@ export default class NavBar extends View {
   }
 
   async _fetchInfo() {
-    const user = 'jeseo'; 
-    const url = `http://${window.location.hostname}:8000/users/${user}/profile`;
+    const url = `http://${window.location.hostname}:8000/users/me/profile`;
 
     await httpRequest('GET', url, null, this._initNavbarData.bind(this));
   }

@@ -15,8 +15,7 @@ export default class EditView extends View {
     const imgInput = editProfileImg.querySelector('input');
     const imgContainer = editProfileImg.querySelector('.test');
     
-    const user = 'jeseo';
-    const url = `http://${window.location.hostname}:8000/users/${user}/profile`
+    const url = `http://${window.location.hostname}:8000/users/me/profile`
 
     await httpRequest('GET', url, null, (data) => {
       profileImg.src = `data:image;base64,${data.avatar}`;
@@ -43,12 +42,10 @@ export default class EditView extends View {
     const messageInput = this.querySelector('.edit-user-message-input')
     const imgInput = this.querySelector('.edit-user-img-input')
     
-    const user = 'jeseo';
-    
     btnSave.addEventListener('click', async () => {
       const reader = new FileReader();
       const file = imgInput.files[0];
-      const url = `http://${window.location.hostname}:8000/users/${user}/profile/`;
+      const url = `http://${window.location.hostname}:8000/users/me/profile/`;
 
       if (!file)
       {

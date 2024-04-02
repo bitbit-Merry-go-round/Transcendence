@@ -10,8 +10,7 @@ export default class FriendView extends View {
 
   async _fetchFriendList() {
     const friendGroup = this.querySelector('ul');
-    const user = 'jeseo';
-    const url = `http://${window.location.hostname}:8000/users/${user}/friends/`;
+    const url = `http://${window.location.hostname}:8000/users/me/friends/`;
     
     httpRequest('GET', url, null, (res) => {
       if (res.length === 0)
@@ -44,8 +43,7 @@ export default class FriendView extends View {
   }  
   
   async _deleteBtnHandler(user, event) {
-    const me = 'jeseo';
-    const url = `http://${window.location.hostname}:8000/users/${me}/friends/${user}`;
+    const url = `http://${window.location.hostname}:8000/users/me/friends/${user}`;
     
     await httpRequest('DELETE', url, null, () => {
       alert(`Your friend <${user}> is deleted!`);
@@ -109,14 +107,13 @@ export default class FriendView extends View {
   _bindProfileCardWithUser() {
     const profileCardModalBtn = document.getElementById('profileCardModalBtn');
     const profileCardModal = document.getElementById('profileCardModal');
-    const user = 'jeseo';
 
     profileCardModalBtn.addEventListener('click', async () => {
       const addFriendBtn = profileCardModal.querySelector('.btn-add-friend');
       addFriendBtn.classList.remove('btn-del-friend');
       addFriendBtn.href = '/edit';
 
-      const url = `http://${window.location.hostname}:8000/users/${user}/profile`;
+      const url = `http://${window.location.hostname}:8000/users/me/profile`;
 
       await httpRequest('GET', url, null, (res) => {
           const userAvatar = profileCardModal.querySelector('.user-avatar');
