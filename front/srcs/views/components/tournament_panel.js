@@ -1,4 +1,4 @@
-import { GameData } from "@/data/game_data";
+import GameData from "@/data/game_data";
 import View from "@/lib/view";
 
 /** @typedef {Object} Match 

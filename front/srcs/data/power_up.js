@@ -1,6 +1,15 @@
-import { getRandomFromObject } from "@/utils/typeutils";
-import PhysicsEntity from "@/game/physicsEntity";
+import { getRandomFromObject } from "@/utils/type_util";
+import PhysicsEntity from "@/game/physics_entity";
 
+/** @typedef {Object} PowerUpInfo
+ *  @property {"SUMMON" | "BUFF" | "DEBUFF"} type,
+ *  @property {string} key,
+ *  @property {string} desc
+ */
+
+/**@type {{
+ * [key: string]: "SUMMON" | "BUFF" | "DEBUFF" 
+ * }} */
 export const POWER_UP_TYPES = Object.freeze({
   summon: "SUMMON",
   buff: "BUFF",
@@ -12,20 +21,57 @@ export const POWER_TARGETS = Object.freeze({
   peddle: "PEDDLE",
 });
 
+/** @type {{
+ *  [key: string] : PowerUpInfo
+ * }} */
 export const SUMMONS = Object.freeze({
-  block: "SUMMON_BLOCK",
-  ball: "SUMMON_BALL",
-  peddle: "SUMMON_PEDDLE",
+  block: {
+    type: POWER_UP_TYPES.summon,
+    key: "SUMMON_BLOCK",
+    desc: "🧱 Create block",
+  },
+  ball: {
+    type: POWER_UP_TYPES.summon,
+    key: "SUMMON_BALL",
+    desc: "🔴 Summon ball",
+  },
+  peddle: {
+    type: POWER_UP_TYPES.summon,
+    key: "SUMMON_PEDDLE",
+    desc: "🏓 Helper peddle",
+  },
 });
 
+/** @type {{
+ *  [key: string] : PowerUpInfo
+ * }} */
 export const BUFFS = Object.freeze({
-  peddleSize: "PEDDLE_SIZE_UP",
-  peddleSpeed: "PEDDLE_SPEED_UP",
+  peddleSize: {
+    type: POWER_UP_TYPES.buff,
+    key: "PEDDLE_SIZE_UP",
+    desc: "⏫ Size up me",
+  },
+  peddleSpeed: { 
+    type: POWER_UP_TYPES.buff,
+    key: "PEDDLE_SPEED_UP", 
+    desc: "🚀 Speed up me",
+  },
 });
 
+/** @type {{
+ *  [key: string] : PowerUpInfo
+ * }} */
 export const DEBUFFS = Object.freeze({
-  peddleSize: "PEDDLE_SIZE_DOWN",
-  peddleSpeed: "PEDDLE_SPEED_DOWN",
+  peddleSize: { 
+    type: POWER_UP_TYPES.debuff,
+    key: "PEDDLE_SIZE_DOWN", 
+    desc: "⏬ Size down opponent"
+  },
+  peddleSpeed: {
+    type: POWER_UP_TYPES.debuff,
+    key: "PEDDLE_SPEED_DOWN", 
+    desc: "🐢 Slow down opponent"
+  },
 });
 
 export default class PowerUp {
@@ -33,15 +79,15 @@ export default class PowerUp {
   /** @type {"SUMMON" | "BUFF" | "DEBUFF"} type */
   #_type;
 
-  /** @type {string} */
-  #detail;
+  /** @type {PowerUpInfo} */
+  #info;
 
-  #_defaulTargetStatus = null;
+  #defaultTargetStatus = null;
 
   get info() {
     return ({
       type: this.#_type,
-      detail: this.#detail 
+      desc: this.#info.desc 
     });
   }
 
@@ -65,19 +111,19 @@ export default class PowerUp {
   /**
    * constructor.
    * @param {{
-   *  type: "SUMMON" | "BUFF" | "DEBUFF",
+   *  info: PowerUpInfo,
    *  duration: number,
    * }} params
    */
-  constructor({type, duration}) {
+  constructor({info, duration}) {
 
     if (duration <= 0) {
       throw "Invalid duration";
     }
-    this.#_type = type;
+    this.#_type = info.type;
+    this.#info = info;
     this.#_duration = duration;
     this.#_target = null;
-    this.#setDetail();
   }
 
   /** @param {any} target */
@@ -135,71 +181,56 @@ export default class PowerUp {
     this.#revokeCallbacks.push(callback);
   }
 
-  #setDetail() {
-    switch (this.#_type) {
-      case (POWER_UP_TYPES.summon): 
-        this.#detail = getRandomFromObject(SUMMONS);
-        break;
-      case (POWER_UP_TYPES.buff):
-        this.#detail = getRandomFromObject(BUFFS);
-        break;
-      case (POWER_UP_TYPES.debuff):
-        this.#detail = getRandomFromObject(DEBUFFS);
-        break;
-    }
-  }
-
   #useBuff() {
-    if (this.#detail == BUFFS.peddleSize) {
+    if (this.#info == BUFFS.peddleSize) {
       /** @type {PhysicsEntity} */
       const peddle = this.#_target;
-      this.#_defaulTargetStatus = {...peddle.size};
-      peddle.size.width *= 2;
+      this.#defaultTargetStatus = peddle.width;
+      peddle.setWidth(peddle.width * 2);
     }
-    else if (this.#detail == BUFFS.peddleSpeed) {
+    else if (this.#info == BUFFS.peddleSpeed) {
       /** @type {PhysicsEntity} */
       const peddle = this.#_target;
-      this.#_defaulTargetStatus = {...peddle.velocity};
-      if (peddle.veolocity.x > 0) {
-        peddle.veolocity.x += 1;
+      this.#defaultTargetStatus = {...peddle.velocity};
+      if (peddle.velocity.x > 0) {
+        peddle.velocity.x += 1;
       }
       else {
-        peddle.veolocity.x -= 1;
+        peddle.velocity.x -= 1;
       }
     }
   }
 
   #updateBuff() {
-    if (this.#detail == BUFFS.peddleSpeed) {
+    if (this.#info == BUFFS.peddleSpeed) {
       /** @type {PhysicsEntity} */
       const peddle = this.#_target;
       peddle.velocity.x *= 1.1;
     }
-
   }
 
   #useDebuff() {
-    if (this.#detail == DEBUFFS.peddleSize) {
+    if (this.#info == DEBUFFS.peddleSize) {
       /** @type {PhysicsEntity} */
       const peddle = this.#_target;
-      this.#_defaulTargetStatus = {...peddle.size};
-      peddle.size.width *= 0.5;
+      this.#defaultTargetStatus = peddle.width;
+      peddle.setWidth(peddle.width * 0.5);
     }
-    else if (this.#detail == DEBUFFS.peddleSpeed) {
+    else if (this.#info == DEBUFFS.peddleSpeed) {
       /** @type {PhysicsEntity} */
       const peddle = this.#_target;
-      this.#_defaulTargetStatus = {...peddle.velocity};
-      if (peddle.veolocity.x > 0) {
-        peddle.veolocity.x = Math.max(peddle.veolocity.x - 1, 0);
+      this.#defaultTargetStatus = {...peddle.velocity};
+      if (peddle.velocity.x > 0) {
+        peddle.velocity.x = Math.max(peddle.velocity.x - 1, 0);
       }
       else {
-        peddle.veolocity.x = Math.min(paddle.velocity.x + 1, 0);
+        peddle.velocity.x = Math.min(peddle.velocity.x + 1, 0);
       }
     }
   }
 
   #updateDebuff() {
-    if (this.#detail == DEBUFFS.peddleSpeed) {
+    if (this.#info == DEBUFFS.peddleSpeed) {
       /** @type {PhysicsEntity} */
       const peddle = this.#_target;
       if (peddle.velocity.x > 0) {
@@ -209,6 +240,8 @@ export default class PowerUp {
         peddle.velocity.x = Math.max(peddle.velocity.x , -2);
       }
     }
-
   }
 }
+
+export const Types = {};
+

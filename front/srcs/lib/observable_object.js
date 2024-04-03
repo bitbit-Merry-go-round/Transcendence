@@ -10,6 +10,11 @@ export default class ObservableObject {
     const proxy = new Proxy(inner, {
       /** @param {_ObservableObject} obj */
       get: (obj, prop) => {
+        if (prop == "_proxy") {
+          if (!obj._proxy)
+            console.error("proxy is not set");
+          return this;
+        }
         if (typeof obj[prop] === 'function')
           return obj[prop].bind(inner);
         if (typeof prop === "string")
@@ -32,6 +37,7 @@ export default class ObservableObject {
         return ObservableObject;
       }
     })
+    inner.setValue("_proxy", proxy);
     return proxy;
   }
 
@@ -63,6 +69,8 @@ class _ObservableObject {
    * }}
    */
   #listeners;
+
+  _proxy = null;;
 
   /** @type {Number} */
   $listenerId = 0;

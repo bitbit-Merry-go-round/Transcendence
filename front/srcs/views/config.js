@@ -12,7 +12,7 @@ import EditView from "@/views/edit/edit_view";
 import NavBar from "@/views/components/nav_bar";
 import ProfileCard from "@/views/components/profile_card";
 import UserLabel from "@/views/components/user_label";
-import ColorPicker from "@/views/components/color_picker";
+import ColorPicker from "@/views/components/color_picker.js";
 
 /**
  * fileName for view class MUST contain '_' or '-' (Web components requirement)

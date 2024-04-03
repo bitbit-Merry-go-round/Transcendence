@@ -3,28 +3,26 @@ import * as THREE from "three";
 /** @param {THREE.Vector3} hsb
  * */
 export function hsb2rgb(hsb) {
-  //  Function from Iñigo Quiles
-  //  https://www.shadertoy.com/view/MsS3Wc
-  const rgb = new THREE.Vector3(0.0, 4.0, 2.0);
-
-  rgb.addScalar(hsb.x * 6.0); 
-  rgb.x = rgb.x % 6.0;
-  rgb.y = rgb.y % 6.0;
-  rgb.z = rgb.z % 6.0;
-  rgb.subScalar(3.0);
-  rgb.x = abs(rgb.x) - 1.0;
-  rgb.y = abs(rgb.y) - 1.0;
-  rgb.z = abs(rgb.z) - 1.0;
-  rgb.clamp({ x: 0, y: 0, z: 0 },
-    { x: 1.0, y: 1.0, z: 1.0 });
-  rgb.multiplyVectors([
-    {
-      x: 3.0 - 2.0 * rgb.x,
-      y: 3.0 - 2.0 * rgb.y,
-      z: 3.0 - 2.0 * rgb.z,
-    },
-    rgb,
-    rgb
-  ]);
- 
+  let r, g, b, i, f, p, q, t;
+  let h = hsb.x;
+  let s = hsb.y;
+  let v = hsb.z;
+  i = Math.floor(h * 6);
+  f = h * 6 - i;
+  p = v * (1 - s);
+  q = v * (1 - f * s);
+  t = v * (1 - (1 - f) * s);
+  switch (i % 6) {
+    case 0: r = v, g = t, b = p; break;
+    case 1: r = q, g = v, b = p; break;
+    case 2: r = p, g = v, b = t; break;
+    case 3: r = p, g = q, b = v; break;
+    case 4: r = t, g = p, b = v; break;
+    case 5: r = v, g = p, b = q; break;
+  }
+  return new THREE.Vector3(
+    Math.round(r * 255),
+    Math.round(g * 255),
+    Math.round(b * 255)
+  );
 }

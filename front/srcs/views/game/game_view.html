@@ -38,8 +38,8 @@
     .top-bar-button:hover>span {
       display: inline-block;
       position: absolute;
-      top: 4em;
-      right: 5em;
+      top: 1em;
+      right: 20%;
       color: white;
       background-color: #303D29;
       border-radius: 10px;
@@ -52,9 +52,15 @@
       flex-direction: row;
       padding: 0.5em;
     }
-    #score-container>span {
-      margin: 0em 0.5em;
+    .container-for-player {
+      margin: 0.5em 1.5em;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+    }
+    .container-for-player>span {
       font-width: bold;
+      margin-left: 0.5em;
     }
     .score-placeholder{
       background: white;
@@ -63,13 +69,16 @@
       padding: 0.5em;
       padding-left: 1em;
       padding-right: 1em;
+      margin-right: 0.5em;
       text-align: center;
       font-family: "Silkscreen", cursive;
       font-style: normal;
       font-weight: 800;
       font-size: 1em;
     }
-
+    .player-nickname {
+      margin-left: 3em;
+    }
     .canvas-container {
       margin: 0;
       width: 100%;
@@ -122,11 +131,12 @@
     <img src="./srcs/assets/logo.svg" alt="logo" class="d-inline-block align-text-top logo-image">
     <div id="score-container" 
          data-for="player in currentPlayers">
+      <div class="container-for-player">
       <span style="color:white;" class="player-nickname">{{player.nickname}}</span>
       <span class="score-placeholder" 
             data-player={{player.nickname}}>0</span>
+      </div>
     </div>
-    <p></p>
     <button id="start-button" class="top-bar-button">Start
       <span>You can press enter </span></button>
     <button id="reset-button" class="top-bar-button">Reset

@@ -1,7 +1,7 @@
 import View from "@/lib/view";
-import MapImageGenarator from "@/game/mapImageGenerator";
+import MapImageGenarator from "@/game/map_image_generator";
 import { GameMap } from "@/data/game_map";
-import { ASSETS } from "@/game/game_scene";
+import ASSET_PATH from "@/assets/path";
 
 const examples = [1, 2, 3, 4].map(i => ({
   textureName: "brick",
@@ -75,7 +75,7 @@ export default class MapSelector extends View {
     const textureName = "brick";
     await mapGenerator.loadTexture([{
       name: textureName,
-      path: ASSETS.getColorTexture(textureName)  
+      path: ASSET_PATH.getTexture.color(textureName)  
     }]);
     for (let {map, textureName} of examples) {
       const image = mapGenerator.generate({map, textureName});
@@ -92,7 +92,7 @@ export default class MapSelector extends View {
   showMap(map) {
   }
   
-  disConnectedCallback() {
-    super.disConnectedCallback();
+  disconnectedCallback() {
+    super.disconnectedCallback();
   }
 }
