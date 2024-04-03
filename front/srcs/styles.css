@@ -610,4 +610,6 @@ input::-webkit-inner-spin-button {
     height: 70px;
     width: 400px;
     font-size: 40px;
+    border: #6B7964 solid 5px;
+    border-radius: 10px;
 }
