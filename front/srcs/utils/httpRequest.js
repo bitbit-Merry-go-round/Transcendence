@@ -1,7 +1,8 @@
 
-
 function fetch_failed(url) {
     console.error(`fetch to ${url} failed`);
+    // TODO: access 토큰 또는 refresh 토큰 유효하지 않을 경우 처리할 로직.
+    window.location.href = '/login';
 }
 
 /**
