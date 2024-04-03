@@ -684,6 +684,20 @@ export default class GameScene extends THREE.Group {
       console.error("not implemented");
     }
     powerUp.use(target); 
+    switch (info.type)  {
+        case ("BUFF"): {
+          /** @type {HTMLAudioElement} */
+          const sound = Asset.shared.get("AUDIO", ASSET_PATH.buffSound);
+          sound.play();
+        }
+        break;
+      case ("DEBUFF"): {
+        /** @type {HTMLAudioElement} */
+        const sound = Asset.shared.get("AUDIO", ASSET_PATH.deBuffSound);
+        sound.play();
+      }
+        break;
+    }
   }
 
   /** @param{{
