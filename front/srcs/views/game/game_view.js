@@ -9,6 +9,7 @@ import Asset from "@/game/asset";
 import ColorPicker from "@/views/components/color_picker.js";
 import Observable from "@/lib/observable";
 import { getRandomFromArray } from "@/utils/type_util";
+import GameDataEmitter from "@/game/game_data_emitter";
 
 export default class GameView extends View {
 
@@ -37,10 +38,15 @@ export default class GameView extends View {
   #isReadyToPlay = false;
   /** @type {Observable[]} */
   #pickerColors = [];
+  /** @type {GameDataEmitter} */
+  #dataEmitter;
 
   constructor({data}) {
     super({data: data.gameData});
     this.#data = data.gameData;
+    this.#dataEmitter = new GameDataEmitter({
+      receiver: (output) => console.log(output)
+    });
     //@ts-ignore
     this.#gameData = data.gameData;
     this.#data.subscribe("scores", 
@@ -82,6 +88,12 @@ export default class GameView extends View {
     /** @type {GameData} */ //@ts-ignore
     if (this.#gameData.gameType == GAME_TYPE.localTournament) {
       this.#initTournament();
+    }
+    //else if (this.#gameData.gameType == GAME_TYPE.remote) {
+    if (true) {
+      this.#scene.addDataEmitter(this.#dataEmitter)
+      this.#dataEmitter.startCollecting();
+      this.#dataEmitter.startEmit();
     }
   }
 
@@ -288,6 +300,8 @@ export default class GameView extends View {
     ];
     for (let player of this.#gameData.currentPlayers) {
       for (let i = 0; i < this.#gameData.winScore; ++i ) {
+        if (this.#gameData.getPowerUpCountFor(player) >= this.#gameData.winScore)
+          break;
         const powerUp = getRandomFromArray(allPowerUps);
         this.#gameData.givePowerUpTo({
           player,

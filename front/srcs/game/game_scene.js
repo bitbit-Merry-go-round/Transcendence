@@ -11,7 +11,7 @@ import { WALL_TYPES, DIRECTION, GameMap } from "@/data/game_map";
 import GUI from "node_modules/lil-gui/dist/lil-gui.esm.min.js";
 import { resizeTexture } from "@/utils/three_util";
 import Timer from "@/game/timer";
-import PowerUp, { DEBUFFS, POWER_UP_CONFIG } from "@/data/power_up";
+import PowerUp, { POWER_UP_CONFIG } from "@/data/power_up";
 
 const FRAME_TIME_THRESHOLD = 0.01;
 const MAX_PEDDLE_SPEED = 50;
@@ -34,6 +34,8 @@ export default class GameScene extends THREE.Group {
    * powerUp: PowerUp,
    * }[]} */
   #activePowerUps = [];
+  /** @type {(key: string, press: boolean) => void} */
+  #keyLogger = null;
 
   #hitSound = {
     sound: Asset.shared.get("AUDIO", ASSET_PATH.hitSound),
@@ -197,6 +199,9 @@ export default class GameScene extends THREE.Group {
     this
       .#updatePowerUps(frameTime)
       .#updateObjects({frameTime, frameSlice})
+    if (this.#ball.physicsId) {
+      this.#captureBall()
+    }
     this.#gameParticle.animate();
   }
 
@@ -606,6 +611,9 @@ export default class GameScene extends THREE.Group {
       const controlKey = this.#gameData.controlMap[event.key];
       if (!controlKey)
         return ;
+      if (this.#keyLogger) {
+        this.#keyLogger(event.key, true);
+      }
       switch (controlKey.type) {
           case ("MOVE"):
         this.#peddleControls[controlKey.player].pressed = {
@@ -628,6 +636,9 @@ export default class GameScene extends THREE.Group {
       const controlKey = this.#gameData.controlMap[event.key];
       if (!controlKey)
         return ;
+      if (this.#keyLogger) {
+        this.#keyLogger(event.key, false);
+      }
       switch (controlKey.type) {
         case ("MOVE"):
           if (this.#peddleControls[controlKey.player].pressed.key 
@@ -818,8 +829,8 @@ export default class GameScene extends THREE.Group {
           this.#stuckHandler(false);
         }
         this.#safeWallHitCount = 0;
-        this.removeBall()
-          .#updateGameData();
+        this.#lostSide = collidee.data.direction;
+        this.#handleScoreChange();
       }
     )
 
@@ -855,7 +866,6 @@ export default class GameScene extends THREE.Group {
     }
     const winSide = this.#lostSide == DIRECTION.top ? DIRECTION.bottom: DIRECTION.top;
     const winPlayer = players[PLAYER_POSITION[winSide]];
-    
     gameData.setScore({
       player: winPlayer, 
       score: gameData.getScore(winPlayer) + 1
@@ -932,6 +942,58 @@ export default class GameScene extends THREE.Group {
       mesh.position.set(position.x, position.y, mesh.position.z);
     })
     return this;
+  }
+
+  /** @description Prevent ball go out */
+  #captureBall() {
+    const ballPosition = this.#physics.getState(this.#ball.physicsId).position;
+    let resetX = null;
+    if (ballPosition.x <= -45) {
+      resetX = -45 ;
+    }
+    else if (ballPosition.x > 41) {
+      resetX = 41 ;
+    }
+    if (ballPosition.y <= -48) {
+      this.#lostSide = "TOP";
+      this.#handleScoreChange();
+    }
+    else if (ballPosition.y > 48) {
+      this.#lostSide = "BOTTOM";
+      this.#handleScoreChange();
+    }
+  }
+
+  #handleScoreChange() {
+    if (this.#stuckHandler && this.#safeWallHitCount > SAFE_WALL_STUCK_THRESHOLD) {
+      this.#stuckHandler(false);
+    }
+    this.#safeWallHitCount = 0;
+    this.removeBall()
+    this.#updateGameData();
+    return this;
+  }
+
+  /**
+   *  Collect data
+   */
+
+  /** @param {number} playerIndex */
+  getPeddleInfo(playerIndex) {
+    const physicsId = this.#peddles[playerIndex].physicsId;
+    return this.#physics.getState(physicsId);
+  }
+
+  getBallInfo() {
+    if (!this.#ball?.physicsId)
+      return {};
+    const physicsId = this.#ball.physicsId;
+    return this.#physics.getState(physicsId);
+  }
+
+  /** @param {(key: string, press: boolean) => void} logger */
+  setKeyLogger(logger) {
+    this.#keyLogger = logger;
   }
 
   _addHelper() {

@@ -3,6 +3,8 @@
  *  @property value number
  */
 
+import { isEmptyObject } from "@/utils/type_util";
+
 /** @typedef {"INSTANT" | "FLUSH" | "LAZY"} EventReactConfig */
 /** @typedef {"ball" | "player" | "gameState"} CollectTarget */
 /** @typedef {"playerBehvior" | "collision" | "gameDataChange"} EventType */
@@ -20,6 +22,7 @@
  *  @property { Date } collectedDate
  *  @property { "PERIODICAL" | "EVENT" } type
  *  @property { any } data
+ *  @property { string } key
  */
 
 /** @typedef DataOutput
@@ -43,9 +46,9 @@ export default class GameDataEmitter {
   static DefaultConfig = Object.freeze({
     emitInterval: DATA_INTERVAL.sec(1),
     periodicalCollect: {
-      ball: DATA_INTERVAL.ms(100),
-      player: DATA_INTERVAL.ms(100),
-      gameState: DATA_INTERVAL.ms(500),
+      ball: DATA_INTERVAL.ms(300),
+      player: DATA_INTERVAL.ms(300),
+      gameState: DATA_INTERVAL.ms(1000),
     },
     event: {
       playerBehvior: "LAZY",
@@ -100,6 +103,13 @@ export default class GameDataEmitter {
     this.#emit();
   }
 
+  /** @param {CollectTarget} target
+   *  @param {() => Object} collector
+   */
+  setCollector(target, collector) {
+    this.#collectors[target] = collector;
+  }
+
   #emit() {
     const interval = this.#config.emitInterval.value * 
       (this.#config.emitInterval.unit == "sec" ? 1000 : 1);
@@ -119,6 +129,7 @@ export default class GameDataEmitter {
     for (let receiver of this.#receivers) {
       receiver(output); 
     }
+    this.#pendingData = [];
   }
 
   /** @param {EventType} type
@@ -132,6 +143,7 @@ export default class GameDataEmitter {
     const formatted = {
       collectedDate: date,
       type: "EVENT",
+      key: type,
       data: event
     };
     switch (config) {
@@ -169,10 +181,14 @@ export default class GameDataEmitter {
     const date = new Date();
     const collector = this.#collectors[target];
     if (collector) {
+      const data = collector();
+      if (isEmptyObject(data))
+        return;
       this.#pendingData.push({
         collectedDate: date,
         type: "PERIODICAL",
-        data: collector()
+        key: target,
+        data
       });
     }
   }

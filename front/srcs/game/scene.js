@@ -14,6 +14,7 @@ import Asset from "@/game/asset";
 import GameScene from "@/game/game_scene";
 import Timer from "@/game/timer";
 import GUI from "node_modules/lil-gui/dist/lil-gui.esm.min.js";
+import GameDataEmitter from "./game_data_emitter";
 
 /**
  * Game Scene.
@@ -210,6 +211,44 @@ export default class Scene {
       position: "BottomRight"}
     );
     return this;
+  }
+
+  /** @param {GameDataEmitter} emitter */
+  addDataEmitter(emitter) {
+    emitter.setCollector("player", () => this.#getPlayersInfo()
+    );
+    emitter.setCollector("ball", () => this.#gameScene.getBallInfo());
+    emitter.setCollector("gameState", () => this.#getGameState());
+    this.#gameScene.setKeyLogger((key, pressed) => {
+      emitter.submitEvent("playerBehvior", {
+        key: key,
+        pressed
+      });
+    });
+  }
+
+  #getPlayersInfo() {
+    const info = {};
+    info.player1 = {
+      peddle: this.#gameScene.getPeddleInfo(0),
+    }
+    if (this.#gameData.currentPlayers.length == 2) {
+      info.player2 = {
+        peddle: this.#gameScene.getPeddleInfo(0),
+      }
+    }
+    return info;
+  }
+
+  #getGameState() {
+    const state = {};
+    state.scores = {};
+    state.powerUps = {};
+    this.#gameData.currentPlayers.forEach(player => {
+      state.scores[player.nickname] = this.#gameData.getScore(player);
+      state.powerUps[player.nickname] = this.#gameData.getPowerUps(player);
+    });
+    return state;
   }
 
   startGame() {
