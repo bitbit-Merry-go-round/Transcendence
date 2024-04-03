@@ -342,6 +342,19 @@ ul {
 }
 
 /* 토너먼트 */
+.vibration {
+    background-color: rgb(255, 240, 240);
+    animation: vibration .1s infinite;
+}
+@keyframes vibration {
+    from {
+        transform: rotate(0.5deg);
+    }
+    to {
+        transform: rotate(-0.5deg);
+    }
+}
+
 .tournament-box {
     background-color: #B1C59A;
     border-radius: 2em;
