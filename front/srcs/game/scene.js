@@ -107,10 +107,6 @@ export default class Scene {
   #timer;
 
   isBallMoving = false;
-  peddleColors = {
-    "player1": 0x00ffff,
-    "player2": 0xffff00,
-  };
 
   peddleSizeInGame = {
     width: 0.15,
@@ -138,15 +134,6 @@ export default class Scene {
    *  }[]} 
    */
   #animations = [];
-
-  /** @type {{
-   *  [key in string]: {
-   *    colorTexture: THREE.Texture,
-   *    normalTexture: THREE.Texture,
-   *    aoRoughnessMetallnessTexture: THREE.Texture
-   *  }
-   * }} */
-  #loadedTextures = { };
 
   /** @type {THREE.Object3D} */
   #trophy;
@@ -204,12 +191,13 @@ export default class Scene {
     this.#gameScene.init();
     this
       .#loadLeaf()
-      .#startRender();
+      .#startRender()
+      .#listenPowerUp();
   }
 
   showNextMatch() {
     this.#updateLabels();
-    this.#gameScene.updatePeddleColors();
+    this.#gameScene.showNextMatch();
   }
 
   #updateLabels() {
@@ -1069,6 +1057,16 @@ export default class Scene {
         }
       })
     this.#animations = this.#animations.filter(e => !e.animation.isFinished);
+  }
+
+  #listenPowerUp() {
+    /** @type {ObservableObject} */ //@ts-ignore
+    const gameData = this.#gameData;
+    gameData.subscribe("powerUps", (powerup) => {
+      this.#updateLabels();
+    })
+
+    return this;
   }
 
   _addHelper() {

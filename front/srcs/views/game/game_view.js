@@ -8,6 +8,7 @@ import * as PU from "@/data/power_up";
 import Asset from "@/game/asset";
 import ColorPicker from "@/views/components/color_picker.js";
 import Observable from "@/lib/observable";
+import { getRandomFromArray } from "@/utils/type_util";
 
 export default class GameView extends View {
 
@@ -64,14 +65,6 @@ export default class GameView extends View {
         centerY: 70
       }
     ], WALL_TYPES.safe);
-    this.#gameData.givePowerUpTo({
-      powerUp: PU.BUFFS.peddleSpeed,
-      player: this.#gameData.currentPlayers[0]
-    })
-    this.#gameData.givePowerUpTo({
-      powerUp: PU.BUFFS.peddleSize,
-      player: this.#gameData.currentPlayers[1]
-    })
   }
 
   connectedCallback() {
@@ -80,6 +73,7 @@ export default class GameView extends View {
       console.log(`Asset load ${Asset.shared.loadedPercentage * 100}%`);
     })
     this
+      .#givePowerUps()
       .#createScene()
       .#addColorPicker()
       .#initButtons()
@@ -88,9 +82,6 @@ export default class GameView extends View {
     if (this.#gameData.gameType == GAME_TYPE.localTournament) {
       this.#initTournament();
     }
-    this.#data.subscribe("powerUps", (powerup) => {
-      console.log("power up changed", powerup);
-    })
   }
 
   #createScene() {
@@ -157,16 +148,16 @@ export default class GameView extends View {
       this.#tournamentButton.style.visibility = "hidden";
       return ;
     }
-    this.#tournamentButton.style.opacity = 0.3;
+    this.#tournamentButton.style.opacity = "0.3";
     this.#tournamentButton.addEventListener("click",
       () => {
         this.#startButton.style.visibility = "hidden";
-        this.#tournamentButton.style.opacity = 0.3; 
+        this.#tournamentButton.style.opacity = "0.3"; 
         this.#isReadyToPlay = false;
 
         this.#scene.showTournamentBoard(() => {
           this.#returnGameButton.style.visibility = "visible";
-          this.#returnGameButton.style.opacity = 1;
+          this.#returnGameButton.style.opacity = "1";
           this.#returnGameButton.disabled = false;
           this.#tournamentButton.disabled = true;
         });
@@ -262,6 +253,24 @@ export default class GameView extends View {
       const color = this.#scene.getPlayerColor(player);
       this.#pickerColors[i].value = color;
     }
+    return this;
+  }
+
+  #givePowerUps() {
+    const allPowerUps = [
+      PU.BUFFS.peddleSize,
+      PU.BUFFS.peddleSpeed,
+      PU.DEBUFFS.peddleSize,
+      PU.DEBUFFS.peddleSpeed
+    ];
+    for (let player of this.#gameData.currentPlayers) {
+      const powerUp = getRandomFromArray(allPowerUps);
+      this.#gameData.givePowerUpTo({
+        player,
+        powerUp
+      });
+    }
+    return this;
   }
 
   async #showTournamentBoard() {
@@ -333,6 +342,8 @@ export default class GameView extends View {
     this.#returnGameButton.style.visibility = "hidden";
     this.#startButton.style.visibility = "visible";
     this.#startButton.disabled = false;
-    this.#showNextMatch();
+    this
+      .#showNextMatch()
+      .#givePowerUps();
   }
 }

@@ -10,7 +10,8 @@ import ParticleGenerator from "@/game/particle_generator";
 import { WALL_TYPES, DIRECTION, GameMap } from "@/data/game_map";
 import GUI from "node_modules/lil-gui/dist/lil-gui.esm.min.js";
 import { resizeTexture } from "@/utils/three_util";
-import Timer from "./timer";
+import Timer from "@/game/timer";
+import PowerUp, { DEBUFFS, POWER_UP_CONFIG } from "@/data/power_up";
 
 const FRAME_TIME_THRESHOLD = 0.01;
 const MAX_PEDDLE_SPEED = 50;
@@ -27,6 +28,12 @@ export default class GameScene extends THREE.Group {
   #gameData;
   #gameMap;
   #timer;
+  /** @type {{
+   * physicsId: number,
+   * mesh: THREE.Mesh,
+   * powerUp: PowerUp,
+   * }[]} */
+  #activePowerUps = [];
 
   #hitSound = {
     sound: Asset.shared.get("AUDIO", ASSET_PATH.hitSound),
@@ -187,7 +194,9 @@ export default class GameScene extends THREE.Group {
   /** @param {number} frameTime */
   update(frameTime) {
     let frameSlice = Math.min(frameTime, FRAME_TIME_THRESHOLD);
-    this.#updateObjects({frameTime, frameSlice})
+    this
+      .#updatePowerUps(frameTime)
+      .#updateObjects({frameTime, frameSlice})
     this.#gameParticle.animate();
   }
 
@@ -236,6 +245,18 @@ export default class GameScene extends THREE.Group {
     return this;
   }
 
+  showNextMatch() {
+    this.#removePowerUps();
+    this.#updatePeddleColors();
+  }
+
+  #removePowerUps() {
+    for (let {powerUp} of this.#activePowerUps) {
+      powerUp.revoke();
+    }
+    this.#activePowerUps = [];
+  }
+
   removeBall() {
     const mesh = this.#ball.mesh;
     const id = this.#ball.physicsId
@@ -277,7 +298,7 @@ export default class GameScene extends THREE.Group {
     material.color.b = color.b / 255;
   }
 
-  updatePeddleColors() {
+  #updatePeddleColors() {
     for (let player of this.#gameData.currentPlayers) {
       let color = this.#peddleColors[player.nickname];
       if (!color)  {
@@ -585,27 +606,129 @@ export default class GameScene extends THREE.Group {
       const controlKey = this.#gameData.controlMap[event.key];
       if (!controlKey)
         return ;
-      this.#peddleControls[controlKey.player].pressed = {
-        ...controlKey,
-        key: event.key
-      };
+      switch (controlKey.type) {
+          case ("MOVE"):
+        this.#peddleControls[controlKey.player].pressed = {
+          x: controlKey.x,
+          y: controlKey.y,
+          player: controlKey.player,
+          key: event.key
+        };
+          break;
+        case ("ACTION"):
+          if (controlKey.action == "USE_POWER_UP") {
+            const player = this.#gameData.currentPlayers[controlKey.player];
+            this.#usePowerUp(player, controlKey.player);
+          }
+          break;
+      }
     });
 
     window.addEventListener("keyup", event => {
       const controlKey = this.#gameData.controlMap[event.key];
       if (!controlKey)
         return ;
-      if (this.#peddleControls[controlKey.player].pressed.key == 
-        event.key) {
-        this.#peddleControls[controlKey.player].pressed = {
-          x: 0, 
-          y: 0,
-          key: null,
-          player: controlKey.player
-        };
-      };
+      switch (controlKey.type) {
+        case ("MOVE"):
+          if (this.#peddleControls[controlKey.player].pressed.key 
+            == event.key) {
+            this.#peddleControls[controlKey.player].pressed = {
+              x: 0, 
+              y: 0,
+              key: null,
+              player: controlKey.player
+            };
+            break;
+          }
+      }
     })
     return this;
+  }
+
+  /** @param {Player} player 
+   *  @param {number} playerIndex
+   **/
+  #usePowerUp(player, playerIndex) {
+    if (this.#gameData.getPowerUpCountFor(player) == 0) {
+      console.log(player.nickname, " has no power up");
+      return ;
+    }
+    const info = this.#gameData.usePowerUp(player);
+    
+    const powerUp = new PowerUp({
+      duration: POWER_UP_CONFIG.defaultDuration,
+      info
+    });
+    let target = null;
+    switch (info.type) {
+      case ("SUMMON"):
+        break;
+      case ("BUFF"):
+        if (info.target == "PEDDLE") {
+          const peddle = this.#peddles[playerIndex];
+          target = this.#physics.getState(peddle.physicsId);
+          this.#usePowerUpToPeddle(peddle, powerUp);
+        }
+        break;
+      case ("DEBUFF"):
+        if (info.target == "PEDDLE") {
+          const opponentIndex = playerIndex == 0 ? 1: 0;
+          const peddle = this.#peddles[opponentIndex];
+          target = this.#physics.getState(peddle.physicsId);
+          this.#usePowerUpToPeddle(peddle, powerUp);
+        }
+        break; 
+    }
+
+    if (!target) {
+      console.error("not implemented");
+    }
+    powerUp.use(target); 
+  }
+
+  /** @param{{
+   *    mesh: THREE.Mesh,
+   *    physicsId: number
+   *    }} peddle,
+   *  @param { PowerUp } powerUp
+   */
+  #usePowerUpToPeddle(peddle, powerUp) {
+      switch (powerUp.info.key) {
+          case ("PEDDLE_SPEED_UP"):
+        powerUp.setTotalDuration(POWER_UP_CONFIG.peddleSpeedUpDuration);
+          break;
+        case ("PEDDLE_SPEED_DOWN"):
+          powerUp.setTotalDuration(POWER_UP_CONFIG.peddleSpeedDownDuration);
+          break;
+          default: break;
+      }
+    powerUp.setUseCallback((state) => {
+      if (powerUp.info.key.includes("PEDDLE_SIZE")) {
+        this.#physics.setState(peddle.physicsId, () => ({width: state.width}));
+        const scale = state.width / powerUp.defaultTargetStatus.width; 
+        peddle.mesh.scale.setX(scale);
+      }
+    });
+    powerUp.setRevokeCallback((state) => {
+      if (powerUp.info.key.includes("PEDDLE_SIZE")) {
+        this.#physics.setState(peddle.physicsId, () => ({width: state.width}));
+        const scale = state.width / powerUp.defaultTargetStatus.width; 
+        peddle.mesh.scale.setX(scale);
+      }
+      else if (powerUp.info.key.includes("PEDDLE_SPEED")) {
+        this.#physics.setState(
+          peddle.physicsId, () =>
+          ({
+            velocity: state.velocity 
+          })
+        )
+      }
+    })
+    this.#activePowerUps.push({
+      mesh: peddle.mesh,
+      physicsId: peddle.physicsId,
+      powerUp 
+    });
   }
 
   #addEvents() {
@@ -726,6 +849,17 @@ export default class GameScene extends THREE.Group {
     return this;
   }
 
+  #updatePowerUps(frameTime) {
+    for (let {powerUp} of this.#activePowerUps) {
+      powerUp.update(frameTime);
+      if (powerUp.isEnd) {
+        powerUp.revoke();
+      }
+    }
+    this.#activePowerUps = this.#activePowerUps.filter(({powerUp}) => !powerUp.isEnd);
+    return this;
+  }
+
   /**
    * @param {{
    *  frameTime: number,
@@ -735,17 +869,36 @@ export default class GameScene extends THREE.Group {
   #updateObjects({frameTime, frameSlice}) {
     this.#peddles.forEach((peddle, index) => {
       const control = this.#peddleControls[index];
+      const activePowerUp = this.#activePowerUps.find(({physicsId}) => physicsId == peddle.physicsId);
       this.#physics.setState(peddle.physicsId,
         (state) => {
           let vel = { ...state.velocity };
-          if (control.pressed.x == 0) {
-            vel.x = Math.abs(vel.x) < EPSILON ? 0: vel.x * PEDDLE_DECEL_RATIO;
+          const speedPowerUp = activePowerUp && activePowerUp.powerUp.targetStatus.velocity;
+          let accel = PEDDLE_ACCEL;
+          let decel = PEDDLE_DECEL_RATIO;
+          if (speedPowerUp) {
+            const status = activePowerUp.powerUp.targetStatus;
+            vel.x = status.velocity.x;
+            if( activePowerUp.powerUp.info.key == "PEDDLE_SPEED_UP")
+            {
+              accel *= 2;
+              decel *= 2;
+            }
+            else {
+              accel *= 0.5;
+              decel *= 0.5;
+            }
           }
-          else if (control.pressed.x > 0) {
-            vel.x = Math.min(MAX_PEDDLE_SPEED, vel.x + PEDDLE_ACCEL);
+
+          if (control.pressed.x == 0) {
+            vel.x = Math.abs(vel.x) < EPSILON ? 0: vel.x * decel;
           }
           else {
-            vel.x = Math.max(-MAX_PEDDLE_SPEED, vel.x - PEDDLE_ACCEL);
+            vel.x += accel * (control.pressed.x > 0 ? 1: -1);
+            if (!speedPowerUp) {
+              vel.x = THREE.MathUtils.clamp(
+                vel.x,  -MAX_PEDDLE_SPEED, MAX_PEDDLE_SPEED);
+            }
           }
           return { velocity: {
             ...vel
@@ -764,6 +917,7 @@ export default class GameScene extends THREE.Group {
       const position = states[physicsId].position;
       mesh.position.set(position.x, position.y, mesh.position.z);
     })
+    return this;
   }
 
   _addHelper() {

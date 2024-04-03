@@ -53,64 +53,85 @@ export default class GameData {
   /** @type {{
    *    [key: string] : {
    *      player: number,
-   *      x: number,
-   *      y: number,
+   *      type: string,
+   *      x?: number,
+   *      y?: number,
+   *      action?: string
    *    }
    *  }}
    */
   controlMap = {
     "ArrowLeft": {
       player: 0,
+      type: "MOVE",
       x: -1,
       y: 0,
     },
     "ArrowRight": {
       player: 0, 
+      type: "MOVE",
       x: 1,
       y: 0,
     },
+    "ArrowUp": {
+      player: 0,
+      type: "ACTION",
+      action: "USE_POWER_UP"
+    },
     ",": {
       player: 1, 
-    x: -1,
-    y: 0,
-  },
-  ".": {
-    player: 1, 
-    x: 1,
-    y: 0,
-  },
-};
+      type: "MOVE",
+      x: -1,
+      y: 0,
+    },
+    ".": {
+      player: 1, 
+      type: "MOVE",
+      x: 1,
+      y: 0,
+    },
+    "l": {
+      player: 1, 
+      type: "ACTION",
+      action: "USE_POWER_UP"
+    }
+  };
 
-get controls() {
-  const player1Controls = {
-    left: Object.keys(this.controlMap).find(key => 
-      this.controlMap[key].player == 0 &&
-      this.controlMap[key].x == -1
-    ),
-    right: Object.keys(this.controlMap).filter(key => 
-      this.controlMap[key].player == 0 &&
-      this.controlMap[key].x == 1
-    )
+  get controls() {
+    const player1Controls = {
+      left: Object.keys(this.controlMap).find(key => 
+        this.controlMap[key].player == 0 &&
+        this.controlMap[key].x == -1
+      ),
+      right: Object.keys(this.controlMap).filter(key => 
+        this.controlMap[key].player == 0 &&
+        this.controlMap[key].x == 1
+      )
+    }
+    const player2Controls = {
+      left: Object.keys(this.controlMap).find(key => 
+        this.controlMap[key].player == 1 &&
+        this.controlMap[key].x == -1
+      ),
+      right: Object.keys(this.controlMap).filter(key => 
+        this.controlMap[key].player == 1 && 
+        this.controlMap[key].x == 1
+      )
+    }
+    return [player1Controls, player2Controls];
   }
-  const player2Controls = {
-    left: Object.keys(this.controlMap).find(key => 
-      this.controlMap[key].player == 1 &&
-      this.controlMap[key].x == -1
-    ),
-    right: Object.keys(this.controlMap).filter(key => 
-      this.controlMap[key].player == 1 && 
-      this.controlMap[key].x == 1
-    )
-  }
-  return [player1Controls, player2Controls];
-}
   /** @type {Player[]} */
   #players = [ ];
 
   /** @type {{
    *  [key: string]: PU.PowerUpInfo[] 
    * }} */
-  powerUps;
+  #powerUps;
+
+  #_isPowerAvailable;
+  get isPowerAvailable() {
+    return this.#_isPowerAvailable;
+  }
 
   /** @type {TM.Match} */
   #_currentMatch;
@@ -141,17 +162,19 @@ get controls() {
    *  positions?: {
    *    [key: string]: number
    *  } 
-   *  type: string
+   *  type: string,
+   *  isPowerAvailable?: boolean
    * }} args
    */
-  constructor({players, positions = {}, type}) {
+  constructor({players, positions = {}, type, isPowerAvailable = true}) {
     this.#players = players;
     if (players.length < 2) {
       throw "Not enough players";
     }
-    this.powerUps = {};
+    this.#powerUps = {};
+    this.#_isPowerAvailable = true;
     players.forEach(
-    p => this.powerUps[p.nickname] = []);
+      p => this.#powerUps[p.nickname] = []);
     this.#_gameType = type; 
     if (isEmptyObject(positions)) 
       this.setPositions(players);
@@ -234,15 +257,15 @@ get controls() {
       return this.#_tournament.currentPlayers;
     }
   }
-  
+
   /** @param {Player} player */ 
   getPowerUps(player) {
-    return [...this.powerUps[player.nickname]];
+    return [...this.#powerUps[player.nickname]];
   }
-  
+
   /** @param {Player} player */ 
   getPowerUpCountFor(player) {
-    return this.powerUps[player.nickname].length;
+    return this.#powerUps[player.nickname].length;
   }
 
   /** @param {{
@@ -250,16 +273,24 @@ get controls() {
    *  powerUp: PU.PowerUpInfo
    * }} params*/ 
   givePowerUpTo({player, powerUp}) {
-    const allPowerUps = {...this.powerUps};
+    const allPowerUps = {...this.#powerUps};
     allPowerUps[player.nickname].push(powerUp);
-    this.powerUps = allPowerUps;
+    this.#powerUps = allPowerUps;
     //@ts-ignore
     if (this._proxy) { //@ts-ignore
       this._proxy.valueChanged("powerUps");
     }
   }
 
-  usePowerUp() {
+  /** @param {Player} player */ 
+  usePowerUp(player) {
+    const playerPowerUps = this.#powerUps[player.nickname];
+    const powerUp = playerPowerUps.shift();
+    //@ts-ignore
+    if (this._proxy) { //@ts-ignore
+      this._proxy.valueChanged("powerUps");
+    }
+    return powerUp;
   }
 
   #setCurrentMatch() {

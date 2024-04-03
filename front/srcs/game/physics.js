@@ -72,6 +72,8 @@ export default class Physics {
    *    accel?: { x: number, y: number },
    *    velocity?: { x: number, y: number },
    *    position?: { x: number, y: number }
+   *    width?: number,
+   *    height?: number
    *  }} setCallback
    */
   setState(objId, setCallback) {
@@ -83,7 +85,7 @@ export default class Physics {
     const state = {
       accel: obj.acceleration,
       velocity: obj.velocity,
-      position: obj.position
+      position: obj.position,
     };
     const res = setCallback({...state});
     if (res.accel)
@@ -92,6 +94,10 @@ export default class Physics {
       obj.velocity = res.velocity;
     if (res.position)
       obj.position = res.position;
+    if (res.width) 
+      obj.setWidth(res.width);
+    if (res.height)
+      obj.setHeight(res.height);
   }
 
   /**  @param {number} elapsedTime */
@@ -128,7 +134,9 @@ export default class Physics {
       throw "Fail to get object for " + objId;
     return ({
       position: {...obj.position},
-      velocity: {...obj.velocity}
+      velocity: {...obj.velocity},
+      width: obj.width,
+      height: obj.height
     });
   }
 
