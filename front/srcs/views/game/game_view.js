@@ -287,11 +287,13 @@ export default class GameView extends View {
       PU.DEBUFFS.peddleSpeed
     ];
     for (let player of this.#gameData.currentPlayers) {
-      const powerUp = getRandomFromArray(allPowerUps);
-      this.#gameData.givePowerUpTo({
-        player,
-        powerUp
-      });
+      for (let i = 0; i < this.#gameData.winScore; ++i ) {
+        const powerUp = getRandomFromArray(allPowerUps);
+        this.#gameData.givePowerUpTo({
+          player,
+          powerUp
+        });
+      }
     }
     return this;
   }

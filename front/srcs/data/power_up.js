@@ -1,7 +1,7 @@
 
 export const POWER_UP_CONFIG = {
   defaultDuration: 3,
-  peddleSpeedUpDuration: 0.8,
+  peddleSpeedUpDuration: 0.5,
   peddleSpeedDownDuration: 1.5,
   velocityIncrease: 40,
   velocityDecrease: 40

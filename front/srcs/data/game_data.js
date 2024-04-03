@@ -45,7 +45,7 @@ export default class GameData {
     return this.#_gameType;
   }
 
-  #_winScore = 1;
+  #_winScore = 3;
   get winScore() {
     return this.#_winScore;
   }
@@ -78,19 +78,19 @@ export default class GameData {
       type: "ACTION",
       action: "USE_POWER_UP"
     },
-    ",": {
+    "z": {
       player: 1, 
       type: "MOVE",
       x: -1,
       y: 0,
     },
-    ".": {
+    "x": {
       player: 1, 
       type: "MOVE",
       x: 1,
       y: 0,
     },
-    "l": {
+    "s": {
       player: 1, 
       type: "ACTION",
       action: "USE_POWER_UP"
