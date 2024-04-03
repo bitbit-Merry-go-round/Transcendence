@@ -56,7 +56,7 @@ export default function httpRequest(method, url, body, success, fail = fetch_fai
     .then((json) => {
         success(json);
     })
-    .catch(() => {
-        fail(url);
+    .catch((res) => {
+        fail(url, res);
     })
 }

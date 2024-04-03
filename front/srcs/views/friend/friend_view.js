@@ -130,11 +130,50 @@ export default class FriendView extends View {
       });
     }
     
+    async _searchFriend() {
+      const friendNameInput = this.querySelector('#search-friend');
+      function is_alnum(str) { return /^[a-zA-Z0-9]+$/.test(str); }
+      
+      friendNameInput.addEventListener('keydown', async (e) => {
+        const username = e.target.value;
+        if (e.key == 'Enter')
+        {
+          if (!is_alnum(username))
+          {
+            alert(`${username} is not valid.`)
+            return ;
+          }
+          const url = `http://${window.location.hostname}:8000/users?search=${username}`;
+
+          await httpRequest('GET', url, null, (res) => {
+            console.log(res);
+            const profileCardModal = document.getElementById('profileCardModal');
+
+            const userAvatar = profileCardModal.querySelector('.user-avatar');
+            const userLevel = profileCardModal.querySelector('.user-level');
+            const userName = profileCardModal.querySelector('.user-name');
+            const userScore = profileCardModal.querySelector('.score');
+            const stateMessage = profileCardModal.querySelector('.state-message');
+
+            userLevel.textContent = `Lv.${res.level}`;
+            userName.textContent = `${res.username}`
+            userAvatar.src = `data:image;base64,${res.avatar}`;
+            userScore.textContent = `${res.wins} 승 ${res.loses} 패`;
+            stateMessage.textContent = `${res.message}`;
+          }, (url, res) => {
+            console.log(res);
+            alert(`${username} is not exist.`)
+          })
+        }
+      });
+    }
+
     connectedCallback() {
       super.connectedCallback();
       
-    this._friendModalToggler();
-    this._fetchFriendList();
-    this._bindProfileCardWithUser();
-  }
+      this._friendModalToggler();
+      this._fetchFriendList();
+      this._bindProfileCardWithUser();
+      this._searchFriend();
+    }
 }
