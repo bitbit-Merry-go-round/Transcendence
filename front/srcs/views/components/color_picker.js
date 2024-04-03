@@ -102,7 +102,7 @@ export default class ColorPicker extends View {
     const geometry = new THREE.PlaneGeometry(2, 2, 1, 1);
     geometry.setAttribute
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-    camera.position.z = 1;
+    camera.position.z = 0.2;
     const vertexShader = ColorPicker.#shader.vertex;
     const fragmentShader = ColorPicker.#shader.fragment;
     const u_resolution = new THREE.Vector2(
@@ -125,8 +125,7 @@ export default class ColorPicker extends View {
       alpha: false
     });
     this.#renderer.setPixelRatio( window.devicePixelRatio );
-    this.#renderer.setSize(this.#size.width, 
-      this.#size.height);
+    this.#renderer.setSize(this.#size.width, this.#size.height);
     this.#picker = this.#renderer.domElement;
     this.#picker.id = "picker";
     this.#container.appendChild(this.#picker);
@@ -136,7 +135,7 @@ export default class ColorPicker extends View {
   #addEventListener() {
     this.#container.addEventListener("click", 
       event => {
-        this.#pickColor(event.offsetX + 4, event.offsetY + 4);
+        this.#pickColor(event.offsetX + 2, event.offsetY + 2);
       })
     //this.#picker.addEventListener("mousemove", 
     //  event => {

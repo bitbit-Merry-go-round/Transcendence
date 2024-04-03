@@ -203,12 +203,15 @@ export default class GameView extends View {
       colorPicker.render().then (() => {
         colorPicker.addEventListener("mouseenter", () => {
           /** @type{HTMLElement} */
-          const picker = colorPicker.querySelector("#picker"); 
+          const picker = colorPicker.querySelector("#picker-container"); 
+          picker.style.transform = "scale(2,2)";
+          picker.style.transformOrigin = `${pickerSize.width * -0.3}px ${pickerSize.height * -0.3}px`;
         });
 
         colorPicker.addEventListener("mouseleave", () => {
           /** @type{HTMLElement} */
-          const picker = colorPicker.querySelector("#picker"); 
+          const picker = colorPicker.querySelector("#picker-container"); 
+          picker.style.transform = "scale(1, 1)";
         });
         container.appendChild(colorPicker);
       }
