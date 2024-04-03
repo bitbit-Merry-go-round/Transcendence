@@ -9,6 +9,7 @@ import TournamentView from "@/views/tournament/tournament_view";
 import TournamentPanel from "@/views/components/tournament_panel";
 import MatchView from "@/views/match/match_view";
 import EditView from "@/views/edit/edit_view";
+import AuthView from "@/views/auth/auth_view";
 import NavBar from "@/views/components/nav_bar";
 import ProfileCard from "@/views/components/profile_card";
 import UserLabel from "@/views/components/user_label";
@@ -100,7 +101,13 @@ export default {
         "className": "EditView",
         "fileName": "edit_view.html"
       }
-    ]
+    ],
+    "auth": [
+      {
+        "className": "AuthView",
+        "fileName": "auth_view.html"
+      }
+    ],
   }
 }
 
@@ -114,6 +121,7 @@ export const viewConstructors = {
   TournamentView,
   EditView,
   MatchView,
+  AuthView,
   NavBar,
   ProfileCard,
   MapSelector,
@@ -132,4 +140,5 @@ export const routes = [
   { path: "/match", view: MatchView },
   { path: "/tournament", view: TournamentView },
   { path: "/edit", view: EditView },
+  { path: "/auth", view: AuthView },
 ];
