@@ -3,9 +3,10 @@
         <h1 class="page-name">2차 인증</h1>
     </div>
     <div class="d-flex justify-content-center align-items-center mb-auto">
-        <div class="d-flex flex-column justify-content-center">
-            <input type="number" placeholder="enter otp code" class="input-otp" name="2fa" id="2fa">
-            <button type="submit" class="btn btn-primary m-4">Submit</button>
+        <div class="d-flex flex-column justify-content-center align-items-center">
+            <div id="otp-error" style="display: none; position: inherits; top: auto; color: rgb(250 109 109);">인증 번호가 일치하지 않습니다.</div>
+            <input type="number" placeholder="enter otp code" class="input-otp" name="tfa" id="tfa">
+            <button type="submit" class="btn btn-primary m-4" id="btn-tfa">Submit</button>
         </div>
     </div>
 </auth-view>
