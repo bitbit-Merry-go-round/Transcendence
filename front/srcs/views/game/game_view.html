@@ -15,6 +15,7 @@
     }
     .top-bar-button{
       display: inline-block;
+      position: relative;
       text-align: center;
       visibility: hidden;
       margin: 0.5em;
@@ -38,8 +39,9 @@
     .top-bar-button:hover>span {
       display: inline-block;
       position: absolute;
-      top: 1em;
-      right: 20%;
+      min-width: 150px;
+      top: 3em;
+      left: 0.3em;
       color: white;
       background-color: #303D29;
       border-radius: 10px;
@@ -126,6 +128,32 @@
       height: 90%;
     }
 
+    #help-icon {
+      font-size: 30px;
+      padding-left: 8px;
+      padding-right: 8px;
+      background-color: white;
+      border-radius: 50%;
+    }
+
+    #help-text {
+      display: none;
+      position: absolute;
+      background-color: rgb(0, 0, 0,0.7);
+      border-radius: 2em;
+      font-size: 0.8em;
+      color: white;
+    }
+
+    #help-icon:hover>#help-text {
+      display: inline;
+      padding: 1em 2em;
+      top: 7%;
+      right: 5%;
+      max-width: 40%;
+      z-index: 1;
+    }
+
   </style>
   <div class="game-topbar">
     <img src="./srcs/assets/logo.svg" alt="logo" class="d-inline-block align-text-top logo-image">
@@ -141,6 +169,7 @@
       <span>You can press enter </span></button>
     <button id="reset-button" class="top-bar-button">Reset
       <span>Reset ball position</span></button>
+    <div id="help-icon">❓<p id="help-text"/></div>
   </div>
   <div class="canvas-container">
     <canvas id="game-canvas"></canvas>

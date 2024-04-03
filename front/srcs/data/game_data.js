@@ -103,9 +103,13 @@ export default class GameData {
         this.controlMap[key].player == 0 &&
         this.controlMap[key].x == -1
       ),
-      right: Object.keys(this.controlMap).filter(key => 
+      right: Object.keys(this.controlMap).find(key => 
         this.controlMap[key].player == 0 &&
         this.controlMap[key].x == 1
+      ),
+      powerUp: Object.keys(this.controlMap).find(key => 
+        this.controlMap[key].player == 0 &&
+        this.controlMap[key].action == "USE_POWER_UP"
       )
     }
     const player2Controls = {
@@ -113,9 +117,14 @@ export default class GameData {
         this.controlMap[key].player == 1 &&
         this.controlMap[key].x == -1
       ),
-      right: Object.keys(this.controlMap).filter(key => 
+      right: Object.keys(this.controlMap).find(key => 
         this.controlMap[key].player == 1 && 
         this.controlMap[key].x == 1
+      ),
+
+      powerUp: Object.keys(this.controlMap).find(key => 
+        this.controlMap[key].player == 1 &&
+        this.controlMap[key].action == "USE_POWER_UP"
       )
     }
     return [player1Controls, player2Controls];

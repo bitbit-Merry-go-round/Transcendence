@@ -76,6 +76,7 @@ export default class GameView extends View {
       .#givePowerUps()
       .#createScene()
       .#addColorPicker()
+      .#initHelperText()
       .#initButtons()
       .#initEvents();
     /** @type {GameData} */ //@ts-ignore
@@ -99,6 +100,25 @@ export default class GameView extends View {
       }
     });
     return this;    
+  }
+
+  #initHelperText() {
+    /** @type {HTMLParagraphElement} */
+    const container = this.querySelector("#help-text");
+    let text = "";
+    const controls = this.#gameData.controls;
+    controls.forEach((control, index) => {
+      text += index == 0 ? "Player 1" : "Player 2";
+      text += '\n';
+      text += `left: ${control.left} \n`
+      text += `right: ${control.right} \n`
+      if (this.#gameData.isPowerAvailable) {
+        text += `power up: ${control.powerUp}\n`
+      }
+      text += '\n';
+    })
+    container.innerText = text;
+    return this;
   }
 
   #initButtons() {

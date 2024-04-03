@@ -151,6 +151,7 @@ export default class ColorPicker extends View {
       x: pointX / this.#size.width,
       y: (this.#size.height - pointY) / this.#size.height
     };
+    normalized.y -= 0.1;
     const toCenter = {
       x: normalized.x - 0.5,
       y: normalized.y - 0.5
