@@ -38,7 +38,15 @@ export default class AuthView extends View {
     }, 700);
   }
 
-  async _submitBtnControl() {
+  _setJWT(data) {
+    console.log('2fa 인증 성공');
+    console.log('data', data);
+    window.localStorage.setItem('access', data.access);
+    window.localStorage.setItem('refresh', data.refresh);
+    document.getElementById('move-to-home').click();
+  }
+
+  _submitBtnControl() {
     const otpInput = this.querySelector('#tfa');
     const submitBtn = this.querySelector('#btn-tfa');
     const url = `http://localhost:8000/2fa`
@@ -52,10 +60,7 @@ export default class AuthView extends View {
         this._failToAuthHandler();
         return ;
       }
-      await httpRequest('POST', url, value, (res) => {
-        console.log('2fa 인증 성공');
-        //move to home logic 옮겨야 함.
-      }, this._failToAuthHandler.bind(this));
+      await httpRequest('POST', url, value, this._setJWT.bind(this), this._failToAuthHandler.bind(this));
     })
   }
 
