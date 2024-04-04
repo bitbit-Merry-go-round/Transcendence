@@ -1,6 +1,6 @@
 
-function fetch_failed(url) {
-    console.error(`fetch to ${url} failed`);
+function fetch_failed(url, res) {
+    console.error(`fetch to ${url} failed`, `result: ${res}`);
     // TODO: access 토큰 또는 refresh 토큰 유효하지 않을 경우 처리할 로직.
     window.location.href = '/login';
 }
@@ -56,7 +56,7 @@ export default function httpRequest(method, url, body, success, fail = fetch_fai
     .then((json) => {
         success(json);
     })
-    .catch(() => {
-        fail(url);
+    .catch((res) => {
+        fail(url, res);
     })
 }
