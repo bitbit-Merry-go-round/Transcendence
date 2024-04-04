@@ -13,8 +13,9 @@ export default class LoginView extends View {
     document.getElementById('move-to-auth').click();
   }
 
-  _failToSendCode() {
-    window.location.href = '/login';
+  _failToSendCode(url, res) {
+    console.log(url, res);
+    // window.location.href = '/login';
   }
 
   async _request2FA(queryString) {
