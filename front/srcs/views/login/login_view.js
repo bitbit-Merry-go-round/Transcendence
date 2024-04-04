@@ -8,6 +8,8 @@ export default class LoginView extends View {
   }
 
   _sendCode() {
+    console.log('data', data);
+    window.localStorage.setItem('username', data.username);
     document.getElementById('move-to-auth').click();
   }
 

@@ -17,7 +17,7 @@ export default class AuthView extends View {
       }
     });
     otpInput.addEventListener('keypress', (e) => {
-      if (e.target.value.length >= 5)
+      if (e.target.value.length >= 6)
       {
           e.preventDefault();
       }
@@ -49,20 +49,25 @@ export default class AuthView extends View {
   _submitBtnControl() {
     const otpInput = this.querySelector('#tfa');
     const submitBtn = this.querySelector('#btn-tfa');
-    const url = `http://localhost:8000/2fa`
-    const {value} = otpInput;
+    const url = `http://localhost:8000/users/2fa/validate`
+    const body = {
+      otp: otpInput.value,
+      username: window.localStorage.getItem('username')
+    };
 
     submitBtn.addEventListener('click', async (e) => {
       console.log(e.target.value);
       submitBtn.setAttribute('disabled', '');
-      if (otpInput.value.length < 5)
+      if (otpInput.value.length < 6)
       {
         this._failToAuthHandler();
         return ;
       }
-      await httpRequest('POST', url, value, this._setJWT.bind(this), this._failToAuthHandler.bind(this));
+      await httpRequest('POST', url, body, this._setJWT.bind(this), this._failToAuthHandler.bind(this));
+      window.localStorage.removeItem('username');
     })
   }
+
 
   connectedCallback() {
     super.connectedCallback();
