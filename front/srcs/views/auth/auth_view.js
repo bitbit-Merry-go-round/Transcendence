@@ -49,7 +49,7 @@ export default class AuthView extends View {
   _submitBtnControl() {
     const otpInput = this.querySelector('#tfa');
     const submitBtn = this.querySelector('#btn-tfa');
-    const url = `http://localhost:8000/users/validate-otp`
+    const url = `http://localhost:8000/users/validate-otp/`
     const body = {
       otp: otpInput.value,
       username: window.localStorage.getItem('username')

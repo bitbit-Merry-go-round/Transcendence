@@ -7,7 +7,7 @@ export default class LoginView extends View {
     super({data});
   }
 
-  _sendCode() {
+  _sendCode(data) {
     console.log('data', data);
     window.localStorage.setItem('username', data.username);
     document.getElementById('move-to-auth').click();
