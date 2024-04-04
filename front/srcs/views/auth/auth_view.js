@@ -1,5 +1,6 @@
 import View from "@/lib/view";
 import httpRequest from "@/utils/httpRequest";
+import { ConstantColorFactor } from "three";
 
 export default class AuthView extends View {
 
@@ -13,18 +14,18 @@ export default class AuthView extends View {
     otpInput.addEventListener('keydown', (e) => {
       if (['e', 'E', '+', '-', 'ArrowUp', 'ArrowDown'].includes(e.key))
       {
-          e.preventDefault();
+        e.preventDefault();
       }
     });
     otpInput.addEventListener('keypress', (e) => {
       if (e.target.value.length >= 6)
       {
-          e.preventDefault();
+        e.preventDefault();
       }
     });
   }
 
-  _failToAuthHandler() {
+  _failToAuthHandler(url, res) {
     const otpInput = this.querySelector('#tfa');
     const submitBtn = this.querySelector('#btn-tfa');
     const errorPassage = this.querySelector('#otp-error');
@@ -39,10 +40,11 @@ export default class AuthView extends View {
   }
 
   _setJWT(data) {
-    console.log('2fa 인증 성공');
-    console.log('data', data);
+    console.log('jwt token', data);
+    window.localStorage.removeItem('username');
     window.localStorage.setItem('access', data.access);
     window.localStorage.setItem('refresh', data.refresh);
+
     document.getElementById('move-to-home').click();
   }
 
@@ -50,13 +52,12 @@ export default class AuthView extends View {
     const otpInput = this.querySelector('#tfa');
     const submitBtn = this.querySelector('#btn-tfa');
     const url = `http://localhost:8000/users/validate-otp/`
-    const body = {
-      otp: otpInput.value,
-      username: window.localStorage.getItem('username')
-    };
-
+    
     submitBtn.addEventListener('click', async (e) => {
-      console.log(e.target.value);
+      const body = JSON.stringify({
+        otp: otpInput.value,
+        username: window.localStorage.getItem('username')
+      });
       submitBtn.setAttribute('disabled', '');
       if (otpInput.value.length < 6)
       {
@@ -64,7 +65,6 @@ export default class AuthView extends View {
         return ;
       }
       await httpRequest('POST', url, body, this._setJWT.bind(this), this._failToAuthHandler.bind(this));
-      window.localStorage.removeItem('username');
     })
   }
 
