@@ -286,7 +286,8 @@ export default class Scene {
     /** @type {HTMLAudioElement} */
     const sound = Asset.shared.get("AUDIO", ASSET_PATH.winSound);
     sound.volume = 0.8;
-    this.#bgm.current.volume -= 0.1;
+    this.#bgm.current.volume = Math.max(this.#bgm.current.volume - 0.1,
+      0.2);
     sound.play();
     sound.addEventListener("ended", () => {
       this.#bgm.current.volume = this.#bgm.volume;
@@ -309,7 +310,7 @@ export default class Scene {
           const sound = Asset.shared.get("AUDIO",
             ASSET_PATH.tournamentWin);
           sound.volume = 0.8;
-          this.#bgm.current.volume -= 0.1;
+            this.#bgm.current.volume = Math.max(this.#bgm.current.volume - 0.1, 0.1);
           sound.play();
           sound.addEventListener("ended", () => {
             this.#bgm.current.volume = this.#bgm.volume;
