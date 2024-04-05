@@ -22,7 +22,7 @@ import GameDataEmitter from "@/game/game_data_emitter";
 export default class Scene {
 
   // debug
-  #isDebug = true;
+  #isDebug = false;
 
   #scene;
   #scene_objs = {};
@@ -699,6 +699,7 @@ export default class Scene {
           curve: AnimationCurves.easein,
           onEnded: () => {
             this.#sceneParticle.isPlaying = false;
+            this.#sceneParticle.remove();
             this.goToGamePosition(); 
           }
         });
