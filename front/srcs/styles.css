@@ -342,6 +342,19 @@ ul {
 }
 
 /* 토너먼트 */
+.vibration {
+    background-color: rgb(255, 240, 240);
+    animation: vibration .1s infinite;
+}
+@keyframes vibration {
+    from {
+        transform: rotate(0.5deg);
+    }
+    to {
+        transform: rotate(-0.5deg);
+    }
+}
+
 .tournament-box {
     background-color: #B1C59A;
     border-radius: 2em;
@@ -582,4 +595,21 @@ input[type="file"] {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
+}
+
+/* auth view */
+input::-webkit-inner-spin-button {
+    appearance: none;
+    -moz-appearance: none;
+    -webkit-appearance: none;
+}
+
+.input-otp {
+    align-items: center;
+    text-align: center;
+    height: 70px;
+    width: 400px;
+    font-size: 40px;
+    border: #6B7964 solid 5px;
+    border-radius: 10px;
 }

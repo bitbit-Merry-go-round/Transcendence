@@ -6,22 +6,26 @@ export default class LoginView extends View {
   constructor({data}) {
     super({data});
   }
-  
-  _setJWT(data) {
+
+  async _sendCode(data) {
     console.log('data', data);
-    window.localStorage.setItem('access', data.access);
-    window.localStorage.setItem('refresh', data.refresh);
-    document.getElementById('move-to-home').click();
+    await window.localStorage.setItem('username', data.username);
+    await document.getElementById('move-to-auth').click();
   }
 
-  async _getJWT(queryString) {
+  _failToSendCode(url, res) {
+    console.log(url, res);
+    // window.location.href = '/login';
+  }
+
+  async _request2FA(queryString) {
     const authCode = new URLSearchParams(queryString).get('code');
     const uri = `http://127.0.0.1:8000/users/42/callback?code=${authCode}`;
 
     const loadingWrap = this.querySelector('.loading-wrap');
     loadingWrap.style.display = 'flex';
 
-    await httpRequest('GET', uri, null, this._setJWT);
+    await httpRequest('GET', uri, null, this._sendCode, this._failToSendCode);
   }
 
 
@@ -31,7 +35,7 @@ export default class LoginView extends View {
     const queryString = window.location.search;
     if (queryString)
     {
-      this._getJWT(queryString);
+      this._request2FA(queryString);
     }
     else
     {

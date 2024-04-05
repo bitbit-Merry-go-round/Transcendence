@@ -1,8 +1,8 @@
 
-function fetch_failed(url) {
-    console.error(`fetch to ${url} failed`);
+function fetch_failed(url, res) {
+    console.error(`fetch to ${url} failed`, `result: ${res}`);
     // TODO: access 토큰 또는 refresh 토큰 유효하지 않을 경우 처리할 로직.
-    window.location.href = '/login';
+    // window.location.href = '/login';
 }
 
 /**
@@ -14,49 +14,61 @@ function fetch_failed(url) {
  * @param {function} fail
 */
 export default function httpRequest(method, url, body, success, fail = fetch_failed) {
+    const access = localStorage.getItem("access");
     const headers = {
-        Authorization: "Bearer " + localStorage.getItem("access"),
         "Content-Type": "application/json"
     };
-
+    if (access && access != 'undefined')
+    {
+        headers.Authorization = `Bearer ${access}`;
+    }
     fetch(url, {
         method: method,
         headers: headers,
         body: body
     })
     .then((res) => {
-        if (res.status === 200 || res.status == 201){
+        if (200 <= res.status && res.status < 300) {
             return res.json();
         }
-        const refreshToken = localStorage.getItem("refresh")
+        const refresh = localStorage.getItem("refresh")
         // access 토큰이 만료되어 권한이 없고, 리프레시 토큰이 있다면 그 리프레시 토큰을 이용해서 새로운 access token 을 요청
-        if (res.status === 401 && refreshToken) {
-            const GET_TOKEN_URI = `http://${window.location.hostname}:8000/refresh`;
-
+        if (res.status === 401 && refresh) {
+            const GET_TOKEN_URI = `http://${window.location.hostname}:8000/users/token/refresh/`;
+            const body = JSON.stringify({
+                'refresh': `${refresh}`
+            });
+            console.log('body: ', body);
             fetch(GET_TOKEN_URI, {
                 method: "POST",
                 headers: headers,
-                body: JSON.stringify({
-                    refreshToken
-                })
+                body: body
             })
             .then((res) => res.json())
             .then((result) => {
-                localStorage.setItem("access", result.accessToken)
-                httpRequest(method, url, body, success, fail)
+                console.log('jwt token: ', result)
+                localStorage.setItem("access", result.access)
+                localStorage.setItem("refresh", result.refresh)
+            })
+            .then(async () => {
+                await httpRequest(method, url, body, success, () => {
+                    throw new Error(`${res.status}`);
+                })
             })
             .catch(() => {
-                fail(url);
+                localStorage.removeItem('refresh');
+                throw new Error('failed to refresh token.');
             })
         }
         else {
-            throw new Error('failed to refresh token.');
+            console.log('res', res)
+            throw new Error(`${res.status}`);
         }
     })
     .then((json) => {
         success(json);
     })
-    .catch(() => {
-        fail(url);
+    .catch((res) => {
+        fail(url, res);
     })
 }
