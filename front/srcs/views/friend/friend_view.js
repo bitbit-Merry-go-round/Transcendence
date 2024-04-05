@@ -13,32 +13,58 @@ export default class FriendView extends View {
   }
 
   
-  async _deleteBtnHandler(user, event) {
-    const url = `http://${window.location.hostname}:8000/users/me/friends/${user}`;
-    
-    await httpRequest('DELETE', url, null, () => {
-      alert(`Your friend <${user}> is deleted!`);
-    })
+  async _modalBtnHandler(e) {
+    let url;
+    const profileCardModal = e.target.closest('#profileCardModal')
+
+    const type = profileCardModal.getAttribute('data-user-type');
+    const user = profileCardModal.getAttribute('data-user');
+    console.log(`${type}, ${user}`);
+    if (type === TYPE_DELETE)
+    {
+      url = `http://${window.location.hostname}:8000/users/me/friends/${user}/`;
+      console.log(`delete ${user}`);
+      await httpRequest('DELETE', url, null, () => {
+        alert(`Your friend <${user}> is deleted!`);
+      });
+    }
+    else if (type === TYPE_ADD)
+    {
+      console.log(`add ${user}`);
+      url = `http://${window.location.hostname}:8000/users/me/friends/`;
+      const body = JSON.stringify({"to_user": `${user}`})
+      await httpRequest('POST', url, body, () => {
+        alert(`<${user}> is your friend now!`);
+      }, (res) => (console.log('failed res: ', res)));
+    }
+  }
+
+  _modalBtnEventSet() {
+    const addFriendBtn = this.querySelector('.btn-add-friend');
+
+    addFriendBtn.addEventListener('click', this._modalBtnHandler);
   }
 
   _modalBtnSetter(type)
   {
     const addFriendBtn = this.querySelector('.btn-add-friend');
 
+    console.log('this: ', this, 'btn: ', addFriendBtn);
+    addFriendBtn.classList.remove('btn-del-friend');
     if (type === TYPE_EDIT)
     {
-      addFriendBtn.classList.remove('btn-del-friend');
       addFriendBtn.href = '/edit';
     }
     else if (type === TYPE_ADD)
     {
-
+      addFriendBtn.textContent = '친구추가';
+      addFriendBtn.href = '/friend';
     }
     else
     {
       addFriendBtn.classList.add('btn-del-friend');
       addFriendBtn.textContent = '친구삭제';
-      addFriendBtn.href = '/';
+      addFriendBtn.href = '/friend';
     }
   }
 
@@ -69,6 +95,7 @@ export default class FriendView extends View {
           friendElement.querySelector('.user-level').textContent = `Lv.${friend.level}`;
           friendElement.querySelector('.user-name').textContent = `${friend.username}`;
           friendElement.setAttribute('data-user', `${friend.username}`);
+          friendElement.setAttribute('data-user-type', `${TYPE_DELETE}`);
           friendGroup.appendChild(friendElement);
         }
         friendGroup.removeChild(friendGroup.firstChild);
@@ -76,24 +103,7 @@ export default class FriendView extends View {
     })
   }
 
-  _friendModalClose(handler) {
-    const profileCardModal = this.querySelector('#profileCardModal');
-    const modalCloseBtn = this.querySelector('.btn-close');
-    const friendDeleteBtn = profileCardModal.querySelector('.btn-to-edit');
-    modalCloseBtn.addEventListener('click', () => {
-      profileCardModal.style.display = 'none';
-      friendDeleteBtn.removeEventListener('click', handler);
-    });
-    profileCardModal.addEventListener('click', e => {
-      if (e.target === e.currentTarget)
-      {
-        profileCardModal.style.display = 'none';
-        friendDeleteBtn.removeEventListener('click', handler);
-      }
-    });
-  }
-
-  _fillModalWithFriendData(data) {
+  _fillModalData(data) {
     const profileCardModal = document.getElementById('profileCardModal');
     const userAvatar = profileCardModal.querySelector('.user-avatar');
     const userLevel = profileCardModal.querySelector('.user-level');
@@ -101,6 +111,14 @@ export default class FriendView extends View {
     const userScore = profileCardModal.querySelector('.score');
     const stateMessage = profileCardModal.querySelector('.state-message');
     
+    profileCardModal.setAttribute('data-user', `${data.username}`);
+    if (data.is_me === true)
+      profileCardModal.setAttribute('data-user-type', `${TYPE_EDIT}`);
+    else if (data.is_friend === true)
+      profileCardModal.setAttribute('data-user-type', `${TYPE_DELETE}`);
+    else
+      profileCardModal.setAttribute('data-user-type', `${TYPE_ADD}`);
+
     userLevel.textContent = `Lv.${data.level}`;
     userName.textContent = `${data.username}`
     userAvatar.src = `data:image;base64,${data.avatar}`;
@@ -114,18 +132,14 @@ export default class FriendView extends View {
     const clickedList = e.target.closest('li');
     const user = clickedList.getAttribute('data-user');
     const profileCardModal = document.getElementById('profileCardModal');
-    const deleteBtnHandler = this._deleteBtnHandler.bind(this, user);
     const url = `http://${window.location.hostname}:8000/users/${user}/profile`;
-    const addFriendBtn = this.querySelector('.btn-add-friend');
     
     await httpRequest('GET', url, null, (res) => {
-      this._fillModalWithFriendData(res);
+      this._fillModalData(res);
       this._modalBtnSetter(TYPE_DELETE);
 
-      addFriendBtn.addEventListener('click', deleteBtnHandler);
       profileCardModal.style.display = 'flex';
     })
-    await this._friendModalClose(deleteBtnHandler);
   }
 
   _friendModalToggler() {
@@ -140,13 +154,15 @@ export default class FriendView extends View {
       const url = `http://${window.location.hostname}:8000/users/me/profile`;
 
       await httpRequest('GET', url, null, (res) => {
-          this._fillModalWithFriendData(res);
-        });
+        this._fillModalData(res);
+        this._modalBtnSetter(TYPE_EDIT);
       });
-    }
+    });
+  }
     
   async _searchFriend() {
     const friendNameInput = this.querySelector('#search-friend');
+    const profileCardModal = document.getElementById('profileCardModal');
     function is_alnum(str) { return /^[a-zA-Z0-9]+$/.test(str); }
     
     friendNameInput.addEventListener('keydown', async (e) => {
@@ -162,22 +178,22 @@ export default class FriendView extends View {
 
       await httpRequest('GET', url, null, (res) => {
         console.log(res);
-        this._fillModalWithFriendData(res);
+        this._fillModalData(res);
         if (res.is_me === true)
         {
           this._modalBtnSetter(TYPE_EDIT);
         }
-        else if (res.is_Friend === true)
+        else if (res.is_friend === true)
         {
           this._modalBtnSetter(TYPE_DELETE);
         }
         else
         {
-          this._modalBtnSetter(TYPE_DELETE)
-          // TODO: event handler 추가해주어야 함.
+          this._modalBtnSetter(TYPE_ADD)
         }
-      }, (res) => {
-        console.log(res);
+        profileCardModal.style.display = 'flex';
+      }, (url, res) => {
+        console.log(url, res);
         alert(`${username} is not exist.`)
       })
     });
@@ -186,6 +202,7 @@ export default class FriendView extends View {
     connectedCallback() {
       super.connectedCallback();
       
+      this._modalBtnEventSet();
       this._friendModalToggler();
       this._fetchFriendList();
       this._fillModalWithUserData();
