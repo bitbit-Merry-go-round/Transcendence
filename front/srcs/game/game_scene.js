@@ -233,6 +233,7 @@ export default class GameScene extends THREE.Group {
       x: velX,
       y: velY,
     };
+    ballPhysics.isBall = true;
 
     const physicsId = this.#physics.addObject(ballPhysics)[0];
 
@@ -345,6 +346,7 @@ export default class GameScene extends THREE.Group {
       for (let i = 0; i < walls.length; ++i) {
         const wall = walls[i];
         entities[i].data = {
+          isWall: true,
           wallType: wall.type,
         };
         if (wall.type == WALL_TYPES.trap) {
@@ -849,6 +851,7 @@ export default class GameScene extends THREE.Group {
       desc: "safeWallEventId",
       id: safeWallEventId
     });
+
     return this;
   }
 
@@ -993,6 +996,44 @@ export default class GameScene extends THREE.Group {
   /** @param {(key: string, press: boolean) => void} logger */
   setKeyLogger(logger) {
     this.#keyLogger = logger;
+  }
+
+  setCollisionLogger(logger) {
+
+    const id = this.#physics.addCollisionCallback(
+      (_collider, _collidee, _time) =>  true,
+      (collider, collidee, time) => {
+        collider["info"] = this.#getLoggingInfo(collider);
+        collidee["info"] = this.#getLoggingInfo(collidee);
+        logger({ collider, collidee, time, })
+      },
+    );
+    this.#eventsIds.push({
+      desc: "collision logger",
+      id
+    });
+  }
+
+  /** @param {PhysicsEntity} entity */
+  #getLoggingInfo(entity) {
+    const id = entity["physicsId"];
+    if (id == null || id == undefined)  {
+      console.error("no physics id");
+      return null;
+    }
+    if (entity.isBall) {
+      return { type: "BALL" };
+    }
+    const data = entity.data;
+    if (data == null)
+      return null;
+    if (data.isPeddle) {
+      return { 
+        ...data,
+        playerNickname: this.#gameData.currentPlayers[data.player].nickname
+      };
+    }
+    return data;
   }
 
   _addHelper() {

@@ -8,6 +8,7 @@ import { isEmptyObject } from "@/utils/type_util";
 /** @typedef {"INSTANT" | "FLUSH" | "LAZY"} EventReactConfig */
 /** @typedef {"ball" | "player" | "gameState"} CollectTarget */
 /** @typedef {"playerBehvior" | "collision" | "gameDataChange"} EventType */
+
 /** @typedef Config 
  *  @property {DataInterval} emitInterval
  *  @property {{
@@ -32,9 +33,9 @@ import { isEmptyObject } from "@/utils/type_util";
  */
 
 /** @type {{
- *  [key in string]: ((_: number) => DataInterval)
+ *    [key in string]: ((_: number) => DataInterval)
  * }}
-*/
+ */
 const DATA_INTERVAL = Object.freeze({
   sec: (sec) => ({ unit: "sec", value: sec}),
   ms: (ms) => ({ unit: "ms", value: ms}),
@@ -118,18 +119,20 @@ export default class GameDataEmitter {
     setTimeout(() => {
       this.#emit();
     }, interval);
-    const threshold = this.#lastEmittedDate + interval;
+   
     const data = this.#pendingData;
+    this.#pendingData = [];
     /** @type {DataOutput} */
     const output = {
       prefix: GameDataEmitter.outputPrefix,
-      data,
-      emittedTime: new Date
+      data: data.sort(
+      (lhs, rhs) => 
+        lhs.collectedDate < rhs.collectedDate),
+      emittedTime: new Date()
     };
     for (let receiver of this.#receivers) {
       receiver(output); 
     }
-    this.#pendingData = [];
   }
 
   /** @param {EventType} type
@@ -178,7 +181,7 @@ export default class GameDataEmitter {
     setTimeout(() => 
       this.#collect(target, interval),
       interval.value * (interval.unit == "sec" ? 1000 : 1));
-    const date = new Date();
+    const date = new Date().getTime();
     const collector = this.#collectors[target];
     if (collector) {
       const data = collector();

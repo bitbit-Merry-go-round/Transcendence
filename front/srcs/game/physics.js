@@ -17,6 +17,8 @@ export default class Physics {
   /** @type {number[]} */
   #collidibleObjectIds = [];
 
+  #elapsedTime = 0;
+
   /** @type {{
    * [key: number]: {
    * 		callback: (collider: PhysicsEntity, collidee: PhysicsEntity) => void,
@@ -39,6 +41,7 @@ export default class Physics {
     objs.forEach(obj => {
       const id = this.#objId++;
       ids.push(id);
+      obj["physicsId"] = id;
       this.#allObjects[id] = obj;
       if (obj.isMovable) {
         this.#movableObjects.push(id);
@@ -102,6 +105,7 @@ export default class Physics {
 
   /**  @param {number} elapsedTime */
   update(elapsedTime) {
+    this.#elapsedTime += elapsedTime;
     this.#updateVelocities(elapsedTime)
       .#updatePositions(elapsedTime)
       .#handleCollisions()
@@ -146,7 +150,9 @@ export default class Physics {
    * 	@returns {number} id
    */
   addCollisionCallback(trigger, callback) {
+
     const id = this.#collideCallbackId++;
+   
     this.#collideCallbacks[id] = {
       trigger,
       callback
@@ -201,7 +207,8 @@ export default class Physics {
   }
 
   #handleCollisions() {
-    const handlers = Object.values(this.#collideCallbacks);
+    const callbackIds = Object.keys(this.#collideCallbacks)
+      .sort();
     this.#getAllCollisions()
       .forEach(({collider, collidee}) => {
         if (!collidee.isDynamic || !collider.isDynamic) {
@@ -210,11 +217,12 @@ export default class Physics {
         else {
           this.#resolveCollideWithDynamic(collider, collidee);
         }
-        handlers.forEach(({trigger, callback}) => {
-          if (trigger(collider, collidee)) {
-            callback(collider, collidee);
-            }
-          })
+        for (let id of callbackIds) {
+          const {trigger, callback} = this.#collideCallbacks[Number(id)];
+          if (trigger(collider, collidee, this.#elapsedTime)) {
+            callback(collider, collidee, this.#elapsedTime);
+          }
+        }
       })
     return this;
   }

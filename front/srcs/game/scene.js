@@ -225,6 +225,9 @@ export default class Scene {
         pressed
       });
     });
+    this.#gameScene.setCollisionLogger((collision) => {
+      console.log(collision);
+    })
   }
 
   #getPlayersInfo() {
