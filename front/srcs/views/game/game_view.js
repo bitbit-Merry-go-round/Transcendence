@@ -45,7 +45,7 @@ export default class GameView extends View {
     super({data: data.gameData});
     this.#data = data.gameData;
     this.#dataEmitter = new GameDataEmitter({
-      receiver: (output) => console.log(output)
+      receiver: (output) => {}
     });
     //@ts-ignore
     this.#gameData = data.gameData;

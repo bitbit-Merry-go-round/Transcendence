@@ -202,7 +202,7 @@ export default class GameScene extends THREE.Group {
     if (this.#ball.physicsId) {
       this.#captureBall()
     }
-    this.#gameParticle.animate();
+    this.#gameParticle.animate(frameTime);
   }
 
   addBall() {
@@ -496,11 +496,11 @@ export default class GameScene extends THREE.Group {
     );
     this.#gameParticle = new ParticleGenerator({
       count: 100,
-      particleSize: 0.001,
+      particleSize: 20.,
       maxSize: {
-        x: 70,
-        y: 70,
-        z: 20
+        x: 50,
+        y: 50,
+        z: 0.001
       }
     });
     this.#gameParticle.setColor([
@@ -509,14 +509,13 @@ export default class GameScene extends THREE.Group {
       "#ACE2E1",
       "#F7EEDD",
     ])
-    this.#gameParticle.animationConfig.speedCoefficient = 0.001;
-    this.#gameParticle.animationConfig.speedVariantCoefficient = 0.001;
-    this.#gameParticle.animationConfig.speedVariantConstant = 50;
-    this.#gameParticle.createParticles();
-    const particles = this.#gameParticle.getParticles();
-    container.add(particles);
-    container.scale.set(0.8, 0.8, 0.2);
-    this.add(container);
+    this.#gameParticle.createParticles()
+      .then(() => {
+        const particles = this.#gameParticle.getParticles();
+        container.scale.z = 0.2;
+        container.add(particles);
+        this.add(container);
+      });
     return this;
   }
 

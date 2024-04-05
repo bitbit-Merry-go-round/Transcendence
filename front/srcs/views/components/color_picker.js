@@ -2,6 +2,7 @@ import * as THREE from "three";
 import View from "@/lib/view";
 import { hsb2rgb } from "@/utils/color_util";
 import Observable from "@/lib/observable";
+import * as THREE_UTIL from "@/utils/three_util";
 
 const DEFAULT_SIZE = {
   width: 200,
@@ -11,13 +12,14 @@ const DEFAULT_SIZE = {
 
 export default class ColorPicker extends View {
 
-  /** @type {{
-   *  vertex: string,
-   *  fragment: string
-   * }} */ //@ts-ignore
-  static #shader = {};
-  /** @type {Promise<boolean>} */
-  static #shaderLoaded;
+  static shaderPath = {
+    vertex: "srcs/shader/color_picker_v.glsl",
+    fragment: "srcs/shader/color_picker_f.glsl",
+  }
+
+  /** @type {THREE_UTIL.ShaderLoadContext} */
+  static #shaderLoad = THREE_UTIL.createLoadShaderContext(this.shaderPath);
+
   /** @type {{ width: number, height: number }} */
   #size;
   /** @type {HTMLDivElement} */
@@ -39,9 +41,8 @@ export default class ColorPicker extends View {
    *   },
    *   }} params */
   constructor({color= null, onPickColor, size = DEFAULT_SIZE}) {
+    THREE_UTIL.loadShaders(ColorPicker.#shaderLoad);
     super();
-    if (!ColorPicker.#shaderLoaded)
-      ColorPicker.#loadShaders();
     if (color) {
       this.#pickedColor = color;
     }
@@ -75,26 +76,8 @@ export default class ColorPicker extends View {
       });
   }
 
-  static #loadShaders() {
-    const vertex = fetch("srcs/shader/color_picker_v.glsl")
-      .then(res => res.text())
-      .then(text => {
-        ColorPicker.#shader.vertex = text;
-        return true;
-      });
-    const frag = fetch("srcs/shader/color_picker_f.glsl")
-      .then(res => res.text())
-      .then(text => {
-        this.#shader.fragment = text;
-        return true;
-      });
-    this.#shaderLoaded = Promise
-      .all([vertex, frag])
-      .then(res => res.indexOf(false) == -1);  
-  }
-
   async #drawColors() {
-    const isLoaded = await ColorPicker.#shaderLoaded;
+    const isLoaded = await ColorPicker.#shaderLoad.isLoaded;
     if (!isLoaded) {
       console.error("shader not loaded");
       return ;
@@ -103,18 +86,17 @@ export default class ColorPicker extends View {
     geometry.setAttribute
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     camera.position.z = 0.2;
-    const vertexShader = ColorPicker.#shader.vertex;
-    const fragmentShader = ColorPicker.#shader.fragment;
     const u_resolution = new THREE.Vector2(
       this.#size.width,
       this.#size.height
     );
+    const shaders = ColorPicker.#shaderLoad.loadedShader;
     this.#material = new THREE.ShaderMaterial({
       uniforms: {
         u_resolution: { value: u_resolution },
       },
-      vertexShader,
-      fragmentShader
+      vertexShader: shaders.vertex,
+      fragmentShader: shaders.fragment
     });
     this.#material.needsUpdate = true;
     const mesh = new THREE.Mesh(geometry, this.#material);

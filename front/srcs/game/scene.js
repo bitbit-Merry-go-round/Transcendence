@@ -14,7 +14,7 @@ import Asset from "@/game/asset";
 import GameScene from "@/game/game_scene";
 import Timer from "@/game/timer";
 import GUI from "node_modules/lil-gui/dist/lil-gui.esm.min.js";
-import GameDataEmitter from "./game_data_emitter";
+import GameDataEmitter from "@/game/game_data_emitter";
 
 /**
  * Game Scene.
@@ -22,7 +22,7 @@ import GameDataEmitter from "./game_data_emitter";
 export default class Scene {
 
   // debug
-  #isDebug = false;
+  #isDebug = true;
 
   #scene;
   #scene_objs = {};
@@ -61,7 +61,7 @@ export default class Scene {
    * }} */
   #mouseHandler;
   cameraPositions = { 
-    start: { x: 0, y: 70, z: 30 },
+    start: { x: 0, y: 80, z: 30 },
     startRotate: { x: 0, y: 20, z: 10 },
     play: { x: 0.2, y: 1.8, z: 0.75 },
   };
@@ -676,7 +676,6 @@ export default class Scene {
         this.#gameScene.getWorldPosition(screenPos);
         if (this.#isDebug)
           this.#controls.target = screenPos;
-
         this.#loadboomBox(boombox => {
           boombox.scale.set(
             0.5,
@@ -903,25 +902,30 @@ export default class Scene {
       })
     );
     this.#sceneParticle= new ParticleGenerator({
-      count: 500,
-      particleSize: 0.3,
-      computeDepth: true,
+      count: 100,
+      particleSize: 2000,
+      useShader: false,
       maxSize: {
-        x: 2, 
-        y: 2,
-        z: 2
+        x: 100, 
+        y: 100,
+        z: 1
       },
     });
-    this.#sceneParticle.animationConfig.speedCoefficient = 0.0001;
-    this.#sceneParticle.animationConfig.speedVariantConstant = 1;
-    this.#sceneParticle.setColor(["#ffffff", "#ddd0b2", "#f8edde", "#3ac4d6"]);
-
-    this.#sceneParticle.createParticles();
-    const particles = this.#sceneParticle.getParticles();
-    container.add(particles);
-    container.scale.set(100, 100, 100);
-    this.#scene.add(container);
-
+   this.#sceneParticle.animationConfig.speedCoefficient = 2.;
+    this.#sceneParticle.animationConfig.randomCoefficent = 1;
+    this.#sceneParticle.setColor([
+      "#49243E",
+      "#704264",
+      "#FFEBB2",
+      "#E9C874",
+      "#008DDA",
+    ]);
+    this.#sceneParticle.createParticles()
+      .then(() => {
+        const particles = this.#sceneParticle.getParticles();
+        container.add(particles);
+        this.#scene.add(container);
+      });
     return this;
   }
 
@@ -929,7 +933,7 @@ export default class Scene {
     const list = ASSET_PATH.bgms.map(
       bgm => Asset.shared.get(
         "AUDIO", bgm.path
-    ));
+      ));
     this.#bgm = {
       list,
       current: list[0],
@@ -1078,7 +1082,7 @@ export default class Scene {
         this.#controls.update()
       this.#gameScene.update(frameTime);
       this.#runAnimations();
-      this.#sceneParticle.animate();
+      this.#sceneParticle.animate(frameTime);
       this.#leaf.animate();
       this.#renderer.render(this.#scene, this.#camera);
     });
