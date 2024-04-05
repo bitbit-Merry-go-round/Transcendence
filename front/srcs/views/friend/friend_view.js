@@ -20,6 +20,8 @@ export default class FriendView extends View {
     const type = profileCardModal.getAttribute('data-user-type');
     const user = profileCardModal.getAttribute('data-user');
     console.log(`${type}, ${user}`);
+    e.target.setAttribute('disabled', '');
+    e.target.classList.add('disabled');
     if (type === TYPE_DELETE)
     {
       url = `http://${window.location.hostname}:8000/users/me/friends/${user}/`;
