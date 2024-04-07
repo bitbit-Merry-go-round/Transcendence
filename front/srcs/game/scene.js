@@ -24,6 +24,13 @@ export default class Scene {
   // debug
   #isDebug = false;
 
+  /** @type {{
+   *    rallyState: (changed: "START" | "END" | "RESET") => void
+   *    matchState: (changed: "END" | "NEXT") => void
+   *  }}
+   */ //@ts-ignore
+  #logger = {};
+
   #scene;
   #scene_objs = {};
   /** @type {GameData} */
@@ -50,7 +57,6 @@ export default class Scene {
   #camera;
   /** @type {OrbitControls} */
   #controls;
-
 
   /** @type {{
    *    raycaster: THREE.Raycaster,
@@ -199,6 +205,9 @@ export default class Scene {
   showNextMatch() {
     this.#updateLabels();
     this.#gameScene.showNextMatch();
+    if (this.#logger.matchState) {
+      this.#logger.matchState("NEXT");
+    }
   }
 
   #updateLabels() {
@@ -214,23 +223,84 @@ export default class Scene {
   }
 
   /** @param {GameDataEmitter} emitter */
-  addDataEmitter(emitter) {
-    emitter.setCollector("player", () => this.#getPlayersInfo()
+  setDataEmitter(emitter) {
+    this
+      .#setCollectors(emitter)
+      .#setEventLoggers(emitter);
+  }
+
+  /** @param {GameDataEmitter} emitter */
+  #setCollectors(emitter) {
+    emitter.setCollector("PEDDLE", () => this.#getPeddlesInfo()
     );
-    emitter.setCollector("ball", () => this.#gameScene.getBallInfo());
-    emitter.setCollector("gameState", () => this.#getGameState());
+    emitter.setCollector("BALL", () => this.#gameScene.getBallInfo());
+    emitter.setCollector("GAME_STATE", () => this.#getGameState());
+    return this;
+  }
+
+  /** @param {GameDataEmitter} emitter */
+  #setEventLoggers(emitter) {
+    this.#logger.rallyState = (state => {
+      let description = null;
+      switch (state) {
+        case ("START"):
+          description = "START_RALLY";
+          break;
+        case ("RESET"):
+          description = "RESET_RALLY";
+          break;
+        default:
+          return ;
+      }
+      emitter.submitEvent("GAME_DATA_CHANGED", {
+        description,
+      })
+    });
+
+    this.#logger.matchState = (state) => {
+      let description = null;
+      switch (state) {
+        case ("END"):
+          description = "END_MATCH";
+          break;
+        case ("NEXT"):
+          description = "NEXT_MATCH";
+          break;
+          default: return;
+      }
+      emitter.submitEvent("GAME_DATA_CHANGED", {
+        description
+      })
+    }
     this.#gameScene.setKeyLogger((key, pressed) => {
-      emitter.submitEvent("playerBehvior", {
+      emitter.submitEvent("PLAYER_BEHAVIOR", {
+        description: "PLAYER_INPUT",
         key: key,
         pressed
       });
     });
-    this.#gameScene.setCollisionLogger((collision) => {
-      console.log(collision);
-    })
-  }
 
-  #getPlayersInfo() {
+    this.#gameScene.setScoreLogger((
+      { winPlayer, scores }) => {
+        emitter.submitEvent("GAME_DATA_CHANGED", {
+          description: "WIN_SCORE",
+          winPlayer,
+          scores
+        });
+        const winScore = this.#gameData.winScore;
+        if (scores[winPlayer.nickname] == winScore &&
+          this.#logger.matchState) {
+          this.#logger.matchState("END");
+        }
+    });
+
+    this.#gameScene.setCollisionLogger((collision) => {
+      emitter.submitEvent("COLLISION", collision) 
+    });
+    return this;
+  }
+  
+  #getPeddlesInfo() {
     const info = {};
     info.player1 = {
       peddle: this.#gameScene.getPeddleInfo(0),
@@ -257,12 +327,19 @@ export default class Scene {
   startGame() {
     this.#gameScene.addBall();
     this.isBallMoving = true;
+    if (this.#logger.rallyState) {
+      this.#logger.rallyState("START");
+    }
   }
 
   resetBall() {
-    if (this.#gameScene.ball.mesh) {
-      this.#gameScene.removeBall();
+    if (!this.#gameScene.ball.mesh) {
+      return ;
     }
+    if (this.#logger.rallyState) {
+      this.#logger.rallyState("RESET");
+    }
+    this.#gameScene.removeBall();
     this.#gameScene.addBall();
     this.isBallMoving = true;
   }
@@ -286,8 +363,8 @@ export default class Scene {
     /** @type {HTMLAudioElement} */
     const sound = Asset.shared.get("AUDIO", ASSET_PATH.winSound);
     sound.volume = 0.8;
-    this.#bgm.current.volume = Math.max(this.#bgm.current.volume - 0.1,
-      0.2);
+    this.#bgm.current.volume = Math.max(
+      this.#bgm.current.volume - 0.1, 0.05);
     sound.play();
     sound.addEventListener("ended", () => {
       this.#bgm.current.volume = this.#bgm.volume;
@@ -307,10 +384,11 @@ export default class Scene {
         onEnded: () => {
           this.#gameScene.removeParticle();
           this.#showTrophy(() => {
-          const sound = Asset.shared.get("AUDIO",
+            const sound = Asset.shared.get("AUDIO",
             ASSET_PATH.tournamentWin);
-          sound.volume = 0.8;
-            this.#bgm.current.volume = Math.max(this.#bgm.current.volume - 0.1, 0.1);
+          sound.volume = 0.5;
+            this.#bgm.current.volume = Math.max(
+            this.#bgm.current.volume - 0.1, 0.05);
           sound.play();
           sound.addEventListener("ended", () => {
             this.#bgm.current.volume = this.#bgm.volume;
@@ -375,6 +453,7 @@ export default class Scene {
   }
 
   goToGamePosition(onEnded) {
+    // TODO: match event listener
     this.#moveObject({
       target: this.#camera,
       dest: {...this.cameraPositions.play},
@@ -397,7 +476,7 @@ export default class Scene {
     this.#trophy.position.set(
       this.#camera.position.x,
       this.#camera.position.y + 0.5, 
-      this.#camera.position.z - 1.5
+      this.#camera.position.z - 1.
     )
     const spotLight = new THREE.SpotLight(new THREE.Color("white"));
     spotLight.intensity = 100;
@@ -630,7 +709,7 @@ export default class Scene {
         const mac = this.#scene_objs["macintosh"];
 
 
-        /** @type {THREE.Mesh} */
+        /** @type {THREE.Mesh} */ //@ts-ignore
         const screen = mac.children[0].children[0].children[1]
 
         const screenBox= new THREE.Box3().setFromObject(screen);
@@ -942,7 +1021,7 @@ export default class Scene {
     this.#bgm = {
       list,
       current: list[0],
-      volume: 0.2
+      volume: 0.15
     };
     this.#playBgm();
     return this;

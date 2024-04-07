@@ -34,8 +34,14 @@ export default class GameScene extends THREE.Group {
    * powerUp: PowerUp,
    * }[]} */
   #activePowerUps = [];
-  /** @type {(key: string, press: boolean) => void} */
-  #keyLogger = null;
+
+  /** @type {{
+   *  keyInput: (key: string, press: boolean) => void,
+   *  scoreUpdate: (data: { winPlayer: Player,
+   *    scores: { [key: string]: number } }) => void ,
+   *  collisionLoggerId: number,
+   *}} */ //@ts-ignore
+  #logger = {};
 
   #hitSound = {
     sound: Asset.shared.get("AUDIO", ASSET_PATH.hitSound),
@@ -233,7 +239,9 @@ export default class GameScene extends THREE.Group {
       x: velX,
       y: velY,
     };
-    ballPhysics.isBall = true;
+    ballPhysics["data"] = {
+      isBall: true
+    };
 
     const physicsId = this.#physics.addObject(ballPhysics)[0];
 
@@ -612,8 +620,8 @@ export default class GameScene extends THREE.Group {
       const controlKey = this.#gameData.controlMap[event.key];
       if (!controlKey)
         return ;
-      if (this.#keyLogger) {
-        this.#keyLogger(event.key, true);
+      if (this.#logger.keyInput) {
+        this.#logger.keyInput(event.key, true);
       }
       switch (controlKey.type) {
           case ("MOVE"):
@@ -637,8 +645,8 @@ export default class GameScene extends THREE.Group {
       const controlKey = this.#gameData.controlMap[event.key];
       if (!controlKey)
         return ;
-      if (this.#keyLogger) {
-        this.#keyLogger(event.key, false);
+      if (this.#logger.keyInput) {
+        this.#logger.keyInput(event.key, false);
       }
       switch (controlKey.type) {
         case ("MOVE"):
@@ -868,10 +876,17 @@ export default class GameScene extends THREE.Group {
     }
     const winSide = this.#lostSide == DIRECTION.top ? DIRECTION.bottom: DIRECTION.top;
     const winPlayer = players[PLAYER_POSITION[winSide]];
+    /** @type {{ [key in string] : number }} */
+    const scores = {};
+    this.#gameData.currentPlayers.forEach(p => 
+      scores[p.nickname] = this.#gameData.getScore(p)
+    );
+    scores[winPlayer.nickname] += 1;
     gameData.setScore({
       player: winPlayer, 
-      score: gameData.getScore(winPlayer) + 1
+      score: scores[winPlayer.nickname]
     })
+    this.#sendGameScoreUpdate({ winPlayer, scores }); 
     return this;
   }
 
@@ -949,13 +964,6 @@ export default class GameScene extends THREE.Group {
   /** @description Prevent ball go out */
   #captureBall() {
     const ballPosition = this.#physics.getState(this.#ball.physicsId).position;
-    let resetX = null;
-    if (ballPosition.x <= -45) {
-      resetX = -45 ;
-    }
-    else if (ballPosition.x > 41) {
-      resetX = 41 ;
-    }
     if (ballPosition.y <= -48) {
       this.#lostSide = "TOP";
       this.#handleScoreChange();
@@ -980,6 +988,22 @@ export default class GameScene extends THREE.Group {
    *  Collect data
    */
 
+  /** @param {{ 
+   *    winPlayer: Player
+   *    scores: { [key in string]: number}
+   * }} params
+    * */
+  #sendGameScoreUpdate({ winPlayer, scores }) {
+    if (!this.#logger.scoreUpdate)
+      return;
+
+    /** @type {{ [key in string] :number }} */
+    this.#logger.scoreUpdate({
+      winPlayer,
+      scores
+    });
+  }
+
   /** @param {number} playerIndex */
   getPeddleInfo(playerIndex) {
     const physicsId = this.#peddles[playerIndex].physicsId;
@@ -995,23 +1019,30 @@ export default class GameScene extends THREE.Group {
 
   /** @param {(key: string, press: boolean) => void} logger */
   setKeyLogger(logger) {
-    this.#keyLogger = logger;
+    this.#logger.keyInput= logger;
   }
 
+  /** @param {(data: { winPlayer: Player,
+   *    scores: { [key: string]: number } }) => void } logger */
+  setScoreLogger(logger) {
+    this.#logger.scoreUpdate = logger;
+  }
+ 
+  /** @param {(_: {collider: PhysicsEntity, collidee: PhysicsEntity}) => void} logger */
   setCollisionLogger(logger) {
-
     const id = this.#physics.addCollisionCallback(
       (_collider, _collidee, _time) =>  true,
-      (collider, collidee, time) => {
+      (collider, collidee, _time) => {
         collider["info"] = this.#getLoggingInfo(collider);
         collidee["info"] = this.#getLoggingInfo(collidee);
-        logger({ collider, collidee, time, })
+        logger({ collider, collidee })
       },
     );
     this.#eventsIds.push({
       desc: "collision logger",
       id
     });
+    this.#logger.collisionLoggerId = id;
   }
 
   /** @param {PhysicsEntity} entity */
@@ -1021,12 +1052,13 @@ export default class GameScene extends THREE.Group {
       console.error("no physics id");
       return null;
     }
-    if (entity.isBall) {
-      return { type: "BALL" };
-    }
+    //@ts-ignore
     const data = entity.data;
     if (data == null)
       return null;
+    if (data.isBall) {
+      return { type: "BALL" };
+    }
     if (data.isPeddle) {
       return { 
         ...data,

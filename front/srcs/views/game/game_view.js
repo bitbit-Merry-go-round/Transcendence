@@ -10,6 +10,7 @@ import ColorPicker from "@/views/components/color_picker.js";
 import Observable from "@/lib/observable";
 import { getRandomFromArray } from "@/utils/type_util";
 import GameDataEmitter from "@/game/game_data_emitter";
+import GameAnalytics from "@/data/game_analytics";
 
 export default class GameView extends View {
 
@@ -44,10 +45,9 @@ export default class GameView extends View {
   constructor({data}) {
     super({data: data.gameData});
     this.#data = data.gameData;
-    this.#dataEmitter = new GameDataEmitter({
-      receiver: (output) => {
-      }
-    });
+    this.#dataEmitter = new GameDataEmitter();
+    const analystics = data.analytics;
+    analystics.setEmitter(this.#dataEmitter); 
     //@ts-ignore
     this.#gameData = data.gameData;
     this.#data.subscribe("scores", 
@@ -92,7 +92,7 @@ export default class GameView extends View {
     }
     //else if (this.#gameData.gameType == GAME_TYPE.remote) {
     if (true) {
-      this.#scene.addDataEmitter(this.#dataEmitter)
+      this.#scene.setDataEmitter(this.#dataEmitter)
       this.#dataEmitter.startCollecting();
       this.#dataEmitter.startEmit();
     }

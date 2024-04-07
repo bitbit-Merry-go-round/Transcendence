@@ -21,8 +21,8 @@ export default class Physics {
 
   /** @type {{
    * [key: number]: {
-   * 		callback: (collider: PhysicsEntity, collidee: PhysicsEntity) => void,
-   *		trigger: (collider: PhysicsEntity, collidee: PhysicsEntity) => boolean,
+   * 		callback: (collider: PhysicsEntity, collidee: PhysicsEntity, time: number) => void,
+   *		trigger: (collider: PhysicsEntity, collidee: PhysicsEntity, time: number) => boolean,
    *	}
    * }} 
    */
@@ -145,8 +145,8 @@ export default class Physics {
   }
 
   /** 
-   *	@param {(collider: PhysicsEntity, collidee: PhysicsEntity) => boolean} trigger
-   * @param {(collider: PhysicsEntity, collidee: PhysicsEntity) => void} callback
+   *	@param {(collider: PhysicsEntity, collidee: PhysicsEntity, time: number) => boolean} trigger
+   * @param {(collider: PhysicsEntity, collidee: PhysicsEntity, time: number) => void} callback
    * 	@returns {number} id
    */
   addCollisionCallback(trigger, callback) {
@@ -297,14 +297,14 @@ export default class Physics {
           collider.velocity.y *= -1;
 
         if (collideAxes.x && collideAxes.y && collider.isShape("CIRCLE")) {
-          let randomness = (Math.random() - 0.5) * 0.2 ;
+          let randomness = Math.abs((Math.random() - 0.5) * 0.3);
           if (collider.velocity.x > 0) {
-            collider.velocity.x += randomness;
-            collider.velocity.y -= randomness;
+            collider.velocity.x *= 1.0 + randomness;
+            collider.velocity.y *= 1.0 - randomness;
           }
           else {
-            collider.velocity.x -= randomness;
-            collider.velocity.y += randomness;
+            collider.velocity.x *= 1.0 + randomness;
+            collider.velocity.y *= 1.0 - randomness;
           }
         }
       }

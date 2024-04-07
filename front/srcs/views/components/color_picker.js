@@ -139,18 +139,16 @@ export default class ColorPicker extends View {
       y: normalized.y - 0.5
     };
     let angle = Math.atan2(toCenter.y, toCenter.x);
-    let radius = Math.sqrt(toCenter.x * toCenter.x + toCenter.y * toCenter.y) * 3.5;
-    radius = Math.max(0.9, radius);
-    if (angle < 0) {
+    let radius = Math.sqrt(toCenter.x * toCenter.x + toCenter.y * toCenter.y) * 2.0;
+    if (angle < 0) 
       angle += Math.PI * 2.0;
-    }
+
     const color = hsb2rgb(
       new THREE.Vector3(
         angle/(Math.PI * 2.0), 
         radius,
         1.0
       ));
-    color.multiplyScalar(255);
     this.#pickedColor.value = {
       r: color.x,
       g: color.y,

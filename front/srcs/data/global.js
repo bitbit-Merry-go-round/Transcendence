@@ -1,7 +1,7 @@
 import ObservableObject from "@/lib/observable_object";
 import User, { createProfile } from "@/data/user";
 import GameData from "@/data/game_data";
-import Player from "@/data/player";
+import GameAnalytics from "@/data/game_analytics";
 import { generateRandomName } from "@/utils/random_name.js";
 
 const globalData = (() =>{
@@ -23,19 +23,24 @@ const globalData = (() =>{
     ],
   }))
 
-    const game = GameData.createTournamentGame(
-      [
-        generateRandomName(),  
-        generateRandomName(),  
-        generateRandomName(),  
-        generateRandomName(),  
-      ]
-    )
-  //const game = GameData.createLocalGame();
+  let game = GameData.createTournamentGame(
+    [
+      generateRandomName(),  
+      generateRandomName(),  
+      generateRandomName(),  
+      generateRandomName(),  
+    ]
+  );
+  let analytics = new GameAnalytics({gameData: game});
 
   const gameData = new ObservableObject(game);
+  const registerGame = (newGame) => {
+    game = newGame;
+    analytics = new GameAnalytics({ gameData: newGame });
+  };
 
-  return ({ user, gameData });
+  return ({ user, gameData, registerGame, analytics});
 })();
+
 
 export default globalData;

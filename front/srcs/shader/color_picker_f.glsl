@@ -18,8 +18,6 @@ vec3 hsb2rgb( in vec3 c ){
 void main(){
   vec2 st = gl_FragCoord.xy/u_resolution;
   vec3 color = vec3(0.0);
-  st.x -= 0.3;
-  st.y -= 0.3;
 
   vec2 toCenter = vec2(0.5)-st;
   float angle = atan(toCenter.y,toCenter.x);

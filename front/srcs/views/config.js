@@ -13,6 +13,7 @@ import NavBar from "@/views/components/nav_bar";
 import ProfileCard from "@/views/components/profile_card";
 import UserLabel from "@/views/components/user_label";
 import ColorPicker from "@/views/components/color_picker.js";
+import GraphView from "@/views/dash_board/graph_view";
 
 /**
  * fileName for view class MUST contain '_' or '-' (Web components requirement)
@@ -100,6 +101,12 @@ export default {
         "className": "EditView",
         "fileName": "edit_view.html"
       }
+    ],
+    "dash_board": [
+      {
+        "className": "GraphView",
+        "fileName": "graph_view.html"
+      }
     ]
   }
 }
@@ -120,6 +127,7 @@ export const viewConstructors = {
   UserLabel,
   TournamentPanel,
   ColorPicker,
+  GraphView
 };
 
 export const routes = [
@@ -132,4 +140,5 @@ export const routes = [
   { path: "/match", view: MatchView },
   { path: "/tournament", view: TournamentView },
   { path: "/edit", view: EditView },
+  { path: "/dash_board", view: GraphView },
 ];
