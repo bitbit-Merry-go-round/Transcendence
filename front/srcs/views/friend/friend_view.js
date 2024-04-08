@@ -108,8 +108,7 @@ export default class FriendView extends View {
   _fillModalData(data) {
     const profileCardModal = document.getElementById('profileCardModal');
     const userAvatar = profileCardModal.querySelector('.user-avatar');
-    const userLevel = profileCardModal.querySelector('.user-level');
-    const userName = profileCardModal.querySelector('.user-name');
+    const userLevelId = profileCardModal.querySelector('.user-level-id');
     const userScore = profileCardModal.querySelector('.score');
     const stateMessage = profileCardModal.querySelector('.state-message');
     
@@ -121,8 +120,7 @@ export default class FriendView extends View {
     else
       profileCardModal.setAttribute('data-user-type', `${TYPE_ADD}`);
 
-    userLevel.textContent = `Lv.${data.level}`;
-    userName.textContent = `${data.username}`
+    userLevelId.textContent = `Lv.${data.level} ${data.username}`;
     userAvatar.src = `data:image;base64,${data.avatar}`;
     userScore.textContent = `${data.wins} 승 ${data.loses} 패`;
     stateMessage.textContent = `${data.message}`;
