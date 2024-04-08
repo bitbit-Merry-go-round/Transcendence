@@ -46,8 +46,8 @@ export default class GameView extends View {
     super({data: data.gameData});
     this.#data = data.gameData;
     this.#dataEmitter = new GameDataEmitter();
-    const analystics = data.analytics;
-    analystics.setEmitter(this.#dataEmitter); 
+    const analytics = data.analytics;
+    analytics.setEmitter(this.#dataEmitter); 
     //@ts-ignore
     this.#gameData = data.gameData;
     this.#data.subscribe("scores", 

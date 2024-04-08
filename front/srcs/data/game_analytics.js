@@ -1,9 +1,10 @@
 import GameData, { GAME_TYPE } from "@/data/game_data";
 import GameDataEmitter, * as GDE from "@/game/game_data_emitter";
 import { MAP_SIZE } from "@/data/game_map";
+import GraphData,  * as GH from "@/data/graph.js"
 
 /** @typedef { "RALLY"| "MATCH"| "TOURNAMENT" } Time */
-/** @typedef { "ZoneDuration"| "BallRoute"| "HitZone"| "BallSpeed" } Attribute */
+/** @typedef { "ZONE_DURATION"| "BALL_ROUTE"| "HIT_ZONE"| "BALL_SPEED" } Attribute */
 
 /** @typedef { Array<T> | Float32Array } Row<T> 
  *  @template { any } T
@@ -18,13 +19,13 @@ import { MAP_SIZE } from "@/data/game_map";
  */
 
 /** 
- * @typedef { Table<number> } ZoneDurationFormat
+ * @typedef { Table<number> } ZONE_DURATIONFormat
  */
 /**
- * @typedef { Record<number, number>[] } BallSpeedFormat
+ * @typedef { Record<number, number>[] } BALL_SPEEDFormat
  */
 
-/** @typedef { ZoneDurationFormat | BallSpeedFormat } DataFormat */
+/** @typedef { ZONE_DURATIONFormat | BALL_SPEEDFormat } DataFormat */
 
 export class DataRecord {
 
@@ -73,12 +74,27 @@ export class DataRecord {
       .#generate(data);
   }
 
+  export() {
+    /** @type {{
+     *   [ key in string ]: GH.GraphData
+    * }} */
+    const ballSpeed = new GraphData({
+      type: "LINE",
+      label: "Ball speed",
+      axies: { "X": "time", "Y": "speed" },
+      data: {
+        "DEFAULT": this.#data.BALL_SPEED
+      }
+    });
+    return ballSpeed;
+  }
+
   #initData() {
     // @ts-ignore
     this.#data = {};
-    this.#data.BallSpeed = [];
+    this.#data.BALL_SPEED = [];
     {
-      this.#data.ZoneDuration = new Float32Array(
+      this.#data.ZONE_DURATION = new Float32Array(
         this.#zoneConfig.numRow * this.#zoneConfig.numColumn);
     }
     return this;
@@ -112,7 +128,7 @@ export class DataRecord {
       const time = ballData.date;
       const speed = Math.sqrt(ball.velocity.x * ball.velocity.x + ball.velocity.y * ball.velocity.y);
       //@ts-ignore
-      this.#data["BallSpeed"].push({
+      this.#data["BALL_SPEED"].push({
         time,
         speed
       });
@@ -138,7 +154,7 @@ export class DataRecord {
       return ;
     }
     /** @type {Float32Array} */ //@ts-ignore
-    const container = this.#data["ZoneDuration"];
+    const container = this.#data["ZONE_DURATION"];
     for (let i = 0; i < position.length - 1; ++i) {
       const cur = position[i], next = position[i + 1];
       const interval = next.time - cur.time;
@@ -215,6 +231,10 @@ export default class GameAnalytics {
   setEmitter(emitter) {
     emitter.addReciever((output) => this.#recieveData(output));
   } 
+
+  createGraph() {
+    return this.#records.map(r => r.export());
+  }
 
   /** @param { GDE.DataOutput } dataOutput*/
   #recieveData(dataOutput) {
