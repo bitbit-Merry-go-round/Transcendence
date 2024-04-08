@@ -20,7 +20,7 @@ export default class LoginView extends View {
 
   async _request2FA(queryString) {
     const authCode = new URLSearchParams(queryString).get('code');
-    const uri = `http://127.0.0.1:8000/users/42/callback?code=${authCode}`;
+    const uri = `http://127.0.0.1:8000/42/callback?code=${authCode}`;
 
     const loadingWrap = this.querySelector('.loading-wrap');
     loadingWrap.style.display = 'flex';
@@ -31,6 +31,7 @@ export default class LoginView extends View {
 
   connectedCallback() {
     super.connectedCallback();
+    localStorage.clear();
 
     const queryString = window.location.search;
     if (queryString)
