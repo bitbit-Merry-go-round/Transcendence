@@ -100,10 +100,14 @@ export default class Scene {
   #lights = {};
 
   lightConfigs = {
-    ambientColor: 0xffffff,
-    ambientIntensity: 2.1,
+    ambientColor: {
+      default: 0xffffff,
+      buff: 0xb3ffc6,
+      deBuff: 0xffcdb3
+    },
+    ambientIntensity: 3,
     directionalColor: 0xffffff,
-    directionalIntensity: 2.1
+    directionalIntensity: 2
   };
 
   /**
@@ -200,6 +204,22 @@ export default class Scene {
       .#loadLeaf()
       .#startRender()
       .#listenPowerUp();
+    this.#gameScene.subscribePowerUp(activatedPowerUp => {
+      if (activatedPowerUp == null) {
+        this.#lights.ambientLight.color = new THREE.Color(this.lightConfigs.ambientColor.default);
+      }
+      switch (activatedPowerUp) {
+        case ("BUFF"):
+          this.#lights.ambientLight.color = new THREE.Color(this.lightConfigs.ambientColor.buff);
+          break;
+        case ("DEBUFF"):
+          this.#lights.ambientLight.color = new THREE.Color(this.lightConfigs.ambientColor.deBuff);
+          break;
+        default: break;
+      }
+    })
+    if (this.#isDebug)
+      this._addHelper();
   }
 
   showNextMatch() {
@@ -962,9 +982,10 @@ export default class Scene {
 
 
   #setLights() {
-    const gameAmbientLight = new THREE.AmbientLight(this.lightConfigs.ambientColor, this.lightConfigs.ambientIntensity);
+    const gameAmbientLight = new THREE.AmbientLight(this.lightConfigs.ambientColor.default, this.lightConfigs.ambientIntensity);
     const gameDirectionalLight = new THREE.DirectionalLight(
     );
+    gameAmbientLight.position.set(0, 0, 1);
     gameDirectionalLight.castShadow = true;
     gameDirectionalLight.shadow.mapSize.set(1024, 1024);
     gameDirectionalLight.shadow.camera.far = 15;
@@ -1216,7 +1237,7 @@ export default class Scene {
 
     const light = this.gui.addFolder("light");
 
-    light.addColor(this.lightConfigs, "ambientColor")
+    light.addColor(this.lightConfigs.ambientColor, "default")
       .onChange(color => {
         this.#lights.ambientLight.color.set(color);
       })
@@ -1235,6 +1256,23 @@ export default class Scene {
       .min(0).max(5)
       .step(0.01)
       .onChange(value => this.#lights.directionalLight.intensity = value);
+
+    light.add(this.#lights.directionalLight.position, "x")
+      .name("lightPosX")
+      .min(-20)
+      .max(20)
+      .step(0.1)
+    light.add(this.#lights.directionalLight.position, "y")
+      .name("lightPosY")
+      .min(-20)
+      .max(20)
+      .step(0.1);
+    light.add(this.#lights.directionalLight.position, "z")
+      .name("lightPosZ")
+      .min(-20)
+      .max(20)
+      .step(0.1);
+    
 
     return this;
   }

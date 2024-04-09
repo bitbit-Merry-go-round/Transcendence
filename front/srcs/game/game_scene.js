@@ -44,6 +44,7 @@ export default class GameScene extends THREE.Group {
    * powerUp: PowerUp,
    * }[]} */
   #activePowerUps = [];
+  #activatedPowerUP= new Observable(null);
 
   /** @type {{
    *  keyInput: (key: string, press: boolean) => void,
@@ -105,7 +106,7 @@ export default class GameScene extends THREE.Group {
    */
   #walls = {}; 
   #wallTextureRepeat = 0.05;
-  
+
   /** @type {number} */
   wallColor = 0x00ff00;
 
@@ -192,7 +193,7 @@ export default class GameScene extends THREE.Group {
    *  data: GameData,
    *  map: GameMap
    *  }} params
-  * */
+   * */
   constructor({timer, stuckHandler, data, map}) {
     super();
     THREE_UTIL.loadShaders(GameScene.#peddleShaderLoad);
@@ -327,7 +328,7 @@ export default class GameScene extends THREE.Group {
       color.b / 255 
     ];
     if (this.#peddleShaderLoaded) {
-     const materials = mesh.material;
+      const materials = mesh.material;
       for (let i = 2; i <= 4; ++i) {
         materials[i].uniforms.uColor.value = new THREE.Vector3(
           ...normalizedColor
@@ -476,7 +477,7 @@ export default class GameScene extends THREE.Group {
     /** @type {THREE.Texture} */
     const colorTexture = Asset.shared.get(
       "TEXTURE",
-       ASSET_PATH.getTexture.color(name),
+      ASSET_PATH.getTexture.color(name),
     ).clone();
 
     /** @type {THREE.Texture} */
@@ -508,7 +509,7 @@ export default class GameScene extends THREE.Group {
 
     return material;
   }
-  
+
   #setBackground() {
 
     const size = {
@@ -572,21 +573,21 @@ export default class GameScene extends THREE.Group {
     const colors = [];
 
     this.#gameData.currentPlayers.forEach(
-    (player, i) => {
-      const color = {
-        r: Math.random() * 255,
-        g: Math.random() * 255,
-        b: Math.random() * 255
-      };
-      this.#peddleColors[player.nickname] = color;
-      colors[i] = color;
-    });
+      (player, i) => {
+        const color = {
+          r: Math.random() * 255,
+          g: Math.random() * 255,
+          b: Math.random() * 255
+        };
+        this.#peddleColors[player.nickname] = color;
+        colors[i] = color;
+      });
 
     const materials = colors.map(color => {
       return Array(6).fill(
         new THREE.MeshBasicMaterial({
-        color: new THREE.Color(
-          `rgb(${Math.floor(color.r)}, ${Math.floor(color.g)}, ${Math.floor(color.b)})`),
+          color: new THREE.Color(
+            `rgb(${Math.floor(color.r)}, ${Math.floor(color.g)}, ${Math.floor(color.b)})`),
         })
       ) 
     })
@@ -692,7 +693,8 @@ export default class GameScene extends THREE.Group {
           };
           break;
         case ("ACTION"):
-          if (controlKey.action == "USE_POWER_UP") {
+          if (controlKey.action == "USE_POWER_UP" &&
+            this.#activatedPowerUP.value == null) {
             const player = this.#gameData.currentPlayers[controlKey.player];
             this.#usePowerUp(player, controlKey.player);
           }
@@ -733,6 +735,7 @@ export default class GameScene extends THREE.Group {
       return ;
     }
     const info = this.#gameData.usePowerUp(player);
+    this.#activatedPowerUP.value = info.type;
 
     const powerUp = new PowerUp({
       duration: POWER_UP_CONFIG.defaultDuration,
@@ -797,7 +800,20 @@ export default class GameScene extends THREE.Group {
     }
     powerUp.setUseCallback((state) => {
       if (powerUp.info.key.includes("PEDDLE_SIZE")) {
-        this.#physics.setState(peddle.physicsId, () => ({width: state.width}));
+        this.#physics.setState(peddle.physicsId, 
+          ({position}) => {
+            let x = position.x;
+            if (position.x > 0) {
+                x -= state.width * 0.5;
+            }
+            return {
+              position: {
+                x,
+                y: position.y
+              },
+              width: state.width,
+            }
+          });
         const scale = state.width / powerUp.defaultTargetStatus.width; 
         peddle.mesh.scale.setX(scale);
       }
@@ -957,6 +973,7 @@ export default class GameScene extends THREE.Group {
       powerUp.update(frameTime);
       if (powerUp.isEnd) {
         powerUp.revoke();
+        this.#activatedPowerUP.value = null;
       }
     }
     this.#activePowerUps = this.#activePowerUps.filter(({powerUp}) => !powerUp.isEnd);
@@ -1059,110 +1076,115 @@ export default class GameScene extends THREE.Group {
     if (!this.#logger.scoreUpdate)
       return;
 
-  /** @type {{ [key in string] :number }} */
-  this.#logger.scoreUpdate({
-    winPlayer,
-    scores
-  });
-}
+    /** @type {{ [key in string] :number }} */
+    this.#logger.scoreUpdate({
+      winPlayer,
+      scores
+    });
+  }
 
-/** @param {number} playerIndex */
-getPeddleInfo(playerIndex) {
-  const physicsId = this.#peddles[playerIndex].physicsId;
-  return this.#physics.getState(physicsId);
-}
+  /** @param {number} playerIndex */
+  getPeddleInfo(playerIndex) {
+    const physicsId = this.#peddles[playerIndex].physicsId;
+    return this.#physics.getState(physicsId);
+  }
 
-getBallInfo() {
-  if (!this.#ball?.physicsId)
-    return {};
-  const physicsId = this.#ball.physicsId;
-  return this.#physics.getState(physicsId);
-}
+  getBallInfo() {
+    if (!this.#ball?.physicsId)
+      return {};
+    const physicsId = this.#ball.physicsId;
+    return this.#physics.getState(physicsId);
+  }
 
-/** @param {(key: string, press: boolean) => void} logger */
-setKeyLogger(logger) {
-  this.#logger.keyInput= logger;
-}
+  /** @param {(key: string, press: boolean) => void} logger */
+  setKeyLogger(logger) {
+    this.#logger.keyInput= logger;
+  }
 
-/** @param {(data: { winPlayer: Player,
- *    scores: { [key: string]: number } }) => void } logger */
+  /** @param {(data: { winPlayer: Player,
+   *    scores: { [key: string]: number } }) => void } logger */
   setScoreLogger(logger) {
     this.#logger.scoreUpdate = logger;
   }
 
-/** @param {(_: {collider: PhysicsEntity, collidee: PhysicsEntity}) => void} logger */
-setCollisionLogger(logger) {
-  const id = this.#physics.addCollisionCallback(
-    (_collider, _collidee, _time) =>  true,
-    (collider, collidee, _time) => {
-      collider["info"] = this.#getLoggingInfo(collider);
-      collidee["info"] = this.#getLoggingInfo(collidee);
-      logger({ collider, collidee })
-    },
-  );
-  this.#eventsIds.push({
-    desc: "collision logger",
-    id
-  });
-  this.#logger.collisionLoggerId = id;
-}
-
-/** @param {PhysicsEntity} entity */
-#getLoggingInfo(entity) {
-  const id = entity["physicsId"];
-  if (id == null || id == undefined)  {
-    console.error("no physics id");
-    return null;
+  /** @param {(_: {collider: PhysicsEntity, collidee: PhysicsEntity}) => void} logger */
+  setCollisionLogger(logger) {
+    const id = this.#physics.addCollisionCallback(
+      (_collider, _collidee, _time) =>  true,
+      (collider, collidee, _time) => {
+        collider["info"] = this.#getLoggingInfo(collider);
+        collidee["info"] = this.#getLoggingInfo(collidee);
+        logger({ collider, collidee })
+      },
+    );
+    this.#eventsIds.push({
+      desc: "collision logger",
+      id
+    });
+    this.#logger.collisionLoggerId = id;
   }
-  //@ts-ignore
-  const data = entity.data;
-  if (data == null)
-    return null;
-  if (data.isBall) {
-    return { type: "BALL" };
+
+  /** @param {PhysicsEntity} entity */
+  #getLoggingInfo(entity) {
+    const id = entity["physicsId"];
+    if (id == null || id == undefined)  {
+      console.error("no physics id");
+      return null;
+    }
+    //@ts-ignore
+    const data = entity.data;
+    if (data == null)
+      return null;
+    if (data.isBall) {
+      return { type: "BALL" };
+    }
+    if (data.isPeddle) {
+      return { 
+        ...data,
+        playerNickname: this.#gameData.currentPlayers[data.player].nickname
+      };
+    }
+    return data;
   }
-  if (data.isPeddle) {
-    return { 
-      ...data,
-      playerNickname: this.#gameData.currentPlayers[data.player].nickname
-    };
+
+  /** @param {(_: (string | null)) => void} callback */
+  subscribePowerUp(callback) {
+    this.#activatedPowerUP.subscribe(activated => callback(activated));
   }
-  return data;
-}
 
-_addHelper() {
-  this.gui = new GUI();
-  this.gui.close();
+  _addHelper() {
+    this.gui = new GUI();
+    this.gui.close();
 
-  const color = this.gui.addFolder("color");
+    const color = this.gui.addFolder("color");
 
-  color.addColor(this, "ballColor")
-    .onChange(newColor => {
-      if (this.#ball.mesh)
-        this.#ball.mesh.material.color.set(newColor);
-    })
+    color.addColor(this, "ballColor")
+      .onChange(newColor => {
+        if (this.#ball.mesh)
+          this.#ball.mesh.material.color.set(newColor);
+      })
 
-  color.addColor(this, "wallColor")
-    .onChange(newColor => {
-      Object.entries(this.#walls) 
-        .forEach(([id, mesh]) => {
-          mesh.material.color.set(newColor);
+    color.addColor(this, "wallColor")
+      .onChange(newColor => {
+        Object.entries(this.#walls) 
+          .forEach(([id, mesh]) => {
+            mesh.material.color.set(newColor);
+          })
+      })
+
+    Object.entries(this.#peddleColors).forEach(([player], index) => {
+      color.addColor(this.#peddleColors, player) 
+        .onChange(newColor => {
+          this.#peddles[index].mesh.material.color.set(newColor);
         })
     })
 
-  Object.entries(this.#peddleColors).forEach(([player], index) => {
-    color.addColor(this.#peddleColors, player) 
-      .onChange(newColor => {
-        this.#peddles[index].mesh.material.color.set(newColor);
-      })
-  })
-
-  const axesHelper = new THREE.AxesHelper(5);
-  axesHelper.setColors(
-    new THREE.Color(0xffffff), 
-    new THREE.Color(0xffffff), 
-    new THREE.Color(0xffffff)
-  )
-  this.add(axesHelper);
-}
+    const axesHelper = new THREE.AxesHelper(5);
+    axesHelper.setColors(
+      new THREE.Color(0xffffff), 
+      new THREE.Color(0xffffff), 
+      new THREE.Color(0xffffff)
+    )
+    this.add(axesHelper);
+  }
 }
