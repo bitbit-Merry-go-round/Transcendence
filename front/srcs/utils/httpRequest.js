@@ -28,7 +28,12 @@ export default function httpRequest(method, url, body, success, fail = fetch_fai
         body: body
     })
     .then((res) => {
-        if (200 <= res.status && res.status < 300) {
+        if (res.status === 204)
+        {
+            return ;
+        }
+        if (200 <= res.status && res.status < 300) 
+        {
             return res.json();
         }
         const refresh = localStorage.getItem("refresh")
