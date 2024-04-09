@@ -19,20 +19,17 @@ export default class FriendView extends View {
 
     const type = profileCardModal.getAttribute('data-user-type');
     const user = profileCardModal.getAttribute('data-user');
-    console.log(`${type}, ${user}`);
     e.target.setAttribute('disabled', '');
     e.target.classList.add('disabled');
     if (type === TYPE_DELETE)
     {
       url = `http://${window.location.hostname}:8000/users/me/friends/${user}/`;
-      console.log(`delete ${user}`);
       await httpRequest('DELETE', url, null, () => {
         alert(`Your friend <${user}> is deleted!`);
       });
     }
     else if (type === TYPE_ADD)
     {
-      console.log(`add ${user}`);
       url = `http://${window.location.hostname}:8000/users/me/friends/`;
       const body = JSON.stringify({"to_user": `${user}`})
       await httpRequest('POST', url, body, () => {
@@ -51,7 +48,6 @@ export default class FriendView extends View {
   {
     const addFriendBtn = this.querySelector('.btn-add-friend');
 
-    console.log('this: ', this, 'btn: ', addFriendBtn);
     addFriendBtn.classList.remove('btn-del-friend');
     if (type === TYPE_EDIT)
     {
