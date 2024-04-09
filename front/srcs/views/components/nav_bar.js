@@ -64,8 +64,16 @@ export default class NavBar extends View {
   }
     
   _logoutEvent() {
+    const url = `http://${window.location.hostname}:8000/logout/`;
     const logoutBtn = this.querySelector('#logout');
+    const body = JSON.stringify({
+      refresh: `${localStorage.getItem('refresh')}`
+    })
     logoutBtn.addEventListener('click', () => {
+      httpRequest('POST', url, body, () => {
+        alert('Logout success');
+      }, () => {
+      })
       localStorage.clear();
     })
   }
