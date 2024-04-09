@@ -12,6 +12,8 @@ import GUI from "node_modules/lil-gui/dist/lil-gui.esm.min.js";
 import { resizeTexture } from "@/utils/three_util";
 import Timer from "@/game/timer";
 import PowerUp, { POWER_UP_CONFIG } from "@/data/power_up";
+import * as THREE_UTIL from "@/utils/three_util";
+import Observable from "@/lib/observable";
 
 const FRAME_TIME_THRESHOLD = 0.01;
 const MAX_PEDDLE_SPEED = 50;
@@ -21,6 +23,14 @@ const SOUND_EFFECT_THRESHOLD = 0.3;
 const SAFE_WALL_STUCK_THRESHOLD = 4;
 
 export default class GameScene extends THREE.Group {
+
+  static peddleShaderPath = {
+    vertex: "srcs/shader/peddle_v.glsl",
+    fragment: "srcs/shader/peddle_f.glsl",
+  }
+
+  /** @type {THREE_UTIL.ShaderLoadContext} */
+  static #peddleShaderLoad= THREE_UTIL.createLoadShaderContext(GameScene.peddleShaderPath);
 
   /** @type {Physics} */
   #physics;
@@ -103,10 +113,12 @@ export default class GameScene extends THREE.Group {
 
   /** @type {{
    *    mesh: THREE.Mesh,
-   *    physicsId: number
+   *    physicsId: number,
+   *    hitEffect: Observable
    *  }[]}
    */
   #peddles = [];
+  #peddleShaderLoaded = false;
 
   /** @type {{
    *    pressed: {
@@ -183,6 +195,8 @@ export default class GameScene extends THREE.Group {
   * */
   constructor({timer, stuckHandler, data, map}) {
     super();
+    THREE_UTIL.loadShaders(GameScene.#peddleShaderLoad);
+    GameScene.#peddleShaderLoad
     this.#timer = timer;
     this.#gameData = data;
     this.#gameMap = map;
@@ -201,6 +215,8 @@ export default class GameScene extends THREE.Group {
 
   /** @param {number} frameTime */
   update(frameTime) {
+    this.#peddles.forEach(peddle => 
+      peddle.hitEffect.value = Math.max(peddle.hitEffect.value - frameTime, 0));
     let frameSlice = Math.min(frameTime, FRAME_TIME_THRESHOLD);
     this
       .#updatePowerUps(frameTime)
@@ -305,11 +321,26 @@ export default class GameScene extends THREE.Group {
       console.error("player to set color not playing");
       return ;
     }
-    /** @type {THREE.MeshStandardMaterial} */ //@ts-ignore
-    const material = mesh.material;
-    material.color.r = color.r / 255;
-    material.color.g = color.g / 255;
-    material.color.b = color.b / 255;
+    const normalizedColor = [ 
+      color.r / 255,
+      color.g / 255, 
+      color.b / 255 
+    ];
+    if (this.#peddleShaderLoaded) {
+     const materials = mesh.material;
+      for (let i = 2; i <= 4; ++i) {
+        materials[i].uniforms.uColor.value = new THREE.Vector3(
+          ...normalizedColor
+        );
+      }
+    }
+    else {
+      /** @type {THREE.MeshBasicMaterial} */ //@ts-ignore
+      const material = mesh.material;
+      material.color.r = normalizedColor[0];
+      material.color.g = normalizedColor[1];
+      material.color.b = normalizedColor[2];
+    }
   }
 
   #updatePeddleColors() {
@@ -323,17 +354,7 @@ export default class GameScene extends THREE.Group {
         };
         this.#peddleColors[player.nickname] = color;
       }
-      let mesh  
-      if (player.nickname == 
-        this.#gameData.currentPlayers[0].nickname)
-        mesh = this.#peddles[0].mesh; 
-      else         
-        mesh = this.#peddles[1].mesh; 
-      /** @type {THREE.MeshStandardMaterial} */ //@ts-ignore
-      const material = mesh.material;
-      material.color.r = color.r / 255;
-      material.color.r = color.r / 255;
-      material.color.r = color.r / 255;
+      this.setPeddleColor(player, color);
     }
   }
 
@@ -547,22 +568,27 @@ export default class GameScene extends THREE.Group {
       this.#depth.peddle
     );
 
+    /** @type {{ r: number, g: number, b: number}[]} */
+    const colors = [];
+
     this.#gameData.currentPlayers.forEach(
-    player => {
-      this.#peddleColors[player.nickname] = {
+    (player, i) => {
+      const color = {
         r: Math.random() * 255,
         g: Math.random() * 255,
         b: Math.random() * 255
       };
+      this.#peddleColors[player.nickname] = color;
+      colors[i] = color;
     });
 
-    const materials = Object.entries(this.#peddleColors).map(([_, color]) => {
-      return new THREE.MeshStandardMaterial({
+    const materials = colors.map(color => {
+      return Array(6).fill(
+        new THREE.MeshBasicMaterial({
         color: new THREE.Color(
           `rgb(${Math.floor(color.r)}, ${Math.floor(color.g)}, ${Math.floor(color.b)})`),
-        metalness: 0.3,
-        roughness: 0.5,
-      })
+        })
+      ) 
     })
 
     const positions = [
@@ -575,6 +601,7 @@ export default class GameScene extends THREE.Group {
         y: this.#gameSize.height * - 0.4
       },
     ];
+
     const meshes = materials.map((material, index) => {
       const mesh = new THREE.Mesh(
         geometry,
@@ -583,6 +610,37 @@ export default class GameScene extends THREE.Group {
       const pos = positions[index];
       mesh.position.set(pos.x, pos.y, this.#depth.peddle * 0.5);
       return mesh;
+    });
+
+    GameScene.#peddleShaderLoad.isLoaded.then(() => {
+      this.#peddleShaderLoaded = true;
+      meshes.forEach((mesh, i) => {
+        const color = colors[i];
+        const hitEffect = this.#peddles[i].hitEffect;
+        const shaders = GameScene.#peddleShaderLoad.loadedShader;
+        for (let i = 2; i <= 4; ++i) { 
+          let direction = "#define " + (
+            i == 4 ? "FRONT": (i == 2 ? "ABOVE": "BELOW")
+          ) + "\n"; 
+          const material = new THREE.ShaderMaterial({
+            vertexShader: shaders["vertex"],
+            fragmentShader: direction + shaders["fragment"],
+            uniforms: {
+              uColor: { value: new THREE.Vector3(
+                color.r / 255, color.g / 255, color.b / 255
+              )},
+              uHit: { value: 0.0 }
+            },
+          });
+          mesh.material[i].dispose();
+          mesh.material[i] = material;
+        }
+        hitEffect.subscribe((hit) => {
+          for (let i = 2; i <=4; ++i) {
+            mesh.material[i].uniforms.uHit.value = hit;
+          }
+        })
+      })
     });
 
     const physicsEntities = positions.map((pos, index) => {
@@ -609,8 +667,9 @@ export default class GameScene extends THREE.Group {
       });
       this.#peddles.push({
         mesh: meshes[i],
-        physicsId: physicsIds[i]
-      })
+        physicsId: physicsIds[i],
+        hitEffect: new Observable(0.0)
+      });
     };
     this.add(...meshes);
   }
@@ -624,13 +683,13 @@ export default class GameScene extends THREE.Group {
         this.#logger.keyInput(event.key, true);
       }
       switch (controlKey.type) {
-          case ("MOVE"):
-        this.#peddleControls[controlKey.player].pressed = {
-          x: controlKey.x,
-          y: controlKey.y,
-          player: controlKey.player,
-          key: event.key
-        };
+        case ("MOVE"):
+          this.#peddleControls[controlKey.player].pressed = {
+            x: controlKey.x,
+            y: controlKey.y,
+            player: controlKey.player,
+            key: event.key
+          };
           break;
         case ("ACTION"):
           if (controlKey.action == "USE_POWER_UP") {
@@ -674,7 +733,7 @@ export default class GameScene extends THREE.Group {
       return ;
     }
     const info = this.#gameData.usePowerUp(player);
-    
+
     const powerUp = new PowerUp({
       duration: POWER_UP_CONFIG.defaultDuration,
       info
@@ -705,11 +764,11 @@ export default class GameScene extends THREE.Group {
     }
     powerUp.use(target); 
     switch (info.type)  {
-        case ("BUFF"): {
-          /** @type {HTMLAudioElement} */
-          const sound = Asset.shared.get("AUDIO", ASSET_PATH.buffSound);
-          sound.play();
-        }
+      case ("BUFF"): {
+        /** @type {HTMLAudioElement} */
+        const sound = Asset.shared.get("AUDIO", ASSET_PATH.buffSound);
+        sound.play();
+      }
         break;
       case ("DEBUFF"): {
         /** @type {HTMLAudioElement} */
@@ -727,15 +786,15 @@ export default class GameScene extends THREE.Group {
    *  @param { PowerUp } powerUp
    */
   #usePowerUpToPeddle(peddle, powerUp) {
-      switch (powerUp.info.key) {
-          case ("PEDDLE_SPEED_UP"):
+    switch (powerUp.info.key) {
+      case ("PEDDLE_SPEED_UP"):
         powerUp.setTotalDuration(POWER_UP_CONFIG.peddleSpeedUpDuration);
-          break;
-        case ("PEDDLE_SPEED_DOWN"):
-          powerUp.setTotalDuration(POWER_UP_CONFIG.peddleSpeedDownDuration);
-          break;
-          default: break;
-      }
+        break;
+      case ("PEDDLE_SPEED_DOWN"):
+        powerUp.setTotalDuration(POWER_UP_CONFIG.peddleSpeedDownDuration);
+        break;
+      default: break;
+    }
     powerUp.setUseCallback((state) => {
       if (powerUp.info.key.includes("PEDDLE_SIZE")) {
         this.#physics.setState(peddle.physicsId, () => ({width: state.width}));
@@ -802,6 +861,9 @@ export default class GameScene extends THREE.Group {
         /** @type {PhysicsEntity} */
         const peddle = ball == collider ? collidee: collider;
         ball.velocity.x += peddle.velocity.x * 0.1;
+        const peddleIndex = peddle["physicsId"] == this.#peddles[0].physicsId ? 0: 1;
+
+        this.#peddles[peddleIndex].hitEffect.value = 1.0;
       }
     )
 
@@ -992,115 +1054,115 @@ export default class GameScene extends THREE.Group {
    *    winPlayer: Player
    *    scores: { [key in string]: number}
    * }} params
-    * */
+   * */
   #sendGameScoreUpdate({ winPlayer, scores }) {
     if (!this.#logger.scoreUpdate)
       return;
 
-    /** @type {{ [key in string] :number }} */
-    this.#logger.scoreUpdate({
-      winPlayer,
-      scores
-    });
-  }
+  /** @type {{ [key in string] :number }} */
+  this.#logger.scoreUpdate({
+    winPlayer,
+    scores
+  });
+}
 
-  /** @param {number} playerIndex */
-  getPeddleInfo(playerIndex) {
-    const physicsId = this.#peddles[playerIndex].physicsId;
-    return this.#physics.getState(physicsId);
-  }
+/** @param {number} playerIndex */
+getPeddleInfo(playerIndex) {
+  const physicsId = this.#peddles[playerIndex].physicsId;
+  return this.#physics.getState(physicsId);
+}
 
-  getBallInfo() {
-    if (!this.#ball?.physicsId)
-      return {};
-    const physicsId = this.#ball.physicsId;
-    return this.#physics.getState(physicsId);
-  }
+getBallInfo() {
+  if (!this.#ball?.physicsId)
+    return {};
+  const physicsId = this.#ball.physicsId;
+  return this.#physics.getState(physicsId);
+}
 
-  /** @param {(key: string, press: boolean) => void} logger */
-  setKeyLogger(logger) {
-    this.#logger.keyInput= logger;
-  }
+/** @param {(key: string, press: boolean) => void} logger */
+setKeyLogger(logger) {
+  this.#logger.keyInput= logger;
+}
 
-  /** @param {(data: { winPlayer: Player,
-   *    scores: { [key: string]: number } }) => void } logger */
+/** @param {(data: { winPlayer: Player,
+ *    scores: { [key: string]: number } }) => void } logger */
   setScoreLogger(logger) {
     this.#logger.scoreUpdate = logger;
   }
- 
-  /** @param {(_: {collider: PhysicsEntity, collidee: PhysicsEntity}) => void} logger */
-  setCollisionLogger(logger) {
-    const id = this.#physics.addCollisionCallback(
-      (_collider, _collidee, _time) =>  true,
-      (collider, collidee, _time) => {
-        collider["info"] = this.#getLoggingInfo(collider);
-        collidee["info"] = this.#getLoggingInfo(collidee);
-        logger({ collider, collidee })
-      },
-    );
-    this.#eventsIds.push({
-      desc: "collision logger",
-      id
-    });
-    this.#logger.collisionLoggerId = id;
+
+/** @param {(_: {collider: PhysicsEntity, collidee: PhysicsEntity}) => void} logger */
+setCollisionLogger(logger) {
+  const id = this.#physics.addCollisionCallback(
+    (_collider, _collidee, _time) =>  true,
+    (collider, collidee, _time) => {
+      collider["info"] = this.#getLoggingInfo(collider);
+      collidee["info"] = this.#getLoggingInfo(collidee);
+      logger({ collider, collidee })
+    },
+  );
+  this.#eventsIds.push({
+    desc: "collision logger",
+    id
+  });
+  this.#logger.collisionLoggerId = id;
+}
+
+/** @param {PhysicsEntity} entity */
+#getLoggingInfo(entity) {
+  const id = entity["physicsId"];
+  if (id == null || id == undefined)  {
+    console.error("no physics id");
+    return null;
   }
-
-  /** @param {PhysicsEntity} entity */
-  #getLoggingInfo(entity) {
-    const id = entity["physicsId"];
-    if (id == null || id == undefined)  {
-      console.error("no physics id");
-      return null;
-    }
-    //@ts-ignore
-    const data = entity.data;
-    if (data == null)
-      return null;
-    if (data.isBall) {
-      return { type: "BALL" };
-    }
-    if (data.isPeddle) {
-      return { 
-        ...data,
-        playerNickname: this.#gameData.currentPlayers[data.player].nickname
-      };
-    }
-    return data;
+  //@ts-ignore
+  const data = entity.data;
+  if (data == null)
+    return null;
+  if (data.isBall) {
+    return { type: "BALL" };
   }
+  if (data.isPeddle) {
+    return { 
+      ...data,
+      playerNickname: this.#gameData.currentPlayers[data.player].nickname
+    };
+  }
+  return data;
+}
 
-  _addHelper() {
-    this.gui = new GUI();
-    this.gui.close();
+_addHelper() {
+  this.gui = new GUI();
+  this.gui.close();
 
-    const color = this.gui.addFolder("color");
+  const color = this.gui.addFolder("color");
 
-    color.addColor(this, "ballColor")
-      .onChange(newColor => {
-        if (this.#ball.mesh)
-          this.#ball.mesh.material.color.set(newColor);
-      })
+  color.addColor(this, "ballColor")
+    .onChange(newColor => {
+      if (this.#ball.mesh)
+        this.#ball.mesh.material.color.set(newColor);
+    })
 
-    color.addColor(this, "wallColor")
-      .onChange(newColor => {
-        Object.entries(this.#walls) 
-          .forEach(([id, mesh]) => {
-            mesh.material.color.set(newColor);
-          })
-      })
-
-    Object.entries(this.#peddleColors).forEach(([player], index) => {
-      color.addColor(this.#peddleColors, player) 
-        .onChange(newColor => {
-          this.#peddles[index].mesh.material.color.set(newColor);
+  color.addColor(this, "wallColor")
+    .onChange(newColor => {
+      Object.entries(this.#walls) 
+        .forEach(([id, mesh]) => {
+          mesh.material.color.set(newColor);
         })
     })
 
-    const axesHelper = new THREE.AxesHelper(5);
-    axesHelper.setColors(
-      new THREE.Color(0xffffff), 
-      new THREE.Color(0xffffff), 
-      new THREE.Color(0xffffff)
-    )
-    this.add(axesHelper);
-  }
+  Object.entries(this.#peddleColors).forEach(([player], index) => {
+    color.addColor(this.#peddleColors, player) 
+      .onChange(newColor => {
+        this.#peddles[index].mesh.material.color.set(newColor);
+      })
+  })
+
+  const axesHelper = new THREE.AxesHelper(5);
+  axesHelper.setColors(
+    new THREE.Color(0xffffff), 
+    new THREE.Color(0xffffff), 
+    new THREE.Color(0xffffff)
+  )
+  this.add(axesHelper);
+}
 }

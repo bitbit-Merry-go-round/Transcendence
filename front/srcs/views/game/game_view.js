@@ -10,7 +10,6 @@ import ColorPicker from "@/views/components/color_picker.js";
 import Observable from "@/lib/observable";
 import { getRandomFromArray } from "@/utils/type_util";
 import GameDataEmitter from "@/game/game_data_emitter";
-import GameAnalytics from "@/data/game_analytics";
 
 export default class GameView extends View {
 
@@ -33,8 +32,6 @@ export default class GameView extends View {
   #returnGameButton;
   /** @type{GameMap} */
   #gameMap;
-  /** @type {TournamentPanel} */
-  #tournamentPanel;
   /** @type {boolean} */
   #isReadyToPlay = false;
   /** @type {Observable[]} */
@@ -45,9 +42,6 @@ export default class GameView extends View {
   constructor({data}) {
     super({data: data.gameData});
     this.#data = data.gameData;
-    this.#dataEmitter = new GameDataEmitter();
-    const analytics = data.analytics;
-    analytics.setEmitter(this.#dataEmitter); 
     //@ts-ignore
     this.#gameData = data.gameData;
     this.#data.subscribe("scores", 
@@ -90,8 +84,7 @@ export default class GameView extends View {
     if (this.#gameData.gameType == GAME_TYPE.localTournament) {
       this.#initTournament();
     }
-    //else if (this.#gameData.gameType == GAME_TYPE.remote) {
-    if (true) {
+    else if (this.#gameData.gameType == GAME_TYPE.remote) {
       this.#scene.setDataEmitter(this.#dataEmitter)
       this.#dataEmitter.startCollecting();
       this.#dataEmitter.startEmit();
@@ -130,6 +123,7 @@ export default class GameView extends View {
       }
       text += '\n';
     })
+    text += "Change 🎵: Click 📻";
     container.innerText = text;
     return this;
   }
@@ -325,7 +319,6 @@ export default class GameView extends View {
       height: "800px",
     };
     await panel.render();
-    this.#tournamentPanel = panel;
     /** @type {HTMLElement} */ //@ts-ignore
     const board = panel.children[0];
     this.#scene.createBoard(board);

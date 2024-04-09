@@ -13,7 +13,7 @@ export default class ParticleGenerator {
   }
 
   /** @type {THREE_UTIL.ShaderLoadContext} */
-  static #shaderLoad = THREE_UTIL.createLoadShaderContext(this.shaderPath);
+  static #shaderLoad = THREE_UTIL.createLoadShaderContext(ParticleGenerator.shaderPath);
 
   /** @type {THREE.Group} */
   #particleContainer;

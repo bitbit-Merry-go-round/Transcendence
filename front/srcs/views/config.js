@@ -140,5 +140,4 @@ export const routes = [
   { path: "/match", view: MatchView },
   { path: "/tournament", view: TournamentView },
   { path: "/edit", view: EditView },
-  { path: "/dash_board", view: GraphView },
 ];

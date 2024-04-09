@@ -18,7 +18,7 @@ export default class ColorPicker extends View {
   }
 
   /** @type {THREE_UTIL.ShaderLoadContext} */
-  static #shaderLoad = THREE_UTIL.createLoadShaderContext(this.shaderPath);
+  static #shaderLoad = THREE_UTIL.createLoadShaderContext(ColorPicker.shaderPath);
 
   /** @type {{ width: number, height: number }} */
   #size;
@@ -41,8 +41,8 @@ export default class ColorPicker extends View {
    *   },
    *   }} params */
   constructor({color= null, onPickColor, size = DEFAULT_SIZE}) {
-    THREE_UTIL.loadShaders(ColorPicker.#shaderLoad);
     super();
+    THREE_UTIL.loadShaders(ColorPicker.#shaderLoad);
     if (color) {
       this.#pickedColor = color;
     }
