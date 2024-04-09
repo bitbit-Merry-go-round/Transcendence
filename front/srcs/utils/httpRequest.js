@@ -50,8 +50,8 @@ export default function httpRequest(method, url, body, success, fail = fetch_fai
                 localStorage.setItem("access", result.access)
                 localStorage.setItem("refresh", result.refresh)
             })
-            .then(async () => {
-                await httpRequest(method, url, body, success, () => {
+            .then(() => {
+                httpRequest(method, url, body, success, () => {
                     throw new Error(`${res.status}`);
                 })
             })
