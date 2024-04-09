@@ -9,6 +9,7 @@
  *    [key in string]: string
  *  }} loadedShader
  *}} */ 
+import { DEBUG } from "@/data/global";
 import * as THREE from "three";
 
 export function resizeTexture({texture, x, y}) {
@@ -37,6 +38,7 @@ export function loadShaders(context) {
     .then(_ => context.resolve(true) )
     .catch(err => {
       context.resolve(false);
+      if (DEBUG.isDebug())
       console.error("Fail to load shader ", context, err);
     });
 }
@@ -46,12 +48,13 @@ export function loadShaders(context) {
 export function createLoadShaderContext(path) {
   const rv = {
     path,
-    loadstarted: false,
+    loadStarted: false,
     loadedShader: {},
   };
   rv.isLoaded = new Promise(resolve => 
     rv.resolve = resolve
   );
+  // @ts-ignore
   return rv;
 }
 

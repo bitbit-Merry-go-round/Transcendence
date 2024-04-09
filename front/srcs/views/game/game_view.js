@@ -10,6 +10,7 @@ import ColorPicker from "@/views/components/color_picker.js";
 import Observable from "@/lib/observable";
 import { getRandomFromArray } from "@/utils/type_util";
 import GameDataEmitter from "@/game/game_data_emitter";
+import { DEBUG } from "@/data/global";
 
 export default class GameView extends View {
 
@@ -71,7 +72,8 @@ export default class GameView extends View {
   connectedCallback() {
     super.connectedCallback();
     Asset.shared.onLoaded(() => {
-      console.log(`Asset load ${Asset.shared.loadedPercentage * 100}%`);
+      if (DEBUG.isDebug())
+        console.log(`Asset load ${Asset.shared.loadedPercentage * 100}%`);
     })
     this
       .#givePowerUps()

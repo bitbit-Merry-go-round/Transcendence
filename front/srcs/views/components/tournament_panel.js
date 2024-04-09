@@ -1,4 +1,5 @@
 import GameData from "@/data/game_data";
+import { DEBUG } from "@/data/global";
 import View from "@/lib/view";
 
 /** @typedef {Object} Match 
@@ -54,7 +55,7 @@ export default class TournamentPanel extends View {
         this.updatePanel(gameData.tournament.allRounds)
       })
     }
-    else {
+    else if (DEBUG.isDebug()){
       console.error("no data for TournamentPanel");
     }
   }

@@ -2,7 +2,9 @@ import { isEmptyObject } from "@/utils/type_util";
 import { generateRandomName } from "@/utils/random_name";
 import Player from "@/data/player";
 import Tournament, * as TM from "@/data/tournament";
-import PowerUp, * as PU from "@/data/power_up";
+import * as PU from "@/data/power_up";
+import CONFIG from "@/game/config";
+import { DEBUG } from "./global";
 
 export const GAME_TYPE = Object.freeze({
   local1on1: "LOCAL_1ON1",
@@ -45,7 +47,7 @@ export default class GameData {
     return this.#_gameType;
   }
 
-  #_winScore = 3;
+  #_winScore;
   get winScore() {
     return this.#_winScore;
   }
@@ -172,14 +174,21 @@ export default class GameData {
    *    [key: string]: number
    *  } 
    *  type: string,
+   *  winScore?: number,
    *  isPowerAvailable?: boolean
    * }} args
    */
-  constructor({players, positions = {}, type, isPowerAvailable = true}) {
+  constructor({
+    players, 
+    positions = {}, 
+    type, 
+    winScore = CONFIG.WIN_SCORE,
+    isPowerAvailable = true}) {
     this.#players = players;
     if (players.length < 2) {
       throw "Not enough players";
     }
+    this.#_winScore = winScore;
     this.#powerUps = {};
     this.#_isPowerAvailable = true;
     players.forEach(
@@ -227,6 +236,7 @@ export default class GameData {
         this.#_tournament.setScore({ player, score });
         break;
       default:
+        if (DEBUG.isDebug())
         console.error("not implemented");
         break;
     }

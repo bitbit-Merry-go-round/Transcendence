@@ -1,3 +1,4 @@
+import { DEBUG } from "@/data/global";
 import  PhysicsEntity, { isCircleCollideRect, isRectCollideRect } from "@/game/physics_entity"
 import { isEqualF } from "@/game/physics_utils";
 
@@ -82,7 +83,8 @@ export default class Physics {
   setState(objId, setCallback) {
     const obj = this.#allObjects[objId];
     if (!obj) {
-      console.error("Not valid object id ", objId);
+      if (DEBUG.isDebug())
+        console.error("Not: valid object id ", objId);
       return ;
     }
     const state = {

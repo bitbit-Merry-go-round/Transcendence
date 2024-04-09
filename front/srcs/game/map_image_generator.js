@@ -8,6 +8,7 @@
 */
 
 import { GameMap, WALL_TYPES } from "@/data/game_map";
+import { DEBUG } from "@/data/global";
 
 const WALL_THICKNESS_THRESHOLD = 4;
 
@@ -102,7 +103,8 @@ export default class MapImageGenarator {
   generate({map, textureName}) {
     const texture = this.#textures[textureName];
     if (!texture) {
-      console.error(textureName + " texture not loaded");
+      if (DEBUG.isDebug())
+        console.error(textureName + " texture not loaded");
       return ;
     }
     const ctx = this.#canvas.getContext("2d");

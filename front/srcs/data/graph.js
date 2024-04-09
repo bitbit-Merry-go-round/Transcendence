@@ -1,7 +1,8 @@
 /** @typedef { "LINE" | "BAR" | "PIE" } GraphType */
 
-export default class GraphData {
+import { DEBUG } from "./global";
 
+export default class GraphData {
 
   /** @type { string } */
   #label; 
@@ -40,7 +41,7 @@ export default class GraphData {
    */ 
   #colors;
 
-  /** @param { string } */
+  /** @param { string } axies */
   getColor(axies) {
     return this.#colors[axies];
   }
@@ -76,16 +77,17 @@ export default class GraphData {
   }
 
   #calcAxiesLength() { 
-    if (this.#data.length < 2) {
-      console.error("data length < 2");
-      return ;
-    }
     let min = {};
     let max = {};
     for (let axis in this.#axies) {
        min[axis] = 0;
        max[axis] = 0;
     }   
+    if (this.#data["DEFAULT"].length < 2) {
+      if (DEBUG.isDebug())
+        console.error("data length < 2");
+      return ;
+    }
 
     this.#data["DEFAULT"].forEach(data => {
       Object.entries(this.#axies).forEach(([axis, { name }]) => {

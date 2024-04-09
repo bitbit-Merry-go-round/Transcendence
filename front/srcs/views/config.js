@@ -141,3 +141,16 @@ export const routes = [
   { path: "/tournament", view: TournamentView },
   { path: "/edit", view: EditView },
 ];
+
+/** @param { string } path 
+ *  @returns { boolean }
+ */
+export function isAvailableAddress(path) {
+  if (path.length == 0) {
+    return true;
+  }
+  let _path = path[0] == "/" ? path.substring(1): path;
+  const notAvailable = [ "game" ];
+
+  return (notAvailable.indexOf(_path) == -1);
+}

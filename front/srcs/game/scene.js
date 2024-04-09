@@ -15,6 +15,7 @@ import GameScene from "@/game/game_scene";
 import Timer from "@/game/timer";
 import GUI from "node_modules/lil-gui/dist/lil-gui.esm.min.js";
 import GameDataEmitter from "@/game/game_data_emitter";
+import { DEBUG } from "@/data/global";
 
 /**
  * Game Scene.
@@ -117,7 +118,7 @@ export default class Scene {
   /** @type {Timer} */
   #timer;
 
-  isBallMoving = false;
+  #isBallMoving = false;
 
   peddleSizeInGame = {
     width: 0.15,
@@ -346,7 +347,7 @@ export default class Scene {
 
   startGame() {
     this.#gameScene.addBall();
-    this.isBallMoving = true;
+    this.#isBallMoving = true;
     if (this.#logger.rallyState) {
       this.#logger.rallyState("START");
     }
@@ -361,7 +362,7 @@ export default class Scene {
     }
     this.#gameScene.removeBall();
     this.#gameScene.addBall();
-    this.isBallMoving = true;
+    this.#isBallMoving = true;
   }
 
   /** @param {Player} player */
@@ -389,7 +390,7 @@ export default class Scene {
     sound.addEventListener("ended", () => {
       this.#bgm.current.volume = this.#bgm.volume;
     });
-    this.isBallMoving = false;
+    this.#isBallMoving = false;
     const cameraDest = { ...this.cameraPositions.play };
     cameraDest.z += 0.5;
     this.#showLeaves();
@@ -490,7 +491,8 @@ export default class Scene {
 
   #showTrophy(onEnded) {
     if (!this.#trophy) {
-      console.error("trophy is not loaded");
+      if (DEBUG.isDebug())
+        console.error("trophy is not loaded");
       return ;
     }
     this.#trophy.position.set(
@@ -1103,7 +1105,8 @@ export default class Scene {
     this.#renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.#renderer.setSize(this.#windowSize.width, 
       this.#windowSize.height);
-    this.#renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    const pixelRatio = Math.min(window.devicePixelRatio, 2);
+    this.#renderer.setPixelRatio(pixelRatio);
 
     return this;
   }
@@ -1159,7 +1162,6 @@ export default class Scene {
 
       const width = this.#canvas.parentElement.offsetWidth;
       const height = this.#canvas.parentElement.offsetHeight;
-
       this.#windowSize = {
         width,
         height,
@@ -1168,9 +1170,11 @@ export default class Scene {
       this.#camera.aspect = width / height;
       this.#camera.updateProjectionMatrix();
       this.#renderer.setSize(width, height);
-      this.#renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      const pixelRatio = Math.min(window.devicePixelRatio, 2);
+      this.#renderer.setPixelRatio(pixelRatio);
+      this.#gameScene.pixelRatio = pixelRatio;
 
-    }).bind(this);
+    });
     window.addEventListener("resize", () => resizeCallback()) 
     return this;
   }

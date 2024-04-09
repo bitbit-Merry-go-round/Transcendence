@@ -14,15 +14,9 @@ import Timer from "@/game/timer";
 import PowerUp, { POWER_UP_CONFIG } from "@/data/power_up";
 import * as THREE_UTIL from "@/utils/three_util";
 import Observable from "@/lib/observable";
+import CONFIG from "@/game/config";
+import { DEBUG } from "@/data/global";
 
-const FRAME_TIME_THRESHOLD = 0.01;
-const MAX_PEDDLE_SPEED = 50;
-const PEDDLE_ACCEL = 10;
-const PEDDLE_DECEL_RATIO = 0.5;
-const SOUND_EFFECT_THRESHOLD = 0.3;
-const SAFE_WALL_STUCK_THRESHOLD = 4;
-const MAX_BALL_SPEED = 100;
-const MIN_BALL_SPEED = 10;
 
 export default class GameScene extends THREE.Group {
 
@@ -31,8 +25,18 @@ export default class GameScene extends THREE.Group {
     fragment: "srcs/shader/peddle_f.glsl",
   }
 
+  static ballShaderPath = {
+    vertex: "srcs/shader/ball_v.glsl",
+    fragment: "srcs/shader/ball_f.glsl",
+    atMosphereFragment: "srcs/shader/ball_atmosphere_f.glsl",
+  };
+
   /** @type {THREE_UTIL.ShaderLoadContext} */
   static #peddleShaderLoad= THREE_UTIL.createLoadShaderContext(GameScene.peddleShaderPath);
+  #peddleShaderLoaded = false;
+  /** @type {THREE_UTIL.ShaderLoadContext} */
+  static #ballShaderLoad = THREE_UTIL.createLoadShaderContext(GameScene.ballShaderPath);
+  #ballShaderLoaded = false;
 
   /** @type {Physics} */
   #physics;
@@ -40,6 +44,9 @@ export default class GameScene extends THREE.Group {
   #gameData;
   #gameMap;
   #timer;
+  #isPreparingBall = false;
+  #isVisible = document.visibilityState != "hidden";
+  pixelRatio = Math.min(window.devicePixelRatio, 2);
   /** @type {{
    * physicsId: number,
    * mesh: THREE.Mesh,
@@ -75,12 +82,20 @@ export default class GameScene extends THREE.Group {
   /**
    * @type {{
    *  mesh: THREE.Mesh | null,
+   *  atmosphere:THREE.Mesh | null,
    *  physicsId: number | null,
    * }} 
    */
-  #ball = { mesh: null, physicsId: null };
+  #ball = { 
+    mesh: null, 
+    atmosphere: null,
+    physicsId: null 
+  };
   get ball() {
-    return {...this.#ball};
+    return {
+      mesh: this.#ball.mesh,
+      physicsId: this.#ball.physicsId
+    };
   }
 
   ballColor = 0xff0000;
@@ -121,7 +136,6 @@ export default class GameScene extends THREE.Group {
    *  }[]}
    */
   #peddles = [];
-  #peddleShaderLoaded = false;
 
   /** @type {{
    *    pressed: {
@@ -199,6 +213,7 @@ export default class GameScene extends THREE.Group {
   constructor({timer, stuckHandler, data, map}) {
     super();
     THREE_UTIL.loadShaders(GameScene.#peddleShaderLoad);
+    THREE_UTIL.loadShaders(GameScene.#ballShaderLoad);
     GameScene.#peddleShaderLoad
     this.#timer = timer;
     this.#gameData = data;
@@ -213,31 +228,36 @@ export default class GameScene extends THREE.Group {
       .#addObjects()
       .#addControls()
       .#addEvents()
+      .#setVisibleCallback();
     this.#gameParticle.isPlaying = true;
   }
 
   /** @param {number} frameTime */
   update(frameTime) {
+    this.#gameParticle.animate(frameTime);
+    if (!this.#isVisible) 
+      return ;
     this.#peddles.forEach(peddle => 
       peddle.hitEffect.value = Math.max(peddle.hitEffect.value - frameTime, 0));
-    let frameSlice = Math.min(frameTime, FRAME_TIME_THRESHOLD);
+    let frameSlice = Math.min(frameTime, CONFIG.FRAME_TIME_THRESHOLD);
     this
       .#updatePowerUps(frameTime)
       .#updateObjects({frameTime, frameSlice})
     if (this.#ball.physicsId) {
       this.#captureBall()
     }
-    this.#gameParticle.animate(frameTime);
   }
 
   addBall() {
+    if (this.#isPreparingBall) {
+      if (DEBUG.isDebug())
+        console.error("preparing ball");
+      return ;
+    }
+    this.#isPreparingBall = true;
     const mesh = new THREE.Mesh(
       new THREE.SphereGeometry(this.#ballRadiusInGame, 16, 16),
-      new THREE.MeshStandardMaterial({
-        color: this.ballColor,
-        metalness: 0.3,
-        roughness: 0.4
-      })
+      this.#createBallMaterial()
     );
     mesh.position.set(0, 0, 0);
     const ballWidth =  this.#ballRadiusInGame;
@@ -249,15 +269,6 @@ export default class GameScene extends THREE.Group {
       radius: Math.max(ballWidth, ballHeight),
       center: { x: 0, y:0 }
     });
-    this.#ballStartDirection.x = (Math.random() > 0.5) ? DIRECTION.left: DIRECTION.right;
-    this.#ballStartDirection.y = (this.#lostSide == DIRECTION.top) ? DIRECTION.bottom: DIRECTION.top;
-    let velX = (this.#ballStartDirection.x == DIRECTION.right? 1 : -1) * this.#ballSpeed * (Math.random() + 0.5);
-    let velY = (this.#ballStartDirection.y == DIRECTION.top? 1 : -1) * this.#ballSpeed;
-
-    ballPhysics.velocity = {
-      x: velX,
-      y: velY,
-    };
     ballPhysics["data"] = {
       isBall: true
     };
@@ -271,11 +282,87 @@ export default class GameScene extends THREE.Group {
       },
     );
     this.add(mesh);
-    this.#ball = {
-      mesh,
-      physicsId,
-    };
+    this.#ball.mesh = mesh;
+    this.#ball.physicsId = physicsId;
+    this.#ball.atmosphere = this.#createBallAtmosphere();
+    setTimeout(() => {
+      this.#moveBall();
+      this.#isPreparingBall = false;
+    }, CONFIG.BALL_PREPARE_MS);
     return this;
+  }
+
+  #createBallAtmosphere() {
+    if (!this.#ballShaderLoaded || !this.#ball.mesh) {
+      return null;
+    }
+    const geometry = this.#ball.mesh.geometry.clone();
+
+    const shaders = GameScene.#ballShaderLoad.loadedShader;
+    const material = new THREE.ShaderMaterial({
+      vertexShader: shaders["vertex"],
+      fragmentShader: shaders["atMosphereFragment"],
+      transparent: true,
+    });
+
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.castShadow = false;
+    mesh.scale.set(1.5, 1.5, 1.0);
+    mesh.position.z -= 1.0;
+    this.add(mesh);
+    return mesh;
+  }
+
+  #createBallMaterial() {
+    /** @type { THREE.Material } */
+    let material = null;
+    if (!this.#ballShaderLoaded) {
+
+      GameScene.#ballShaderLoad.isLoaded.then((loaded) =>  {
+        this.#ballShaderLoaded = loaded;
+        if (this.#ball.mesh) {
+          //@ts-ignore
+          this.#ball.mesh.material.dispose();
+          this.#ball.mesh.material = this.#createBallMaterial();
+        }
+        if (!this.#ball.atmosphere) {
+          this.#ball.atmosphere = this.#createBallAtmosphere();
+        }
+      })
+      material = new THREE.MeshStandardMaterial({
+        color: this.ballColor,
+        metalness: 0.3,
+        roughness: 0.4
+      })
+    }
+    else {
+      const shaders = GameScene.#ballShaderLoad.loadedShader;
+      material = new THREE.ShaderMaterial({
+        vertexShader: shaders["vertex"],
+        fragmentShader: shaders["fragment"],
+        uniforms: {
+          uText: { 
+            value: Asset.shared.get("TEXTURE", 
+              ASSET_PATH.getTexture.normal("earth"))
+          }
+        }
+      });
+    }
+    
+    return material;
+  }
+
+  #moveBall() {
+
+    this.#ballStartDirection.x = (Math.random() > 0.5) ? DIRECTION.left: DIRECTION.right;
+    this.#ballStartDirection.y = (this.#lostSide == DIRECTION.top) ? DIRECTION.bottom: DIRECTION.top;
+    const velocity = {
+      x: (this.#ballStartDirection.x == DIRECTION.right? 1 : -1) * this.#ballSpeed * (Math.random() + 0.5),
+      y: (this.#ballStartDirection.y == DIRECTION.top? 1 : -1) * this.#ballSpeed
+    };
+    this.#physics.setState(this.#ball.physicsId,
+      () => ({ velocity })
+    );
   }
 
   showNextMatch() {
@@ -291,12 +378,13 @@ export default class GameScene extends THREE.Group {
   }
 
   removeBall() {
-    const mesh = this.#ball.mesh;
     const id = this.#ball.physicsId
     this.#physics.removeCollisionCallback(id);
     this.#physics.removeObject(id);
-    this.remove(mesh);
+    this.remove(this.#ball.mesh);
+    this.remove(this.#ball.atmosphere);
     this.#ball.mesh = null;
+    this.#ball.atmosphere = null;
     this.#ball.physicsId = null;
     return this;
   }
@@ -321,7 +409,8 @@ export default class GameScene extends THREE.Group {
     else if (player.nickname == this.#gameData.currentPlayers[1].nickname)
       mesh = this.#peddles[1].mesh; 
     else {
-      console.error("player to set color not playing");
+      if (DEBUG.isDebug())
+        console.error("player to set color not playing");
       return ;
     }
     const normalizedColor = [ 
@@ -530,7 +619,7 @@ export default class GameScene extends THREE.Group {
     );
     this.#gameParticle = new ParticleGenerator({
       count: 100,
-      particleSize: 20.,
+      particleSize: 20. * this.pixelRatio,
       maxSize: {
         x: 50,
         y: 50,
@@ -733,7 +822,8 @@ export default class GameScene extends THREE.Group {
    **/
   #usePowerUp(player, playerIndex) {
     if (this.#gameData.getPowerUpCountFor(player) == 0) {
-      console.log(player.nickname, " has no power up");
+      if (DEBUG.isDebug())
+        console.log(player.nickname, " has no power up");
       return ;
     }
     const info = this.#gameData.usePowerUp(player);
@@ -765,7 +855,9 @@ export default class GameScene extends THREE.Group {
     }
 
     if (!target) {
-      console.error("not implemented");
+      if (DEBUG.isDebug())
+        console.error("not implemented");
+      return ;
     }
     powerUp.use(target); 
     switch (info.type)  {
@@ -846,7 +938,7 @@ export default class GameScene extends THREE.Group {
 
     const hitSoundEventId = this.#physics.addCollisionCallback(
       (collider, collidee, _time) => {
-        if (Math.abs(this.#timer.elapsedTime - this.#hitSound.time) < SOUND_EFFECT_THRESHOLD)
+        if (Math.abs(this.#timer.elapsedTime - this.#hitSound.time) < CONFIG.SOUND_EFFECT_THRESHOLD)
           return false;
         if (collider.isShape("CIRCLE") || collidee.isShape("CIRCLE")) {
           return true;
@@ -870,19 +962,19 @@ export default class GameScene extends THREE.Group {
         return (collider.data?.isPeddle || collidee.data?.isPeddle);
       },
       (collider, collidee, _time) => {
-        if (this.#stuckHandler && this.#safeWallHitCount > SAFE_WALL_STUCK_THRESHOLD) {
+        if (this.#stuckHandler && this.#safeWallHitCount > CONFIG.SAFE_WALL_STUCK_THRESHOLD) {
           this.#stuckHandler(false);
         }
         this.#safeWallHitCount = 0;
         /** @type {PhysicsEntity} */
         const ball = collider.isShape("CIRCLE") ? collider: collidee;
         const ballSpeedX = Math.abs(ball.velocity.x);
-        if (ballSpeedX > MAX_BALL_SPEED) {
-          ball.velocity.x = MAX_BALL_SPEED * (ball.velocity.x < 0 ? -1: 1);
+        if (ballSpeedX > CONFIG.MAX_BALL_SPEED) {
+          ball.velocity.x = CONFIG.MAX_BALL_SPEED * (ball.velocity.x < 0 ? -1: 1);
         }
-        else if (ballSpeedX < MIN_BALL_SPEED) {
+        else if (ballSpeedX < CONFIG.MIN_BALL_SPEED) {
 
-          ball.velocity.x = MIN_BALL_SPEED* (ball.velocity.x < 0 ? -1: 1);
+          ball.velocity.x = CONFIG.MIN_BALL_SPEED* (ball.velocity.x < 0 ? -1: 1);
         }
         /** @type {PhysicsEntity} */
         const peddle = ball == collider ? collidee: collider;
@@ -905,7 +997,7 @@ export default class GameScene extends THREE.Group {
       },
       (_collider, _collidee, _time) => {
         this.#safeWallHitCount += 1;
-        if (this.#safeWallHitCount > SAFE_WALL_STUCK_THRESHOLD) {
+        if (this.#safeWallHitCount > CONFIG.SAFE_WALL_STUCK_THRESHOLD) {
           this.#stuckHandler(true); 
         }
       }
@@ -922,7 +1014,7 @@ export default class GameScene extends THREE.Group {
       },
       (_collider, collidee, _time) => {
         this.#lostSide = collidee.data.direction;
-        if (this.#stuckHandler && this.#safeWallHitCount > SAFE_WALL_STUCK_THRESHOLD) {
+        if (this.#stuckHandler && this.#safeWallHitCount > CONFIG.SAFE_WALL_STUCK_THRESHOLD) {
           this.#stuckHandler(false);
         }
         this.#safeWallHitCount = 0;
@@ -1004,8 +1096,8 @@ export default class GameScene extends THREE.Group {
         (state) => {
           let vel = { ...state.velocity };
           const speedPowerUp = activePowerUp && activePowerUp.powerUp.targetStatus.velocity;
-          let accel = PEDDLE_ACCEL;
-          let decel = PEDDLE_DECEL_RATIO;
+          let accel = CONFIG.PEDDLE_ACCEL;
+          let decel = CONFIG.PEDDLE_DECEL_RATIO;
           if (speedPowerUp) {
             const status = activePowerUp.powerUp.targetStatus;
             vel.x = status.velocity.x;
@@ -1027,7 +1119,7 @@ export default class GameScene extends THREE.Group {
             vel.x += accel * (control.pressed.x > 0 ? 1: -1);
             if (!speedPowerUp) {
               vel.x = THREE.MathUtils.clamp(
-                vel.x,  -MAX_PEDDLE_SPEED, MAX_PEDDLE_SPEED);
+                vel.x,  -CONFIG.MAX_PEDDLE_SPEED, CONFIG.MAX_PEDDLE_SPEED);
             }
           }
           return { velocity: {
@@ -1038,7 +1130,7 @@ export default class GameScene extends THREE.Group {
     while (frameTime > EPSILON) {
       this.#physics.update(frameSlice);
       frameTime -= frameSlice; 
-      frameSlice = Math.min(frameTime, FRAME_TIME_THRESHOLD);
+      frameSlice = Math.min(frameTime, CONFIG.FRAME_TIME_THRESHOLD);
     }
     const states = this.#physics.allStates;
     this.#objects.forEach(({mesh, physicsId}) => {
@@ -1046,7 +1138,17 @@ export default class GameScene extends THREE.Group {
         return ;
       const position = states[physicsId].position;
       mesh.position.set(position.x, position.y, mesh.position.z);
-    })
+    });
+    if (this.#ball.mesh && this.#ball.physicsId) {
+      const velocity = this.#physics.getState(this.#ball.physicsId).velocity;
+      this.#ball.mesh.rotation.x += velocity.x * 0.001;
+      this.#ball.mesh.rotation.y += velocity.y * 0.001;
+    }
+    if (this.#ball.mesh && this.#ball.atmosphere)  {
+      const position = this.#ball.mesh.position;
+      this.#ball.atmosphere.position.setX(position.x);
+      this.#ball.atmosphere.position.setY(position.y);
+    }
     return this;
   }
 
@@ -1064,7 +1166,7 @@ export default class GameScene extends THREE.Group {
   }
 
   #handleScoreChange() {
-    if (this.#stuckHandler && this.#safeWallHitCount > SAFE_WALL_STUCK_THRESHOLD) {
+    if (this.#stuckHandler && this.#safeWallHitCount > CONFIG.SAFE_WALL_STUCK_THRESHOLD) {
       this.#stuckHandler(false);
     }
     this.#safeWallHitCount = 0;
@@ -1138,7 +1240,8 @@ export default class GameScene extends THREE.Group {
   #getLoggingInfo(entity) {
     const id = entity["physicsId"];
     if (id == null || id == undefined)  {
-      console.error("no physics id");
+      if (DEBUG.isDebug())
+        console.error("no physics id");
       return null;
     }
     //@ts-ignore
@@ -1160,6 +1263,26 @@ export default class GameScene extends THREE.Group {
   /** @param {(_: (string | null)) => void} callback */
   subscribePowerUp(callback) {
     this.#activatedPowerUP.subscribe(activated => callback(activated));
+  }
+
+  #setVisibleCallback() {
+    window.addEventListener('blur', 
+      () => 
+      this.#isVisible = false,
+      false);
+    window.addEventListener('focus', 
+      () => this.#isVisible = true,
+      false);
+    document.addEventListener("visibilitychange",
+      () => {
+        //Only work 
+        setTimeout(() => {
+          this.#isVisible = !document.hidden;
+        }, 10);
+      },
+      false
+    );
+    return this;
   }
 
   _addHelper() {

@@ -1,3 +1,4 @@
+import { DEBUG } from "./global";
 
 export const POWER_UP_CONFIG = {
   defaultDuration: 3,
@@ -235,7 +236,8 @@ export default class PowerUp {
         }
         break;
       default:
-        console.error("power up state not set");
+        if (DEBUG.isDebug())
+          console.error("power up state not set");
         break;
     }
   }

@@ -25,6 +25,6 @@ void main() {
   float isInner = checkIsInner();
   float dist = abs(0.5 - vUv.x) + 0.5;
   color += (1.0 - isInner) * uColor;
-  color += max(0.3, uHit * pow(dist, 2.0)) * uColor ;
+  color += max(0.3, uHit * pow(dist, 3.0) * 2.0) * uColor ;
   gl_FragColor = vec4(color, 1.0);
 }

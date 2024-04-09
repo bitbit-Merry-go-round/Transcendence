@@ -3,6 +3,7 @@
  *  @property { number } value
  */
 
+import { DEBUG } from "@/data/global";
 import { isEmptyObject } from "@/utils/type_util";
 
 /** @typedef {"INSTANT" | "FLUSH" | "LAZY"} EventReactConfig */
@@ -103,7 +104,8 @@ export default class GameDataEmitter {
 
   startEmit() {
     if (this.#receivers.length == 0) {
-      console.error("No receiver");
+      if (DEBUG.isDebug())
+        console.error("No receiver");
       return ;
     }
     this.#lastEmittedDate = new Date().getTime();

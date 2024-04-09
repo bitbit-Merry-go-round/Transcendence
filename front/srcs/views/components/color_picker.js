@@ -3,6 +3,7 @@ import View from "@/lib/view";
 import { hsb2rgb } from "@/utils/color_util";
 import Observable from "@/lib/observable";
 import * as THREE_UTIL from "@/utils/three_util";
+import { DEBUG } from "@/data/global";
 
 const DEFAULT_SIZE = {
   width: 200,
@@ -79,7 +80,8 @@ export default class ColorPicker extends View {
   async #drawColors() {
     const isLoaded = await ColorPicker.#shaderLoad.isLoaded;
     if (!isLoaded) {
-      console.error("shader not loaded");
+      if (DEBUG.isDebug())
+        console.error("shader not loaded");
       return ;
     }
     const geometry = new THREE.PlaneGeometry(2, 2, 1, 1);
