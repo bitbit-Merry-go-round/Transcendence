@@ -2,7 +2,7 @@
 function fetch_failed(url, res) {
     console.error(`fetch to ${url} failed`, `result: ${res}`);
     // TODO: access 토큰 또는 refresh 토큰 유효하지 않을 경우 처리할 로직.
-    // window.location.href = '/login';
+    window.location.href = '/login';
 }
 
 /**
@@ -28,13 +28,18 @@ export default function httpRequest(method, url, body, success, fail = fetch_fai
         body: body
     })
     .then((res) => {
-        if (200 <= res.status && res.status < 300) {
+        if (res.status === 204)
+        {
+            return ;
+        }
+        if (200 <= res.status && res.status < 300) 
+        {
             return res.json();
         }
         const refresh = localStorage.getItem("refresh")
         // access 토큰이 만료되어 권한이 없고, 리프레시 토큰이 있다면 그 리프레시 토큰을 이용해서 새로운 access token 을 요청
         if (res.status === 401 && refresh) {
-            const GET_TOKEN_URI = `http://${window.location.hostname}:8000/users/token/refresh/`;
+            const GET_TOKEN_URI = `http://${window.location.hostname}:8000/token/refresh/`;
             const body = JSON.stringify({
                 'refresh': `${refresh}`
             });
@@ -50,8 +55,8 @@ export default function httpRequest(method, url, body, success, fail = fetch_fai
                 localStorage.setItem("access", result.access)
                 localStorage.setItem("refresh", result.refresh)
             })
-            .then(async () => {
-                await httpRequest(method, url, body, success, () => {
+            .then(() => {
+                httpRequest(method, url, body, success, () => {
                     throw new Error(`${res.status}`);
                 })
             })

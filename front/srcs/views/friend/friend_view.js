@@ -19,20 +19,17 @@ export default class FriendView extends View {
 
     const type = profileCardModal.getAttribute('data-user-type');
     const user = profileCardModal.getAttribute('data-user');
-    console.log(`${type}, ${user}`);
     e.target.setAttribute('disabled', '');
     e.target.classList.add('disabled');
     if (type === TYPE_DELETE)
     {
       url = `http://${window.location.hostname}:8000/users/me/friends/${user}/`;
-      console.log(`delete ${user}`);
       await httpRequest('DELETE', url, null, () => {
         alert(`Your friend <${user}> is deleted!`);
       });
     }
     else if (type === TYPE_ADD)
     {
-      console.log(`add ${user}`);
       url = `http://${window.location.hostname}:8000/users/me/friends/`;
       const body = JSON.stringify({"to_user": `${user}`})
       await httpRequest('POST', url, body, () => {
@@ -51,10 +48,10 @@ export default class FriendView extends View {
   {
     const addFriendBtn = this.querySelector('.btn-add-friend');
 
-    console.log('this: ', this, 'btn: ', addFriendBtn);
     addFriendBtn.classList.remove('btn-del-friend');
     if (type === TYPE_EDIT)
     {
+      addFriendBtn.textContent = '정보변경';
       addFriendBtn.href = '/edit';
     }
     else if (type === TYPE_ADD)
@@ -108,8 +105,7 @@ export default class FriendView extends View {
   _fillModalData(data) {
     const profileCardModal = document.getElementById('profileCardModal');
     const userAvatar = profileCardModal.querySelector('.user-avatar');
-    const userLevel = profileCardModal.querySelector('.user-level');
-    const userName = profileCardModal.querySelector('.user-name');
+    const userLevelId = profileCardModal.querySelector('.user-level-id');
     const userScore = profileCardModal.querySelector('.score');
     const stateMessage = profileCardModal.querySelector('.state-message');
     
@@ -121,8 +117,7 @@ export default class FriendView extends View {
     else
       profileCardModal.setAttribute('data-user-type', `${TYPE_ADD}`);
 
-    userLevel.textContent = `Lv.${data.level}`;
-    userName.textContent = `${data.username}`
+    userLevelId.textContent = `Lv.${data.level} ${data.username}`;
     userAvatar.src = `data:image;base64,${data.avatar}`;
     userScore.textContent = `${data.wins} 승 ${data.loses} 패`;
     stateMessage.textContent = `${data.message}`;
