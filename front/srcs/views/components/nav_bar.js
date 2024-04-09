@@ -63,11 +63,18 @@ export default class NavBar extends View {
     await httpRequest('GET', url, null, this._initNavbarData.bind(this));
   }
     
+  _logoutEvent() {
+    const logoutBtn = this.querySelector('#logout');
+    logoutBtn.addEventListener('click', () => {
+      localStorage.clear();
+    })
+  }
+
   connectedCallback() {
     super.connectedCallback();
     
     this._fetchInfo();
-    // 가능하다면, 한 번 받아온 데이터를 두 군데서 초기화해줄 수 있도록 처리하기.
+    this._logoutEvent();
     this._modalToggler();    
   }
 }
