@@ -55,6 +55,7 @@ export default class FriendView extends View {
     addFriendBtn.classList.remove('btn-del-friend');
     if (type === TYPE_EDIT)
     {
+      addFriendBtn.textContent = '정보변경';
       addFriendBtn.href = '/edit';
     }
     else if (type === TYPE_ADD)
