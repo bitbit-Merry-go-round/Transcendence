@@ -380,13 +380,14 @@ ul {
     border-radius: 0.5em;
     padding: 1em;
     height: 3em;
-    font-size: x-large;
+    font-size: 2.5em;
     border-color: #ffffff00;
 }
 
 .btn-tournament {
     background-color: #756655;
     border-color: #756655;
+    font-size: 2em;
 }
 
 .tournament-footer {
