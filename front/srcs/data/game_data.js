@@ -45,7 +45,7 @@ export default class GameData {
     return this.#_gameType;
   }
 
-  #_winScore = 10;
+  #_winScore = 3;
   get winScore() {
     return this.#_winScore;
   }
