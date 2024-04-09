@@ -38,6 +38,19 @@ body {
     background-color: #ECEEE7;
 }
 
+.home-view-bg {
+    background-image: url(./assets/home_bg.png);
+    height: 100vh; 
+    background-repeat: no-repeat; 
+    background-size: contain;
+    background-position: right;
+}
+
+.btn-start {
+
+}
+
+
 .img-login {
     background-image: url(./assets/forest.jpeg);
     background-color: black;
