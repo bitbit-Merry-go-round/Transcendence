@@ -46,10 +46,9 @@ body {
     background-position: right;
 }
 
-.btn-start {
-
+.explain-text {
+    color:rgb(105, 105, 105);
 }
-
 
 .img-login {
     background-image: url(./assets/forest.jpeg);
