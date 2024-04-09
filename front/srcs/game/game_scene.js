@@ -21,6 +21,8 @@ const PEDDLE_ACCEL = 10;
 const PEDDLE_DECEL_RATIO = 0.5;
 const SOUND_EFFECT_THRESHOLD = 0.3;
 const SAFE_WALL_STUCK_THRESHOLD = 4;
+const MAX_BALL_SPEED = 100;
+const MIN_BALL_SPEED = 10;
 
 export default class GameScene extends THREE.Group {
 
@@ -874,6 +876,14 @@ export default class GameScene extends THREE.Group {
         this.#safeWallHitCount = 0;
         /** @type {PhysicsEntity} */
         const ball = collider.isShape("CIRCLE") ? collider: collidee;
+        const ballSpeedX = Math.abs(ball.velocity.x);
+        if (ballSpeedX > MAX_BALL_SPEED) {
+          ball.velocity.x = MAX_BALL_SPEED * (ball.velocity.x < 0 ? -1: 1);
+        }
+        else if (ballSpeedX < MIN_BALL_SPEED) {
+
+          ball.velocity.x = MIN_BALL_SPEED* (ball.velocity.x < 0 ? -1: 1);
+        }
         /** @type {PhysicsEntity} */
         const peddle = ball == collider ? collidee: collider;
         ball.velocity.x += peddle.velocity.x * 0.1;
