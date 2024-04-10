@@ -1,41 +1,39 @@
 import ObservableObject from "@/lib/observable_object";
 import User, { createProfile } from "@/data/user";
 import GameData from "@/data/game_data";
-import Player from "@/data/player";
+import GameAnalytics from "@/data/game_analytics";
 import { generateRandomName } from "@/utils/random_name.js";
 
-const globalData = (() =>{
-  const user = new ObservableObject(new User({
-    profile:
-    createProfile({
-      id: "heshin",
-      level: 30,
-      profileUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSSEOCV5tCOWEb17GSCGh-mv8QfhjmWo-eIO-Go32AHeA&s" ,
-    }), 
-    friends: [ 
-      createProfile({
-        id: "jeseo",
-        level: 25,
-        profileUrl: "https://ca.slack-edge.com/T039P7U66-U03M2KCK5T6-e75d6c9b8cb3-512"
-      }),
-      ...["eunjiko", "hyecheon", "yham", 'test 1', 'test 2', 'test 3', 'test 4', 'test 5', 'test 6', 'test 7', 'test 8', 'test 9', 'test 10']
-      .map(name => createProfile({id: name}))
-    ],
-  }))
+export const DEBUG = (() => {
+  let isDebug = false;
 
-    const game = GameData.createTournamentGame(
-      [
-        generateRandomName(),  
-        generateRandomName(),  
-        generateRandomName(),  
-        generateRandomName(),  
-      ]
-    )
-  //const game = GameData.createLocalGame();
+  return ({
+    isDebug: () => isDebug,
+    setDebug: /** @param {boolean}debug */ 
+    (debug) => isDebug = debug,
+  });
+})();
+
+const globalData = (() =>{
+
+  let game = GameData.createTournamentGame(
+    [
+      generateRandomName(),  
+      generateRandomName(),  
+      generateRandomName(),  
+      generateRandomName(),  
+    ]
+  );
+  let analytics = new GameAnalytics({gameData: game});
 
   const gameData = new ObservableObject(game);
+  const registerGame = (newGame) => {
+    game = newGame;
+    analytics = new GameAnalytics({ gameData: newGame });
+  };
 
-  return ({ user, gameData });
+  return ({ gameData, registerGame, analytics });
 })();
+
 
 export default globalData;

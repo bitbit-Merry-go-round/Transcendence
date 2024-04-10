@@ -1,11 +1,15 @@
 /** @typedef DataInterval 
- *  @property unit "ms" | "sec"
- *  @property value number
+ *  @property {"MS" | "SEC"} unit 
+ *  @property { number } value
  */
 
+import { DEBUG } from "@/data/global";
+import { isEmptyObject } from "@/utils/type_util";
+
 /** @typedef {"INSTANT" | "FLUSH" | "LAZY"} EventReactConfig */
-/** @typedef {"ball" | "player" | "gameState"} CollectTarget */
-/** @typedef {"playerBehvior" | "collision" | "gameDataChange"} EventType */
+/** @typedef {"BALL" | "PEDDLE" | "GAME_STATE"} CollectTarget */
+/** @typedef {"PLAYER_BEHAVIOR" | "COLLISION" | "GAME_DATA_CHANGED"} EventType */
+
 /** @typedef Config 
  *  @property {DataInterval} emitInterval
  *  @property {{
@@ -17,9 +21,10 @@
  */
 
 /** @typedef EmitterData 
- *  @property { Date } collectedDate
+ *  @property { number } date
  *  @property { "PERIODICAL" | "EVENT" } type
- *  @property { any } data
+ *  @property { any } content
+ *  @property { string } key
  */
 
 /** @typedef DataOutput
@@ -29,28 +34,28 @@
  */
 
 /** @type {{
- *  [key in string]: ((_: number) => DataInterval)
+ *    [key in string]: ((_: number) => DataInterval)
  * }}
-*/
+ */
 const DATA_INTERVAL = Object.freeze({
-  sec: (sec) => ({ unit: "sec", value: sec}),
-  ms: (ms) => ({ unit: "ms", value: ms}),
+  SEC: (sec) => ({ unit: "SEC", value: sec}),
+  MS: (ms) => ({ unit: "MS", value: ms}),
 });
 
 export default class GameDataEmitter {
 
   /** @type Config */
   static DefaultConfig = Object.freeze({
-    emitInterval: DATA_INTERVAL.sec(1),
+    emitInterval: DATA_INTERVAL.SEC(1),
     periodicalCollect: {
-      ball: DATA_INTERVAL.ms(100),
-      player: DATA_INTERVAL.ms(100),
-      gameState: DATA_INTERVAL.ms(500),
+      BALL: DATA_INTERVAL.MS(500),
+      PEDDLE: DATA_INTERVAL.MS(500),
+      GAME_STATE: DATA_INTERVAL.MS(2000),
     },
     event: {
-      playerBehvior: "LAZY",
-      collision: "LAZY",
-      gameDataChange: "LAZY"
+      PLAYER_BEHAVIOR: "LAZY",
+      COLLISION: "LAZY",
+      GAME_DATA_CHANGED: "LAZY"
     }
   });
 
@@ -77,44 +82,61 @@ export default class GameDataEmitter {
   }
 
   /** @param {{
-   *  receiver: (output:DataOutput) => void,
+   *  receiver?: (output:DataOutput) => void,
    *  config?: Config
-   * }} params */
-  constructor({
-    receiver,
-    config = GameDataEmitter.DefaultConfig,
-  }) {
-    this.#config = config;
-    this.#receivers = [ receiver ];
+   * } | null
+  * } params */
+  constructor(params = null) {
+    this.#config = params?.config ?? GameDataEmitter.DefaultConfig,
+    this.#receivers = [];
+    if (params?.receiver) {
+      this.#receivers.push(params.receiver);
+    }
     // @ts-ignore
     this.#collectors = {};
     this.#pendingData = [];
   }
 
+  /** @param { (output:DataOutput) => void } receiver */
+  addReciever(receiver) {
+    this.#receivers.push(receiver);
+  }
+
   startEmit() {
     if (this.#receivers.length == 0) {
-      console.error("No receiver");
+      if (DEBUG.isDebug())
+        console.error("No receiver");
       return ;
     }
     this.#lastEmittedDate = new Date().getTime();
     this.#emit();
   }
 
+  /** @param {CollectTarget} target
+   *  @param {() => Object} collector
+   */
+  setCollector(target, collector) {
+    this.#collectors[target] = collector;
+  }
+
   #emit() {
     const interval = this.#config.emitInterval.value * 
-      (this.#config.emitInterval.unit == "sec" ? 1000 : 1);
+      (this.#config.emitInterval.unit == "SEC" ? 1000 : 1);
     if (this.#receivers.length == 0)
       return;
     setTimeout(() => {
       this.#emit();
     }, interval);
-    const threshold = this.#lastEmittedDate + interval;
+   
     const data = this.#pendingData;
+    this.#pendingData = [];
     /** @type {DataOutput} */
     const output = {
       prefix: GameDataEmitter.outputPrefix,
-      data,
-      emittedTime: new Date
+      data: data.sort(
+      (lhs, rhs) => 
+        lhs.date > rhs.date ? 1: -1),
+      emittedTime: new Date()
     };
     for (let receiver of this.#receivers) {
       receiver(output); 
@@ -127,12 +149,13 @@ export default class GameDataEmitter {
   submitEvent(type, event) {
     /** @type {EventReactConfig} */
     const config = this.#config.event[type];
-    const date = new Date();
+    const date = new Date().getTime();
     /** @type {EmitterData} */
     const formatted = {
-      collectedDate: date,
+      date,
       type: "EVENT",
-      data: event
+      key: type,
+      content: event
     };
     switch (config) {
       case("LAZY"):
@@ -165,14 +188,18 @@ export default class GameDataEmitter {
       return ;
     setTimeout(() => 
       this.#collect(target, interval),
-      interval.value * (interval.unit == "sec" ? 1000 : 1));
-    const date = new Date();
+      interval.value * (interval.unit == "SEC" ? 1000 : 1));
+    const date = new Date().getTime();
     const collector = this.#collectors[target];
     if (collector) {
+      const content = collector();
+      if (isEmptyObject(content))
+        return;
       this.#pendingData.push({
-        collectedDate: date,
+        date,
         type: "PERIODICAL",
-        data: collector()
+        key: target,
+        content
       });
     }
   }

@@ -8,6 +8,9 @@ import * as PU from "@/data/power_up";
 import Asset from "@/game/asset";
 import ColorPicker from "@/views/components/color_picker.js";
 import Observable from "@/lib/observable";
+import { getRandomFromArray } from "@/utils/type_util";
+import GameDataEmitter from "@/game/game_data_emitter";
+import { DEBUG } from "@/data/global";
 
 export default class GameView extends View {
 
@@ -30,12 +33,12 @@ export default class GameView extends View {
   #returnGameButton;
   /** @type{GameMap} */
   #gameMap;
-  /** @type {TournamentPanel} */
-  #tournamentPanel;
   /** @type {boolean} */
   #isReadyToPlay = false;
   /** @type {Observable[]} */
   #pickerColors = [];
+  /** @type {GameDataEmitter} */
+  #dataEmitter;
 
   constructor({data}) {
     super({data: data.gameData});
@@ -64,33 +67,30 @@ export default class GameView extends View {
         centerY: 70
       }
     ], WALL_TYPES.safe);
-    this.#gameData.givePowerUpTo({
-      powerUp: PU.BUFFS.peddleSpeed,
-      player: this.#gameData.currentPlayers[0]
-    })
-    this.#gameData.givePowerUpTo({
-      powerUp: PU.BUFFS.peddleSize,
-      player: this.#gameData.currentPlayers[1]
-    })
   }
 
   connectedCallback() {
     super.connectedCallback();
     Asset.shared.onLoaded(() => {
-      console.log(`Asset load ${Asset.shared.loadedPercentage * 100}%`);
+      if (DEBUG.isDebug())
+        console.log(`Asset load ${Asset.shared.loadedPercentage * 100}%`);
     })
     this
+      .#givePowerUps()
       .#createScene()
       .#addColorPicker()
+      .#initHelperText()
       .#initButtons()
       .#initEvents();
     /** @type {GameData} */ //@ts-ignore
     if (this.#gameData.gameType == GAME_TYPE.localTournament) {
       this.#initTournament();
     }
-    this.#data.subscribe("powerUps", (powerup) => {
-      console.log("power up changed", powerup);
-    })
+    else if (this.#gameData.gameType == GAME_TYPE.remote) {
+      this.#scene.setDataEmitter(this.#dataEmitter)
+      this.#dataEmitter.startCollecting();
+      this.#dataEmitter.startEmit();
+    }
   }
 
   #createScene() {
@@ -108,6 +108,26 @@ export default class GameView extends View {
       }
     });
     return this;    
+  }
+
+  #initHelperText() {
+    /** @type {HTMLParagraphElement} */
+    const container = this.querySelector("#help-text");
+    let text = "";
+    const controls = this.#gameData.controls;
+    controls.forEach((control, index) => {
+      text += index == 0 ? "Player 1" : "Player 2";
+      text += '\n';
+      text += `left: ${control.left} \n`
+      text += `right: ${control.right} \n`
+      if (this.#gameData.isPowerAvailable) {
+        text += `power up: ${control.powerUp}\n`
+      }
+      text += '\n';
+    })
+    text += "Change 🎵: Click 📻";
+    container.innerText = text;
+    return this;
   }
 
   #initButtons() {
@@ -157,16 +177,16 @@ export default class GameView extends View {
       this.#tournamentButton.style.visibility = "hidden";
       return ;
     }
-    this.#tournamentButton.style.opacity = 0.3;
+    this.#tournamentButton.style.opacity = "0.3";
     this.#tournamentButton.addEventListener("click",
       () => {
         this.#startButton.style.visibility = "hidden";
-        this.#tournamentButton.style.opacity = 0.3; 
+        this.#tournamentButton.style.opacity = "0.3"; 
         this.#isReadyToPlay = false;
 
         this.#scene.showTournamentBoard(() => {
           this.#returnGameButton.style.visibility = "visible";
-          this.#returnGameButton.style.opacity = 1;
+          this.#returnGameButton.style.opacity = "1";
           this.#returnGameButton.disabled = false;
           this.#tournamentButton.disabled = true;
         });
@@ -212,12 +232,15 @@ export default class GameView extends View {
       colorPicker.render().then (() => {
         colorPicker.addEventListener("mouseenter", () => {
           /** @type{HTMLElement} */
-          const picker = colorPicker.querySelector("#picker"); 
+          const picker = colorPicker.querySelector("#picker-container"); 
+          picker.style.transform = "scale(2,2)";
+          picker.style.transformOrigin = `${pickerSize.width * -0.3}px ${pickerSize.height * -0.3}px`;
         });
 
         colorPicker.addEventListener("mouseleave", () => {
           /** @type{HTMLElement} */
-          const picker = colorPicker.querySelector("#picker"); 
+          const picker = colorPicker.querySelector("#picker-container"); 
+          picker.style.transform = "scale(1, 1)";
         });
         container.appendChild(colorPicker);
       }
@@ -262,6 +285,28 @@ export default class GameView extends View {
       const color = this.#scene.getPlayerColor(player);
       this.#pickerColors[i].value = color;
     }
+    return this;
+  }
+
+  #givePowerUps() {
+    const allPowerUps = [
+      PU.BUFFS.peddleSize,
+      PU.BUFFS.peddleSpeed,
+      PU.DEBUFFS.peddleSize,
+      PU.DEBUFFS.peddleSpeed
+    ];
+    for (let player of this.#gameData.currentPlayers) {
+      for (let i = 0; i < this.#gameData.winScore; ++i ) {
+        if (this.#gameData.getPowerUpCountFor(player) >= this.#gameData.winScore)
+          break;
+        const powerUp = getRandomFromArray(allPowerUps);
+        this.#gameData.givePowerUpTo({
+          player,
+          powerUp
+        });
+      }
+    }
+    return this;
   }
 
   async #showTournamentBoard() {
@@ -276,7 +321,6 @@ export default class GameView extends View {
       height: "800px",
     };
     await panel.render();
-    this.#tournamentPanel = panel;
     /** @type {HTMLElement} */ //@ts-ignore
     const board = panel.children[0];
     this.#scene.createBoard(board);
@@ -333,6 +377,8 @@ export default class GameView extends View {
     this.#returnGameButton.style.visibility = "hidden";
     this.#startButton.style.visibility = "visible";
     this.#startButton.disabled = false;
-    this.#showNextMatch();
+    this
+      .#showNextMatch()
+      .#givePowerUps();
   }
 }

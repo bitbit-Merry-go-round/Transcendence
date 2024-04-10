@@ -45,27 +45,29 @@
       position:absolute;
       width:75%;
       height:20px; 
-      border-top:3px solid #130d6b;
       border-radius: 50% ;
       bottom:0px;
       left:10%;
     }
-    h2 {
+    h3 {
       position:relative;
-      flex-basis: 20%;
+      max-height: 10%;
     }
     ul {
       align-self: flex-start;
+      padding-bottom: 10%;
+      height: 80%;
+      position: relative;
+      bototm: 5%;
     }
     li {
       list-style: none;
       font-size: 24px;
       font-weight: bold;
     }
-
   </style>
   <div class="label-container">
-    <h2 id="label-user-name">{{name}}</h1>
+    <h3 id="label-user-name">{{name}}</h3>
     <ul data-condition="texts" data-for="text in texts">
       <li>{{text}}</li>
     </ul>

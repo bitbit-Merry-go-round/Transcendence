@@ -1,3 +1,4 @@
+import { DEBUG } from "@/data/global";
 import  PhysicsEntity, { isCircleCollideRect, isRectCollideRect } from "@/game/physics_entity"
 import { isEqualF } from "@/game/physics_utils";
 
@@ -17,10 +18,12 @@ export default class Physics {
   /** @type {number[]} */
   #collidibleObjectIds = [];
 
+  #elapsedTime = 0;
+
   /** @type {{
    * [key: number]: {
-   * 		callback: (collider: PhysicsEntity, collidee: PhysicsEntity) => void,
-   *		trigger: (collider: PhysicsEntity, collidee: PhysicsEntity) => boolean,
+   * 		callback: (collider: PhysicsEntity, collidee: PhysicsEntity, time: number) => void,
+   *		trigger: (collider: PhysicsEntity, collidee: PhysicsEntity, time: number) => boolean,
    *	}
    * }} 
    */
@@ -39,6 +42,7 @@ export default class Physics {
     objs.forEach(obj => {
       const id = this.#objId++;
       ids.push(id);
+      obj["physicsId"] = id;
       this.#allObjects[id] = obj;
       if (obj.isMovable) {
         this.#movableObjects.push(id);
@@ -72,18 +76,21 @@ export default class Physics {
    *    accel?: { x: number, y: number },
    *    velocity?: { x: number, y: number },
    *    position?: { x: number, y: number }
+   *    width?: number,
+   *    height?: number
    *  }} setCallback
    */
   setState(objId, setCallback) {
     const obj = this.#allObjects[objId];
     if (!obj) {
-      console.error("Not valid object id ", objId);
+      if (DEBUG.isDebug())
+        console.error("Not: valid object id ", objId);
       return ;
     }
     const state = {
       accel: obj.acceleration,
       velocity: obj.velocity,
-      position: obj.position
+      position: obj.position,
     };
     const res = setCallback({...state});
     if (res.accel)
@@ -92,10 +99,15 @@ export default class Physics {
       obj.velocity = res.velocity;
     if (res.position)
       obj.position = res.position;
+    if (res.width) 
+      obj.setWidth(res.width);
+    if (res.height)
+      obj.setHeight(res.height);
   }
 
   /**  @param {number} elapsedTime */
   update(elapsedTime) {
+    this.#elapsedTime += elapsedTime;
     this.#updateVelocities(elapsedTime)
       .#updatePositions(elapsedTime)
       .#handleCollisions()
@@ -128,17 +140,21 @@ export default class Physics {
       throw "Fail to get object for " + objId;
     return ({
       position: {...obj.position},
-      velocity: {...obj.velocity}
+      velocity: {...obj.velocity},
+      width: obj.width,
+      height: obj.height
     });
   }
 
   /** 
-   *	@param {(collider: PhysicsEntity, collidee: PhysicsEntity) => boolean} trigger
-   * @param {(collider: PhysicsEntity, collidee: PhysicsEntity) => void} callback
+   *	@param {(collider: PhysicsEntity, collidee: PhysicsEntity, time: number) => boolean} trigger
+   * @param {(collider: PhysicsEntity, collidee: PhysicsEntity, time: number) => void} callback
    * 	@returns {number} id
    */
   addCollisionCallback(trigger, callback) {
+
     const id = this.#collideCallbackId++;
+   
     this.#collideCallbacks[id] = {
       trigger,
       callback
@@ -193,7 +209,8 @@ export default class Physics {
   }
 
   #handleCollisions() {
-    const handlers = Object.values(this.#collideCallbacks);
+    const callbackIds = Object.keys(this.#collideCallbacks)
+      .sort();
     this.#getAllCollisions()
       .forEach(({collider, collidee}) => {
         if (!collidee.isDynamic || !collider.isDynamic) {
@@ -202,11 +219,12 @@ export default class Physics {
         else {
           this.#resolveCollideWithDynamic(collider, collidee);
         }
-        handlers.forEach(({trigger, callback}) => {
-          if (trigger(collider, collidee)) {
-            callback(collider, collidee);
-            }
-          })
+        for (let id of callbackIds) {
+          const {trigger, callback} = this.#collideCallbacks[Number(id)];
+          if (trigger(collider, collidee, this.#elapsedTime)) {
+            callback(collider, collidee, this.#elapsedTime);
+          }
+        }
       })
     return this;
   }
@@ -281,14 +299,14 @@ export default class Physics {
           collider.velocity.y *= -1;
 
         if (collideAxes.x && collideAxes.y && collider.isShape("CIRCLE")) {
-          let randomness = (Math.random() - 0.5) * 0.2 ;
+          let randomness = Math.abs((Math.random() - 0.5) * 0.3);
           if (collider.velocity.x > 0) {
-            collider.velocity.x += randomness;
-            collider.velocity.y -= randomness;
+            collider.velocity.x *= 1.0 + randomness;
+            collider.velocity.y *= 1.0 - randomness;
           }
           else {
-            collider.velocity.x -= randomness;
-            collider.velocity.y += randomness;
+            collider.velocity.x *= 1.0 + randomness;
+            collider.velocity.y *= 1.0 - randomness;
           }
         }
       }

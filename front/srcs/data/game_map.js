@@ -10,6 +10,13 @@
 
 import { clamp } from "three/src/math/MathUtils";
 
+export const MAP_SIZE = Object.freeze({
+  width: 100,
+  height: 100,
+  halfWidth: 50,
+  halfHeight: 50
+});
+
 export const WALL_TYPES = Object.freeze({
   safe: "SAFE",
   trap: "TRAP",

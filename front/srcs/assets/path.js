@@ -15,6 +15,8 @@ const path = {
   winSound: "assets/sound/win.mp3",
   tournamentWin: "assets/sound/tournament_win.mp3",
   lostSound: "assets/sound/lost.mp3",
+  buffSound: "assets/sound/buff.mp3",
+  deBuffSound: "assets/sound/debuff.mp3",
   getTexture: {
     color: (name) => `assets/textures/${name}/diff.jpg`,
     normal: (name) => `assets/textures/${name}/nor.jpg`,

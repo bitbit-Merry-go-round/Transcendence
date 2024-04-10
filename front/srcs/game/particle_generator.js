@@ -1,24 +1,27 @@
 import * as THREE from "three";
-
-function hexToRGB(hex) {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-
-  return [r, g, b];
-}
+import { hexToRGB } from "@/utils/color_util";
+import * as THREE_UTIL from "@/utils/three_util";
 
 /**
  * Particles.
  */
 export default class ParticleGenerator {
 
+  static shaderPath = {
+    vertex: "srcs/shader/galaxy_v.glsl",
+    fragment: "srcs/shader/galaxy_f.glsl",
+  }
+
+  /** @type {THREE_UTIL.ShaderLoadContext} */
+  static #shaderLoad = THREE_UTIL.createLoadShaderContext(ParticleGenerator.shaderPath);
 
   /** @type {THREE.Group} */
   #particleContainer;
 
   /** @type {number} */
   count;
+
+  #useShader;
 
   /** @type {number} */
   particleSize;
@@ -28,21 +31,6 @@ export default class ParticleGenerator {
 
   /** @type {boolean} */
   isPlaying;
-
-  /** @type{{
-      position: {
-        x: number, 
-        y: number, 
-        z: number
-      },
-      time: number,
-      speed: number,
-      factor: number
-    }[]}
-    */
-  particleData = [];
-  /** @type {boolean}} */
-  computeDepth; 
 
   /** @type {{
       x: number, 
@@ -56,9 +44,8 @@ export default class ParticleGenerator {
   #colors = null;
 
   animationConfig = {
-    speedCoefficient: 0.01,
-    speedVariantConstant: 100,
-    speedVariantCoefficient: 0.01,
+    speedCoefficient: 0.1,
+    randomCoefficent: 2.0,
   }
 
   /**
@@ -71,26 +58,27 @@ export default class ParticleGenerator {
    *    z: number
    *   },
    *   count: number,
+   *   useShader: boolean,
    *   particleSize: number,
    *   maxSize?: {
    *    x: number,
    *    y: number,
    *    z: number
    *   },
-   *   computeDepth: boolean = false
    * }}
    */
   constructor({
     count,
     particleSize,
+    useShader = true,
     maxSize = null,
-    computeDepth = false,
   }) {
+    THREE_UTIL.loadShaders(ParticleGenerator.#shaderLoad);
     this.count = count;
     this.particleSize = particleSize;
     this.#particleContainer = new THREE.Group();
+    this.#useShader = useShader;
     this.maxSize = maxSize;
-    this.computeDepth = computeDepth
     this.isPlaying = true;
   }
 
@@ -105,16 +93,28 @@ export default class ParticleGenerator {
   }
 
   /** createParticles. */
-  createParticles() {
+  async createParticles() {
+    const isLoaded = await ParticleGenerator.#shaderLoad.isLoaded;
+    if (!isLoaded)
+      return ;
 
     const buffer = new THREE.BufferGeometry()
     const vertices = new Float32Array(this.count * 3);
     const colors = this.#colors ? new Uint8Array(this.count * 3): new Float32Array(this.count * 3);
+    const speeds = new Float32Array(this.count);
+    const randomness = new Float32Array(this.count);
+    const scales = new Float32Array(this.count);
+
+    const maxSize = this.maxSize ?? {
+      x: 10, 
+      y: 10, 
+      z: 10
+    };
     for (let i3 = 0; i3 < this.count; ++i3) {
       //xyz
-      const x =  (Math.random() - 0.5) * (this.maxSize?.x ?? 1);
-      const y = (Math.random() - 0.5) * (this.maxSize?.y ?? 1);
-      const z = (Math.random() - 0.5) * (this.maxSize?.z ?? 1);
+      const x =  (Math.random() - 0.5) * maxSize.x;
+      const y = (Math.random() - 0.5) * maxSize.y;
+      const z = (Math.random() - 0.5) * maxSize.z;
       vertices[i3] = x;
       vertices[i3 + 1] = y;
       vertices[i3 + 2] = z;
@@ -134,18 +134,9 @@ export default class ParticleGenerator {
 
       //animate
 
-      const time = Math.random() * 100;
-      const speed = Math.random() * this.animationConfig.speedCoefficient;
-      const factor = Math.random() * this.animationConfig.speedVariantCoefficient + this.animationConfig.speedVariantConstant; 
-
-      this.particleData.push({
-        position: {
-          x, y, z
-        },
-        time,
-        speed,
-        factor
-      });
+      speeds[i3] = Math.max(Math.random(), 0.5) * this.animationConfig.speedCoefficient * (i3 > this.count * 0.5 ? 1: -1);
+      randomness[i3] = (Math.random() - 0.5) * this.animationConfig.randomCoefficent; 
+      scales[i3] = Math.max(Math.random(), 0.5);
     }
 
     buffer.setAttribute("position",
@@ -153,15 +144,44 @@ export default class ParticleGenerator {
     );
     buffer.setAttribute("color",
       new THREE.BufferAttribute(colors, 3)
-    )
-    const material = new THREE.PointsMaterial({
-      transparent: true,
-      size: this.particleSize,
-      depthTest: this.computeDepth,
-      depthWrite: this.computeDepth,
+    );
+    buffer.setAttribute("aSpeed",
+      new THREE.BufferAttribute(speeds, 1)
+    );
+    buffer.setAttribute("aRandomness",
+      new THREE.BufferAttribute(randomness, 1)
+    );
+    buffer.setAttribute("aScale",
+      new THREE.BufferAttribute(scales, 1)
+    );
+
+    let material;
+    const shaders = ParticleGenerator.#shaderLoad.loadedShader;
+
+    const fragmentShader = this.#useShader ? 
+      shaders.fragment: `
+      varying vec3 vColor;
+      void main() {
+        float dist = 1.0 - distance(gl_PointCoord, vec2(0.5));
+        float strength = pow(dist, 10.0) * 2.0;
+        gl_FragColor = vec4(vColor, strength);
+        #include <colorspace_fragment>
+      }
+    `;
+
+    material = new THREE.ShaderMaterial({
+      vertexShader: shaders.vertex,
+      fragmentShader: fragmentShader,
       blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      transparent: true,
       vertexColors: true,
-      sizeAttenuation: true
+      uniforms: {
+        uTime: { value: 0.0 },
+        uSize: { value: this.particleSize },
+        uMaxRange: { 
+          value: new THREE.Vector2(maxSize.x * 0.5, maxSize.y * 0.5) },
+      }
     });
     this.#particles = new THREE.Points(buffer, material);
     this.#particleContainer.add(this.#particles);
@@ -180,32 +200,13 @@ export default class ParticleGenerator {
   /**
    * animate.
    */
-  animate() {
-    if (!this.isPlaying)
+  animate(frameTime) {
+    if (!this.isPlaying || !this.#particles)
       return;
 
-    for (let i = 0; i < this.count; ++i) {
-      const data = this.particleData[i];
-      const { position, factor } = data;
-    
-      const t = (data.time += data.speed);
-      
-      position.x += (Math.cos((t * 0.1) * factor) + (Math.sin(t * 1) * factor)) * 0.001;
-      position.y += (Math.sin((t * 0.1) * factor) + (Math.cos(t * 2) * factor)) * 0.001;
-      position.z += (Math.cos((t * 0.1) * factor) + (Math.sin(t * 3) * factor)) * 0.001; //@ts-ignore: performance
-      if (this.maxSize) {
-        position.x *= 1 - (Math.abs(position.x) > this.maxSize.x) //@ts-ignore: performance
-        position.y *= 1 - (Math.abs(position.y) > this.maxSize.y) //@ts-ignore: performance
-        position.z *= 1 - (Math.abs(position.z) > this.maxSize.z)
-
-      }
-      const i3 = i * 3;
-      this.#particles.geometry.attributes.position.array[i3] = position.x;
-      this.#particles.geometry.attributes.position.array[i3 + 1] = position.y;
-      this.#particles.geometry.attributes.position.array[i3 + 2] = position.z;
-    }
-
-    this.#particles.geometry.attributes.position.needsUpdate = true;
+    /** @type { THREE.ShaderMaterial } */
+    const material = this.#particles.material;
+    material.uniforms.uTime.value += frameTime;
   }
 }
 

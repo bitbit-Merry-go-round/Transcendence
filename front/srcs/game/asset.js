@@ -1,3 +1,4 @@
+import { DEBUG } from "@/data/global";
 import Observable from "@/lib/observable";
 import ObservableObject from "@/lib/observable_object";
 import * as THREE from "three";
@@ -73,7 +74,8 @@ export default class Asset {
         this.#loaded[path] = this.#textureLoader.load(path);
         break;
       default:
-        console.error(path, "is not loaded");
+        if (DEBUG.isDebug())
+          console.error(path, "is not loaded");
         return null;
     }
     return this.#loaded[path]; 
@@ -96,14 +98,16 @@ export default class Asset {
           this.#loaded[path] = 
             await this.#gltfLoader.loadAsync(path)
             .catch(err => {
-              console.error(err);
+              if (DEBUG.isDebug())
+                console.error(err);
             })
           break;
         case (Asset.type.texture):
           this.#loaded[path] = 
             await this.#textureLoader.loadAsync(path)
             .catch(err => {
-              console.error(err);
+              if (DEBUG.isDebug())
+                console.error(err);
             })
           break;
       }

@@ -14,6 +14,7 @@ import NavBar from "@/views/components/nav_bar";
 import ProfileCard from "@/views/components/profile_card";
 import UserLabel from "@/views/components/user_label";
 import ColorPicker from "@/views/components/color_picker.js";
+import GraphView from "@/views/dash_board/graph_view";
 
 /**
  * fileName for view class MUST contain '_' or '-' (Web components requirement)
@@ -102,6 +103,12 @@ export default {
         "fileName": "edit_view.html"
       }
     ],
+    "dash_board": [
+      {
+        "className": "GraphView",
+        "fileName": "graph_view.html"
+      }
+    ],
     "auth": [
       {
         "className": "AuthView",
@@ -128,6 +135,7 @@ export const viewConstructors = {
   UserLabel,
   TournamentPanel,
   ColorPicker,
+  GraphView
 };
 
 export const routes = [
@@ -142,3 +150,16 @@ export const routes = [
   { path: "/edit", view: EditView },
   { path: "/auth", view: AuthView },
 ];
+
+/** @param { string } path 
+ *  @returns { boolean }
+ */
+export function isAvailableAddress(path) {
+  if (path.length == 0) {
+    return true;
+  }
+  let _path = path[0] == "/" ? path.substring(1): path;
+  const notAvailable = [ "game" ];
+
+  return (notAvailable.indexOf(_path) == -1);
+}

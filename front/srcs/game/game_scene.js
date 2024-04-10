@@ -10,16 +10,33 @@ import ParticleGenerator from "@/game/particle_generator";
 import { WALL_TYPES, DIRECTION, GameMap } from "@/data/game_map";
 import GUI from "node_modules/lil-gui/dist/lil-gui.esm.min.js";
 import { resizeTexture } from "@/utils/three_util";
-import Timer from "./timer";
+import Timer from "@/game/timer";
+import PowerUp, { POWER_UP_CONFIG } from "@/data/power_up";
+import * as THREE_UTIL from "@/utils/three_util";
+import Observable from "@/lib/observable";
+import CONFIG from "@/game/config";
+import { DEBUG } from "@/data/global";
 
-const FRAME_TIME_THRESHOLD = 0.01;
-const MAX_PEDDLE_SPEED = 50;
-const PEDDLE_ACCEL = 10;
-const PEDDLE_DECEL_RATIO = 0.5;
-const SOUND_EFFECT_THRESHOLD = 0.3;
-const SAFE_WALL_STUCK_THRESHOLD = 4;
 
 export default class GameScene extends THREE.Group {
+
+  static peddleShaderPath = {
+    vertex: "srcs/shader/peddle_v.glsl",
+    fragment: "srcs/shader/peddle_f.glsl",
+  }
+
+  static ballShaderPath = {
+    vertex: "srcs/shader/ball_v.glsl",
+    fragment: "srcs/shader/ball_f.glsl",
+    atMosphereFragment: "srcs/shader/ball_atmosphere_f.glsl",
+  };
+
+  /** @type {THREE_UTIL.ShaderLoadContext} */
+  static #peddleShaderLoad= THREE_UTIL.createLoadShaderContext(GameScene.peddleShaderPath);
+  #peddleShaderLoaded = false;
+  /** @type {THREE_UTIL.ShaderLoadContext} */
+  static #ballShaderLoad = THREE_UTIL.createLoadShaderContext(GameScene.ballShaderPath);
+  #ballShaderLoaded = false;
 
   /** @type {Physics} */
   #physics;
@@ -27,6 +44,24 @@ export default class GameScene extends THREE.Group {
   #gameData;
   #gameMap;
   #timer;
+  #isPreparingBall = false;
+  #isVisible = document.visibilityState != "hidden";
+  pixelRatio = Math.min(window.devicePixelRatio, 2);
+  /** @type {{
+   * physicsId: number,
+   * mesh: THREE.Mesh,
+   * powerUp: PowerUp,
+   * }[]} */
+  #activePowerUps = [];
+  #activatedPowerUP= new Observable(null);
+
+  /** @type {{
+   *  keyInput: (key: string, press: boolean) => void,
+   *  scoreUpdate: (data: { winPlayer: Player,
+   *    scores: { [key: string]: number } }) => void ,
+   *  collisionLoggerId: number,
+   *}} */ //@ts-ignore
+  #logger = {};
 
   #hitSound = {
     sound: Asset.shared.get("AUDIO", ASSET_PATH.hitSound),
@@ -47,12 +82,20 @@ export default class GameScene extends THREE.Group {
   /**
    * @type {{
    *  mesh: THREE.Mesh | null,
+   *  atmosphere:THREE.Mesh | null,
    *  physicsId: number | null,
    * }} 
    */
-  #ball = { mesh: null, physicsId: null };
+  #ball = { 
+    mesh: null, 
+    atmosphere: null,
+    physicsId: null 
+  };
   get ball() {
-    return {...this.#ball};
+    return {
+      mesh: this.#ball.mesh,
+      physicsId: this.#ball.physicsId
+    };
   }
 
   ballColor = 0xff0000;
@@ -80,7 +123,7 @@ export default class GameScene extends THREE.Group {
    */
   #walls = {}; 
   #wallTextureRepeat = 0.05;
-  
+
   /** @type {number} */
   wallColor = 0x00ff00;
 
@@ -88,7 +131,8 @@ export default class GameScene extends THREE.Group {
 
   /** @type {{
    *    mesh: THREE.Mesh,
-   *    physicsId: number
+   *    physicsId: number,
+   *    hitEffect: Observable
    *  }[]}
    */
   #peddles = [];
@@ -165,9 +209,12 @@ export default class GameScene extends THREE.Group {
    *  data: GameData,
    *  map: GameMap
    *  }} params
-  * */
+   * */
   constructor({timer, stuckHandler, data, map}) {
     super();
+    THREE_UTIL.loadShaders(GameScene.#peddleShaderLoad);
+    THREE_UTIL.loadShaders(GameScene.#ballShaderLoad);
+    GameScene.#peddleShaderLoad
     this.#timer = timer;
     this.#gameData = data;
     this.#gameMap = map;
@@ -181,24 +228,36 @@ export default class GameScene extends THREE.Group {
       .#addObjects()
       .#addControls()
       .#addEvents()
+      .#setVisibleCallback();
     this.#gameParticle.isPlaying = true;
   }
 
   /** @param {number} frameTime */
   update(frameTime) {
-    let frameSlice = Math.min(frameTime, FRAME_TIME_THRESHOLD);
-    this.#updateObjects({frameTime, frameSlice})
-    this.#gameParticle.animate();
+    this.#gameParticle.animate(frameTime);
+    if (!this.#isVisible) 
+      return ;
+    this.#peddles.forEach(peddle => 
+      peddle.hitEffect.value = Math.max(peddle.hitEffect.value - frameTime, 0));
+    let frameSlice = Math.min(frameTime, CONFIG.FRAME_TIME_THRESHOLD);
+    this
+      .#updatePowerUps(frameTime)
+      .#updateObjects({frameTime, frameSlice})
+    if (this.#ball.physicsId) {
+      this.#captureBall()
+    }
   }
 
   addBall() {
+    if (this.#isPreparingBall) {
+      if (DEBUG.isDebug())
+        console.error("preparing ball");
+      return ;
+    }
+    this.#isPreparingBall = true;
     const mesh = new THREE.Mesh(
       new THREE.SphereGeometry(this.#ballRadiusInGame, 16, 16),
-      new THREE.MeshStandardMaterial({
-        color: this.ballColor,
-        metalness: 0.3,
-        roughness: 0.4
-      })
+      this.#createBallMaterial()
     );
     mesh.position.set(0, 0, 0);
     const ballWidth =  this.#ballRadiusInGame;
@@ -210,14 +269,8 @@ export default class GameScene extends THREE.Group {
       radius: Math.max(ballWidth, ballHeight),
       center: { x: 0, y:0 }
     });
-    this.#ballStartDirection.x = (Math.random() > 0.5) ? DIRECTION.left: DIRECTION.right;
-    this.#ballStartDirection.y = (this.#lostSide == DIRECTION.top) ? DIRECTION.bottom: DIRECTION.top;
-    let velX = (this.#ballStartDirection.x == DIRECTION.right? 1 : -1) * this.#ballSpeed * (Math.random() + 0.5);
-    let velY = (this.#ballStartDirection.y == DIRECTION.top? 1 : -1) * this.#ballSpeed;
-
-    ballPhysics.velocity = {
-      x: velX,
-      y: velY,
+    ballPhysics["data"] = {
+      isBall: true
     };
 
     const physicsId = this.#physics.addObject(ballPhysics)[0];
@@ -229,20 +282,112 @@ export default class GameScene extends THREE.Group {
       },
     );
     this.add(mesh);
-    this.#ball = {
-      mesh,
-      physicsId,
-    };
+    this.#ball.mesh = mesh;
+    this.#ball.physicsId = physicsId;
+    this.#ball.atmosphere = this.#createBallAtmosphere();
+    setTimeout(() => {
+      this.#moveBall();
+      this.#isPreparingBall = false;
+    }, CONFIG.BALL_PREPARE_MS);
     return this;
   }
 
+  #createBallAtmosphere() {
+    if (!this.#ballShaderLoaded || !this.#ball.mesh) {
+      return null;
+    }
+    const geometry = this.#ball.mesh.geometry.clone();
+
+    const shaders = GameScene.#ballShaderLoad.loadedShader;
+    const material = new THREE.ShaderMaterial({
+      vertexShader: shaders["vertex"],
+      fragmentShader: shaders["atMosphereFragment"],
+      transparent: true,
+      uniforms: {
+        uGlow: { value: 0.0 }
+      }
+    });
+
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.castShadow = false;
+    mesh.scale.set(1.5, 1.5, 1.0);
+    mesh.position.z -= 1.0;
+    this.add(mesh);
+    return mesh;
+  }
+
+  #createBallMaterial() {
+    /** @type { THREE.Material } */
+    let material = null;
+    if (!this.#ballShaderLoaded) {
+
+      GameScene.#ballShaderLoad.isLoaded.then((loaded) =>  {
+        this.#ballShaderLoaded = loaded;
+        if (this.#ball.mesh) {
+          //@ts-ignore
+          this.#ball.mesh.material.dispose();
+          this.#ball.mesh.material = this.#createBallMaterial();
+        }
+        if (!this.#ball.atmosphere) {
+          this.#ball.atmosphere = this.#createBallAtmosphere();
+        }
+      })
+      material = new THREE.MeshStandardMaterial({
+        color: this.ballColor,
+        metalness: 0.3,
+        roughness: 0.4
+      })
+    }
+    else {
+      const shaders = GameScene.#ballShaderLoad.loadedShader;
+      material = new THREE.ShaderMaterial({
+        vertexShader: shaders["vertex"],
+        fragmentShader: shaders["fragment"],
+        uniforms: {
+          uText: { 
+            value: Asset.shared.get("TEXTURE", 
+              ASSET_PATH.getTexture.normal("earth"))
+          }
+        }
+      });
+    }
+    
+    return material;
+  }
+
+  #moveBall() {
+
+    this.#ballStartDirection.x = (Math.random() > 0.5) ? DIRECTION.left: DIRECTION.right;
+    this.#ballStartDirection.y = (this.#lostSide == DIRECTION.top) ? DIRECTION.bottom: DIRECTION.top;
+    const velocity = {
+      x: (this.#ballStartDirection.x == DIRECTION.right? 1 : -1) * this.#ballSpeed * (Math.random() + 0.5),
+      y: (this.#ballStartDirection.y == DIRECTION.top? 1 : -1) * this.#ballSpeed
+    };
+    this.#physics.setState(this.#ball.physicsId,
+      () => ({ velocity })
+    );
+  }
+
+  showNextMatch() {
+    this.#removePowerUps();
+    this.#updatePeddleColors();
+  }
+
+  #removePowerUps() {
+    for (let {powerUp} of this.#activePowerUps) {
+      powerUp.revoke();
+    }
+    this.#activePowerUps = [];
+  }
+
   removeBall() {
-    const mesh = this.#ball.mesh;
     const id = this.#ball.physicsId
     this.#physics.removeCollisionCallback(id);
     this.#physics.removeObject(id);
-    this.remove(mesh);
+    this.remove(this.#ball.mesh);
+    this.remove(this.#ball.atmosphere);
     this.#ball.mesh = null;
+    this.#ball.atmosphere = null;
     this.#ball.physicsId = null;
     return this;
   }
@@ -267,17 +412,33 @@ export default class GameScene extends THREE.Group {
     else if (player.nickname == this.#gameData.currentPlayers[1].nickname)
       mesh = this.#peddles[1].mesh; 
     else {
-      console.error("player to set color not playing");
+      if (DEBUG.isDebug())
+        console.error("player to set color not playing");
       return ;
     }
-    /** @type {THREE.MeshStandardMaterial} */ //@ts-ignore
-    const material = mesh.material;
-    material.color.r = color.r / 255;
-    material.color.g = color.g / 255;
-    material.color.b = color.b / 255;
+    const normalizedColor = [ 
+      color.r / 255,
+      color.g / 255, 
+      color.b / 255 
+    ];
+    if (this.#peddleShaderLoaded) {
+      const materials = mesh.material;
+      for (let i = 2; i <= 4; ++i) {
+        materials[i].uniforms.uColor.value = new THREE.Vector3(
+          ...normalizedColor
+        );
+      }
+    }
+    else {
+      /** @type {THREE.MeshBasicMaterial} */ //@ts-ignore
+      const material = mesh.material;
+      material.color.r = normalizedColor[0];
+      material.color.g = normalizedColor[1];
+      material.color.b = normalizedColor[2];
+    }
   }
 
-  updatePeddleColors() {
+  #updatePeddleColors() {
     for (let player of this.#gameData.currentPlayers) {
       let color = this.#peddleColors[player.nickname];
       if (!color)  {
@@ -288,17 +449,7 @@ export default class GameScene extends THREE.Group {
         };
         this.#peddleColors[player.nickname] = color;
       }
-      let mesh  
-      if (player.nickname == 
-        this.#gameData.currentPlayers[0].nickname)
-        mesh = this.#peddles[0].mesh; 
-      else         
-        mesh = this.#peddles[1].mesh; 
-      /** @type {THREE.MeshStandardMaterial} */ //@ts-ignore
-      const material = mesh.material;
-      material.color.r = color.r / 255;
-      material.color.r = color.r / 255;
-      material.color.r = color.r / 255;
+      this.setPeddleColor(player, color);
     }
   }
 
@@ -310,15 +461,20 @@ export default class GameScene extends THREE.Group {
       const entities = this.#addWall(
         size,
         walls.map(wall => ({
-          x: (wall.centerX * 0.01 - 0.5) * this.#gameSize.width,
-          y: (wall.centerY * 0.01 - 0.5) * this.#gameSize.height,
-          z: this.#depth.wall * 0.5,
+          position: {
+            x: (wall.centerX * 0.01 - 0.5) * this.#gameSize.width,
+            y: (wall.centerY * 0.01 - 0.5) * this.#gameSize.height,
+            z: this.#depth.wall * 0.5,
+          },
+          textureName: wall.type == "SAFE" ?
+          "brick": "brick_dark"
         })
-        )
+        ),
       );
       for (let i = 0; i < walls.length; ++i) {
         const wall = walls[i];
         entities[i].data = {
+          isWall: true,
           wallType: wall.type,
         };
         if (wall.type == WALL_TYPES.trap) {
@@ -335,43 +491,53 @@ export default class GameScene extends THREE.Group {
    *   width: number,
    *   height: number
    * }} wallSize
-   * @param {{
-   *   x: number,
-   *   y: number,
-   *   z: number
-   * }[]} wallPositions
+   * {{
+   *  position: {
+   *    x: number,
+   *    y: number,
+   *    z: number
+   *  },
+   *  textureName: string
+   * }[]} wallInfo
    */
-  #addWall(wallSize, wallPositions) {
+  #addWall(wallSize, wallInfo) {
 
     const geometry = new THREE.BoxGeometry(wallSize.width, wallSize.height, this.#depth.wall);
-    const material = this.#createMaterialFromTexture(
-      "brick", 
-      (texture) => {
-        resizeTexture({
-          texture,
-          x: wallSize.width * this.#wallTextureRepeat,
-          y: wallSize.height * this.#wallTextureRepeat,
-        })
-      }
-    ) 
 
-    const meshes = wallPositions.map(pos =>  {
+    let textures = {};
+    wallInfo.forEach(({textureName}) => {
+      if (!textures[textureName]) {
+        textures[textureName] = 
+          this.#createMaterialFromTexture(
+            textureName, 
+            (texture) => {
+              resizeTexture({
+                texture,
+                x: wallSize.width * this.#wallTextureRepeat,
+                y: wallSize.height * this.#wallTextureRepeat,
+              })
+            }
+          ) 
+      }
+    })
+
+    const meshes = wallInfo.map(({position, textureName}) =>  {
       const mesh = new THREE.Mesh(
         geometry, 
-        material
+        textures[textureName]
       );
-      mesh.position.set(pos.x, pos.y, pos.z);
+      mesh.position.set(position.x, position.y, position.z);
       return mesh;
     });
 
-    const physics = wallPositions.map(pos => {
+    const physics = wallInfo.map( ({ position })=> {
       return PhysicsEntity.createRect({
         type: "IMMOVABLE",
         width: wallSize.width,
         height: wallSize.height,
         center: {
-          x: pos.x, 
-          y: pos.y
+          x: position.x, 
+          y: position.y
         }
       });
     });
@@ -419,7 +585,7 @@ export default class GameScene extends THREE.Group {
     /** @type {THREE.Texture} */
     const colorTexture = Asset.shared.get(
       "TEXTURE",
-       ASSET_PATH.getTexture.color(name),
+      ASSET_PATH.getTexture.color(name),
     ).clone();
 
     /** @type {THREE.Texture} */
@@ -451,7 +617,7 @@ export default class GameScene extends THREE.Group {
 
     return material;
   }
-  
+
   #setBackground() {
 
     const size = {
@@ -470,11 +636,11 @@ export default class GameScene extends THREE.Group {
     );
     this.#gameParticle = new ParticleGenerator({
       count: 100,
-      particleSize: 0.001,
+      particleSize: 16. * this.pixelRatio,
       maxSize: {
-        x: 70,
-        y: 70,
-        z: 20
+        x: 50,
+        y: 50,
+        z: 0.001
       }
     });
     this.#gameParticle.setColor([
@@ -483,14 +649,13 @@ export default class GameScene extends THREE.Group {
       "#ACE2E1",
       "#F7EEDD",
     ])
-    this.#gameParticle.animationConfig.speedCoefficient = 0.001;
-    this.#gameParticle.animationConfig.speedVariantCoefficient = 0.001;
-    this.#gameParticle.animationConfig.speedVariantConstant = 50;
-    this.#gameParticle.createParticles();
-    const particles = this.#gameParticle.getParticles();
-    container.add(particles);
-    container.scale.set(0.8, 0.8, 0.2);
-    this.add(container);
+    this.#gameParticle.createParticles()
+      .then(() => {
+        const particles = this.#gameParticle.getParticles();
+        container.scale.z = 0.2;
+        container.add(particles);
+        this.add(container);
+      });
     return this;
   }
 
@@ -512,22 +677,27 @@ export default class GameScene extends THREE.Group {
       this.#depth.peddle
     );
 
-    this.#gameData.currentPlayers.forEach(
-    player => {
-      this.#peddleColors[player.nickname] = {
-        r: Math.random() * 255,
-        g: Math.random() * 255,
-        b: Math.random() * 255
-      };
-    });
+    /** @type {{ r: number, g: number, b: number}[]} */
+    const colors = [];
 
-    const materials = Object.entries(this.#peddleColors).map(([_, color]) => {
-      return new THREE.MeshStandardMaterial({
-        color: new THREE.Color(
-          `rgb(${Math.floor(color.r)}, ${Math.floor(color.g)}, ${Math.floor(color.b)})`),
-        metalness: 0.3,
-        roughness: 0.5,
-      })
+    this.#gameData.currentPlayers.forEach(
+      (player, i) => {
+        const color = {
+          r: Math.random() * 255,
+          g: Math.random() * 255,
+          b: Math.random() * 255
+        };
+        this.#peddleColors[player.nickname] = color;
+        colors[i] = color;
+      });
+
+    const materials = colors.map(color => {
+      return Array(6).fill(
+        new THREE.MeshBasicMaterial({
+          color: new THREE.Color(
+            `rgb(${Math.floor(color.r)}, ${Math.floor(color.g)}, ${Math.floor(color.b)})`),
+        })
+      ) 
     })
 
     const positions = [
@@ -540,6 +710,7 @@ export default class GameScene extends THREE.Group {
         y: this.#gameSize.height * - 0.4
       },
     ];
+
     const meshes = materials.map((material, index) => {
       const mesh = new THREE.Mesh(
         geometry,
@@ -548,6 +719,37 @@ export default class GameScene extends THREE.Group {
       const pos = positions[index];
       mesh.position.set(pos.x, pos.y, this.#depth.peddle * 0.5);
       return mesh;
+    });
+
+    GameScene.#peddleShaderLoad.isLoaded.then(() => {
+      this.#peddleShaderLoaded = true;
+      meshes.forEach((mesh, i) => {
+        const color = colors[i];
+        const hitEffect = this.#peddles[i].hitEffect;
+        const shaders = GameScene.#peddleShaderLoad.loadedShader;
+        for (let i = 2; i <= 4; ++i) { 
+          let direction = "#define " + (
+            i == 4 ? "FRONT": (i == 2 ? "ABOVE": "BELOW")
+          ) + "\n"; 
+          const material = new THREE.ShaderMaterial({
+            vertexShader: shaders["vertex"],
+            fragmentShader: direction + shaders["fragment"],
+            uniforms: {
+              uColor: { value: new THREE.Vector3(
+                color.r / 255, color.g / 255, color.b / 255
+              )},
+              uHit: { value: 0.0 }
+            },
+          });
+          mesh.material[i].dispose();
+          mesh.material[i] = material;
+        }
+        hitEffect.subscribe((hit) => {
+          for (let i = 2; i <=4; ++i) {
+            mesh.material[i].uniforms.uHit.value = hit;
+          }
+        })
+      })
     });
 
     const physicsEntities = positions.map((pos, index) => {
@@ -574,8 +776,9 @@ export default class GameScene extends THREE.Group {
       });
       this.#peddles.push({
         mesh: meshes[i],
-        physicsId: physicsIds[i]
-      })
+        physicsId: physicsIds[i],
+        hitEffect: new Observable(0.0)
+      });
     };
     this.add(...meshes);
   }
@@ -585,34 +788,174 @@ export default class GameScene extends THREE.Group {
       const controlKey = this.#gameData.controlMap[event.key];
       if (!controlKey)
         return ;
-      this.#peddleControls[controlKey.player].pressed = {
-        ...controlKey,
-        key: event.key
-      };
+      if (this.#logger.keyInput) {
+        this.#logger.keyInput(event.key, true);
+      }
+      switch (controlKey.type) {
+        case ("MOVE"):
+          this.#peddleControls[controlKey.player].pressed = {
+            x: controlKey.x,
+            y: controlKey.y,
+            player: controlKey.player,
+            key: event.key
+          };
+          break;
+        case ("ACTION"):
+          if (controlKey.action == "USE_POWER_UP" &&
+            this.#activatedPowerUP.value == null) {
+            const player = this.#gameData.currentPlayers[controlKey.player];
+            this.#usePowerUp(player, controlKey.player);
+          }
+          break;
+      }
     });
 
     window.addEventListener("keyup", event => {
       const controlKey = this.#gameData.controlMap[event.key];
       if (!controlKey)
         return ;
-      if (this.#peddleControls[controlKey.player].pressed.key == 
-        event.key) {
-        this.#peddleControls[controlKey.player].pressed = {
-          x: 0, 
-          y: 0,
-          key: null,
-          player: controlKey.player
-        };
-      };
+      if (this.#logger.keyInput) {
+        this.#logger.keyInput(event.key, false);
+      }
+      switch (controlKey.type) {
+        case ("MOVE"):
+          if (this.#peddleControls[controlKey.player].pressed.key 
+            == event.key) {
+            this.#peddleControls[controlKey.player].pressed = {
+              x: 0, 
+              y: 0,
+              key: null,
+              player: controlKey.player
+            };
+            break;
+          }
+      }
     })
     return this;
+  }
+
+  /** @param {Player} player 
+   *  @param {number} playerIndex
+   **/
+  #usePowerUp(player, playerIndex) {
+    if (this.#gameData.getPowerUpCountFor(player) == 0) {
+      if (DEBUG.isDebug())
+        console.log(player.nickname, " has no power up");
+      return ;
+    }
+    const info = this.#gameData.usePowerUp(player);
+    this.#activatedPowerUP.value = info.type;
+
+    const powerUp = new PowerUp({
+      duration: POWER_UP_CONFIG.defaultDuration,
+      info
+    });
+    let target = null;
+    switch (info.type) {
+      case ("SUMMON"):
+        break;
+      case ("BUFF"):
+        if (info.target == "PEDDLE") {
+          const peddle = this.#peddles[playerIndex];
+          target = this.#physics.getState(peddle.physicsId);
+          this.#usePowerUpToPeddle(peddle, powerUp);
+        }
+        break;
+      case ("DEBUFF"):
+        if (info.target == "PEDDLE") {
+          const opponentIndex = playerIndex == 0 ? 1: 0;
+          const peddle = this.#peddles[opponentIndex];
+          target = this.#physics.getState(peddle.physicsId);
+          this.#usePowerUpToPeddle(peddle, powerUp);
+        }
+        break; 
+    }
+
+    if (!target) {
+      if (DEBUG.isDebug())
+        console.error("not implemented");
+      return ;
+    }
+    powerUp.use(target); 
+    switch (info.type)  {
+      case ("BUFF"): {
+        /** @type {HTMLAudioElement} */
+        const sound = Asset.shared.get("AUDIO", ASSET_PATH.buffSound);
+        sound.play();
+      }
+        break;
+      case ("DEBUFF"): {
+        /** @type {HTMLAudioElement} */
+        const sound = Asset.shared.get("AUDIO", ASSET_PATH.deBuffSound);
+        sound.play();
+      }
+        break;
+    }
+  }
+
+  /** @param{{
+   *    mesh: THREE.Mesh,
+   *    physicsId: number
+   *    }} peddle,
+   *  @param { PowerUp } powerUp
+   */
+  #usePowerUpToPeddle(peddle, powerUp) {
+    switch (powerUp.info.key) {
+      case ("PEDDLE_SPEED_UP"):
+        powerUp.setTotalDuration(POWER_UP_CONFIG.peddleSpeedUpDuration);
+        break;
+      case ("PEDDLE_SPEED_DOWN"):
+        powerUp.setTotalDuration(POWER_UP_CONFIG.peddleSpeedDownDuration);
+        break;
+      default: break;
+    }
+    powerUp.setUseCallback((state) => {
+      if (powerUp.info.key.includes("PEDDLE_SIZE")) {
+        this.#physics.setState(peddle.physicsId, 
+          ({position}) => {
+            let x = position.x;
+            if (position.x > 0) {
+                x -= state.width * 0.5;
+            }
+            return {
+              position: {
+                x,
+                y: position.y
+              },
+              width: state.width,
+            }
+          });
+        const scale = state.width / powerUp.defaultTargetStatus.width; 
+        peddle.mesh.scale.setX(scale);
+      }
+    });
+    powerUp.setRevokeCallback((state) => {
+      if (powerUp.info.key.includes("PEDDLE_SIZE")) {
+        this.#physics.setState(peddle.physicsId, () => ({width: state.width}));
+        const scale = state.width / powerUp.defaultTargetStatus.width; 
+        peddle.mesh.scale.setX(scale);
+      }
+      else if (powerUp.info.key.includes("PEDDLE_SPEED")) {
+        this.#physics.setState(
+          peddle.physicsId, () =>
+          ({
+            velocity: state.velocity 
+          })
+        )
+      }
+    })
+    this.#activePowerUps.push({
+      mesh: peddle.mesh,
+      physicsId: peddle.physicsId,
+      powerUp 
+    });
   }
 
   #addEvents() {
 
     const hitSoundEventId = this.#physics.addCollisionCallback(
       (collider, collidee, _time) => {
-        if (Math.abs(this.#timer.elapsedTime - this.#hitSound.time) < SOUND_EFFECT_THRESHOLD)
+        if (Math.abs(this.#timer.elapsedTime - this.#hitSound.time) < CONFIG.SOUND_EFFECT_THRESHOLD)
           return false;
         if (collider.isShape("CIRCLE") || collidee.isShape("CIRCLE")) {
           return true;
@@ -636,15 +979,31 @@ export default class GameScene extends THREE.Group {
         return (collider.data?.isPeddle || collidee.data?.isPeddle);
       },
       (collider, collidee, _time) => {
-        if (this.#stuckHandler && this.#safeWallHitCount > SAFE_WALL_STUCK_THRESHOLD) {
+        if (this.#stuckHandler && this.#safeWallHitCount > CONFIG.SAFE_WALL_STUCK_THRESHOLD) {
           this.#stuckHandler(false);
         }
         this.#safeWallHitCount = 0;
         /** @type {PhysicsEntity} */
         const ball = collider.isShape("CIRCLE") ? collider: collidee;
+        const ballSpeedX = Math.abs(ball.velocity.x);
+        if (ballSpeedX > CONFIG.MAX_BALL_SPEED) {
+          ball.velocity.x = CONFIG.MAX_BALL_SPEED * (ball.velocity.x < 0 ? -1: 1);
+        }
+        else if (ballSpeedX < CONFIG.MIN_BALL_SPEED) {
+
+          ball.velocity.x = CONFIG.MIN_BALL_SPEED* (ball.velocity.x < 0 ? -1: 1);
+        }
+        if (this.#ball.atmosphere) { 
+          /** @type { THREE.ShaderMaterial } *///@ts-ignore
+          const material = this.#ball.atmosphere.material;
+          material.uniforms.uGlow.value = 0.5;
+        }
         /** @type {PhysicsEntity} */
         const peddle = ball == collider ? collidee: collider;
         ball.velocity.x += peddle.velocity.x * 0.1;
+        const peddleIndex = peddle["physicsId"] == this.#peddles[0].physicsId ? 0: 1;
+
+        this.#peddles[peddleIndex].hitEffect.value = 1.0;
       }
     )
 
@@ -660,7 +1019,7 @@ export default class GameScene extends THREE.Group {
       },
       (_collider, _collidee, _time) => {
         this.#safeWallHitCount += 1;
-        if (this.#safeWallHitCount > SAFE_WALL_STUCK_THRESHOLD) {
+        if (this.#safeWallHitCount > CONFIG.SAFE_WALL_STUCK_THRESHOLD) {
           this.#stuckHandler(true); 
         }
       }
@@ -677,12 +1036,12 @@ export default class GameScene extends THREE.Group {
       },
       (_collider, collidee, _time) => {
         this.#lostSide = collidee.data.direction;
-        if (this.#stuckHandler && this.#safeWallHitCount > SAFE_WALL_STUCK_THRESHOLD) {
+        if (this.#stuckHandler && this.#safeWallHitCount > CONFIG.SAFE_WALL_STUCK_THRESHOLD) {
           this.#stuckHandler(false);
         }
         this.#safeWallHitCount = 0;
-        this.removeBall()
-          .#updateGameData();
+        this.#lostSide = collidee.data.direction;
+        this.#handleScoreChange();
       }
     )
 
@@ -702,6 +1061,7 @@ export default class GameScene extends THREE.Group {
       desc: "safeWallEventId",
       id: safeWallEventId
     });
+
     return this;
   }
 
@@ -718,11 +1078,29 @@ export default class GameScene extends THREE.Group {
     }
     const winSide = this.#lostSide == DIRECTION.top ? DIRECTION.bottom: DIRECTION.top;
     const winPlayer = players[PLAYER_POSITION[winSide]];
-    
+    /** @type {{ [key in string] : number }} */
+    const scores = {};
+    this.#gameData.currentPlayers.forEach(p => 
+      scores[p.nickname] = this.#gameData.getScore(p)
+    );
+    scores[winPlayer.nickname] += 1;
     gameData.setScore({
       player: winPlayer, 
-      score: gameData.getScore(winPlayer) + 1
+      score: scores[winPlayer.nickname]
     })
+    this.#sendGameScoreUpdate({ winPlayer, scores }); 
+    return this;
+  }
+
+  #updatePowerUps(frameTime) {
+    for (let {powerUp} of this.#activePowerUps) {
+      powerUp.update(frameTime);
+      if (powerUp.isEnd) {
+        powerUp.revoke();
+        this.#activatedPowerUP.value = null;
+      }
+    }
+    this.#activePowerUps = this.#activePowerUps.filter(({powerUp}) => !powerUp.isEnd);
     return this;
   }
 
@@ -733,19 +1111,39 @@ export default class GameScene extends THREE.Group {
    * }} args
    */
   #updateObjects({frameTime, frameSlice}) {
+    const frame = frameTime;
     this.#peddles.forEach((peddle, index) => {
       const control = this.#peddleControls[index];
+      const activePowerUp = this.#activePowerUps.find(({physicsId}) => physicsId == peddle.physicsId);
       this.#physics.setState(peddle.physicsId,
         (state) => {
           let vel = { ...state.velocity };
-          if (control.pressed.x == 0) {
-            vel.x = Math.abs(vel.x) < EPSILON ? 0: vel.x * PEDDLE_DECEL_RATIO;
+          const speedPowerUp = activePowerUp && activePowerUp.powerUp.targetStatus.velocity;
+          let accel = CONFIG.PEDDLE_ACCEL;
+          let decel = CONFIG.PEDDLE_DECEL_RATIO;
+          if (speedPowerUp) {
+            const status = activePowerUp.powerUp.targetStatus;
+            vel.x = status.velocity.x;
+            if( activePowerUp.powerUp.info.key == "PEDDLE_SPEED_UP")
+            {
+              accel *= 2;
+              decel *= 2;
+            }
+            else {
+              accel *= 0.5;
+              decel *= 0.5;
+            }
           }
-          else if (control.pressed.x > 0) {
-            vel.x = Math.min(MAX_PEDDLE_SPEED, vel.x + PEDDLE_ACCEL);
+
+          if (control.pressed.x == 0) {
+            vel.x = Math.abs(vel.x) < EPSILON ? 0: vel.x * decel;
           }
           else {
-            vel.x = Math.max(-MAX_PEDDLE_SPEED, vel.x - PEDDLE_ACCEL);
+            vel.x += accel * (control.pressed.x > 0 ? 1: -1);
+            if (!speedPowerUp) {
+              vel.x = THREE.MathUtils.clamp(
+                vel.x,  -CONFIG.MAX_PEDDLE_SPEED, CONFIG.MAX_PEDDLE_SPEED);
+            }
           }
           return { velocity: {
             ...vel
@@ -755,7 +1153,7 @@ export default class GameScene extends THREE.Group {
     while (frameTime > EPSILON) {
       this.#physics.update(frameSlice);
       frameTime -= frameSlice; 
-      frameSlice = Math.min(frameTime, FRAME_TIME_THRESHOLD);
+      frameSlice = Math.min(frameTime, CONFIG.FRAME_TIME_THRESHOLD);
     }
     const states = this.#physics.allStates;
     this.#objects.forEach(({mesh, physicsId}) => {
@@ -763,7 +1161,155 @@ export default class GameScene extends THREE.Group {
         return ;
       const position = states[physicsId].position;
       mesh.position.set(position.x, position.y, mesh.position.z);
-    })
+    });
+    if (this.#ball.mesh && this.#ball.physicsId) {
+      const velocity = this.#physics.getState(this.#ball.physicsId).velocity;
+      this.#ball.mesh.rotation.x += velocity.x * 0.001;
+      this.#ball.mesh.rotation.y += velocity.y * 0.001;
+    }
+    if (this.#ball.mesh && this.#ball.atmosphere)  {
+      const position = this.#ball.mesh.position;
+      this.#ball.atmosphere.position.setX(position.x);
+      this.#ball.atmosphere.position.setY(position.y); 
+      /** @type { THREE.ShaderMaterial } *///@ts-ignore
+      const material = this.#ball.atmosphere.material;
+      material.uniforms.uGlow.value = Math.max(0, 
+        material.uniforms.uGlow.value - frame * 0.5);
+    }
+    return this;
+  }
+
+  /** @description Prevent ball go out */
+  #captureBall() {
+    const ballPosition = this.#physics.getState(this.#ball.physicsId).position;
+    if (ballPosition.y <= -48) {
+      this.#lostSide = "TOP";
+      this.#handleScoreChange();
+    }
+    else if (ballPosition.y > 48) {
+      this.#lostSide = "BOTTOM";
+      this.#handleScoreChange();
+    }
+  }
+
+  #handleScoreChange() {
+    if (this.#stuckHandler && this.#safeWallHitCount > CONFIG.SAFE_WALL_STUCK_THRESHOLD) {
+      this.#stuckHandler(false);
+    }
+    this.#safeWallHitCount = 0;
+    this.removeBall()
+    this.#updateGameData();
+    return this;
+  }
+
+  /**
+   *  Collect data
+   */
+
+  /** @param {{ 
+   *    winPlayer: Player
+   *    scores: { [key in string]: number}
+   * }} params
+   * */
+  #sendGameScoreUpdate({ winPlayer, scores }) {
+    if (!this.#logger.scoreUpdate)
+      return;
+
+    /** @type {{ [key in string] :number }} */
+    this.#logger.scoreUpdate({
+      winPlayer,
+      scores
+    });
+  }
+
+  /** @param {number} playerIndex */
+  getPeddleInfo(playerIndex) {
+    const physicsId = this.#peddles[playerIndex].physicsId;
+    return this.#physics.getState(physicsId);
+  }
+
+  getBallInfo() {
+    if (!this.#ball?.physicsId)
+      return {};
+    const physicsId = this.#ball.physicsId;
+    return this.#physics.getState(physicsId);
+  }
+
+  /** @param {(key: string, press: boolean) => void} logger */
+  setKeyLogger(logger) {
+    this.#logger.keyInput= logger;
+  }
+
+  /** @param {(data: { winPlayer: Player,
+   *    scores: { [key: string]: number } }) => void } logger */
+  setScoreLogger(logger) {
+    this.#logger.scoreUpdate = logger;
+  }
+
+  /** @param {(_: {collider: PhysicsEntity, collidee: PhysicsEntity}) => void} logger */
+  setCollisionLogger(logger) {
+    const id = this.#physics.addCollisionCallback(
+      (_collider, _collidee, _time) =>  true,
+      (collider, collidee, _time) => {
+        collider["info"] = this.#getLoggingInfo(collider);
+        collidee["info"] = this.#getLoggingInfo(collidee);
+        logger({ collider, collidee })
+      },
+    );
+    this.#eventsIds.push({
+      desc: "collision logger",
+      id
+    });
+    this.#logger.collisionLoggerId = id;
+  }
+
+  /** @param {PhysicsEntity} entity */
+  #getLoggingInfo(entity) {
+    const id = entity["physicsId"];
+    if (id == null || id == undefined)  {
+      if (DEBUG.isDebug())
+        console.error("no physics id");
+      return null;
+    }
+    //@ts-ignore
+    const data = entity.data;
+    if (data == null)
+      return null;
+    if (data.isBall) {
+      return { type: "BALL" };
+    }
+    if (data.isPeddle) {
+      return { 
+        ...data,
+        playerNickname: this.#gameData.currentPlayers[data.player].nickname
+      };
+    }
+    return data;
+  }
+
+  /** @param {(_: (string | null)) => void} callback */
+  subscribePowerUp(callback) {
+    this.#activatedPowerUP.subscribe(activated => callback(activated));
+  }
+
+  #setVisibleCallback() {
+    window.addEventListener('blur', 
+      () => 
+      this.#isVisible = false,
+      false);
+    window.addEventListener('focus', 
+      () => this.#isVisible = true,
+      false);
+    document.addEventListener("visibilitychange",
+      () => {
+        //Only work 
+        setTimeout(() => {
+          this.#isVisible = !document.hidden;
+        }, 10);
+      },
+      false
+    );
+    return this;
   }
 
   _addHelper() {

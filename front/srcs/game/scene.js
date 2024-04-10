@@ -14,6 +14,8 @@ import Asset from "@/game/asset";
 import GameScene from "@/game/game_scene";
 import Timer from "@/game/timer";
 import GUI from "node_modules/lil-gui/dist/lil-gui.esm.min.js";
+import GameDataEmitter from "@/game/game_data_emitter";
+import { DEBUG } from "@/data/global";
 
 /**
  * Game Scene.
@@ -22,6 +24,13 @@ export default class Scene {
 
   // debug
   #isDebug = false;
+
+  /** @type {{
+   *    rallyState: (changed: "START" | "END" | "RESET") => void
+   *    matchState: (changed: "END" | "NEXT") => void
+   *  }}
+   */ //@ts-ignore
+  #logger = {};
 
   #scene;
   #scene_objs = {};
@@ -50,7 +59,6 @@ export default class Scene {
   /** @type {OrbitControls} */
   #controls;
 
-
   /** @type {{
    *    raycaster: THREE.Raycaster,
    *    pointer: THREE.Vector2,
@@ -60,7 +68,7 @@ export default class Scene {
    * }} */
   #mouseHandler;
   cameraPositions = { 
-    start: { x: 0, y: 70, z: 30 },
+    start: { x: 0, y: 80, z: 30 },
     startRotate: { x: 0, y: 20, z: 10 },
     play: { x: 0.2, y: 1.8, z: 0.75 },
   };
@@ -93,10 +101,14 @@ export default class Scene {
   #lights = {};
 
   lightConfigs = {
-    ambientColor: 0xffffff,
-    ambientIntensity: 2.1,
+    ambientColor: {
+      default: 0xffffff,
+      buff: 0xb3ffc6,
+      deBuff: 0xffcdb3
+    },
+    ambientIntensity: 3,
     directionalColor: 0xffffff,
-    directionalIntensity: 2.1
+    directionalIntensity: 2
   };
 
   /**
@@ -106,11 +118,7 @@ export default class Scene {
   /** @type {Timer} */
   #timer;
 
-  isBallMoving = false;
-  peddleColors = {
-    "player1": 0x00ffff,
-    "player2": 0xffff00,
-  };
+  #isBallMoving = false;
 
   peddleSizeInGame = {
     width: 0.15,
@@ -138,15 +146,6 @@ export default class Scene {
    *  }[]} 
    */
   #animations = [];
-
-  /** @type {{
-   *  [key in string]: {
-   *    colorTexture: THREE.Texture,
-   *    normalTexture: THREE.Texture,
-   *    aoRoughnessMetallnessTexture: THREE.Texture
-   *  }
-   * }} */
-  #loadedTextures = { };
 
   /** @type {THREE.Object3D} */
   #trophy;
@@ -204,12 +203,32 @@ export default class Scene {
     this.#gameScene.init();
     this
       .#loadLeaf()
-      .#startRender();
+      .#startRender()
+      .#listenPowerUp();
+    this.#gameScene.subscribePowerUp(activatedPowerUp => {
+      if (activatedPowerUp == null) {
+        this.#lights.ambientLight.color = new THREE.Color(this.lightConfigs.ambientColor.default);
+      }
+      switch (activatedPowerUp) {
+        case ("BUFF"):
+          this.#lights.ambientLight.color = new THREE.Color(this.lightConfigs.ambientColor.buff);
+          break;
+        case ("DEBUFF"):
+          this.#lights.ambientLight.color = new THREE.Color(this.lightConfigs.ambientColor.deBuff);
+          break;
+        default: break;
+      }
+    })
+    if (this.#isDebug)
+      this._addHelper();
   }
 
   showNextMatch() {
     this.#updateLabels();
-    this.#gameScene.updatePeddleColors();
+    this.#gameScene.showNextMatch();
+    if (this.#logger.matchState) {
+      this.#logger.matchState("NEXT");
+    }
   }
 
   #updateLabels() {
@@ -224,17 +243,126 @@ export default class Scene {
     return this;
   }
 
+  /** @param {GameDataEmitter} emitter */
+  setDataEmitter(emitter) {
+    this
+      .#setCollectors(emitter)
+      .#setEventLoggers(emitter);
+  }
+
+  /** @param {GameDataEmitter} emitter */
+  #setCollectors(emitter) {
+    emitter.setCollector("PEDDLE", () => this.#getPeddlesInfo()
+    );
+    emitter.setCollector("BALL", () => this.#gameScene.getBallInfo());
+    emitter.setCollector("GAME_STATE", () => this.#getGameState());
+    return this;
+  }
+
+  /** @param {GameDataEmitter} emitter */
+  #setEventLoggers(emitter) {
+    this.#logger.rallyState = (state => {
+      let description = null;
+      switch (state) {
+        case ("START"):
+          description = "START_RALLY";
+          break;
+        case ("RESET"):
+          description = "RESET_RALLY";
+          break;
+        default:
+          return ;
+      }
+      emitter.submitEvent("GAME_DATA_CHANGED", {
+        description,
+      })
+    });
+
+    this.#logger.matchState = (state) => {
+      let description = null;
+      switch (state) {
+        case ("END"):
+          description = "END_MATCH";
+          break;
+        case ("NEXT"):
+          description = "NEXT_MATCH";
+          break;
+          default: return;
+      }
+      emitter.submitEvent("GAME_DATA_CHANGED", {
+        description
+      })
+    }
+    this.#gameScene.setKeyLogger((key, pressed) => {
+      emitter.submitEvent("PLAYER_BEHAVIOR", {
+        description: "PLAYER_INPUT",
+        key: key,
+        pressed
+      });
+    });
+
+    this.#gameScene.setScoreLogger((
+      { winPlayer, scores }) => {
+        emitter.submitEvent("GAME_DATA_CHANGED", {
+          description: "WIN_SCORE",
+          winPlayer,
+          scores
+        });
+        const winScore = this.#gameData.winScore;
+        if (scores[winPlayer.nickname] == winScore &&
+          this.#logger.matchState) {
+          this.#logger.matchState("END");
+        }
+    });
+
+    this.#gameScene.setCollisionLogger((collision) => {
+      emitter.submitEvent("COLLISION", collision) 
+    });
+    return this;
+  }
+  
+  #getPeddlesInfo() {
+    const info = {};
+    info.player1 = {
+      peddle: this.#gameScene.getPeddleInfo(0),
+    }
+    if (this.#gameData.currentPlayers.length == 2) {
+      info.player2 = {
+        peddle: this.#gameScene.getPeddleInfo(0),
+      }
+    }
+    return info;
+  }
+
+  #getGameState() {
+    const state = {};
+    state.scores = {};
+    state.powerUps = {};
+    this.#gameData.currentPlayers.forEach(player => {
+      state.scores[player.nickname] = this.#gameData.getScore(player);
+      state.powerUps[player.nickname] = this.#gameData.getPowerUps(player);
+    });
+    return state;
+  }
+
   startGame() {
     this.#gameScene.addBall();
-    this.isBallMoving = true;
+    this.#isBallMoving = true;
+    if (this.#logger.rallyState) {
+      this.#logger.rallyState("START");
+    }
   }
 
   resetBall() {
-    if (this.#gameScene.ball.mesh) {
-      this.#gameScene.removeBall();
+    if (!this.#gameScene.ball.mesh) {
+      return ;
     }
+    if (this.#logger.rallyState) {
+      this.#logger.rallyState("RESET");
+    }
+    this.#gameScene.removeBall();
     this.#gameScene.addBall();
-    this.isBallMoving = true;
+    this.#isBallMoving = true;
   }
 
   /** @param {Player} player */
@@ -256,12 +384,13 @@ export default class Scene {
     /** @type {HTMLAudioElement} */
     const sound = Asset.shared.get("AUDIO", ASSET_PATH.winSound);
     sound.volume = 0.8;
-    this.#bgm.current.volume -= 0.1;
+    this.#bgm.current.volume = Math.max(
+      this.#bgm.current.volume - 0.1, 0.05);
     sound.play();
     sound.addEventListener("ended", () => {
       this.#bgm.current.volume = this.#bgm.volume;
     });
-    this.isBallMoving = false;
+    this.#isBallMoving = false;
     const cameraDest = { ...this.cameraPositions.play };
     cameraDest.z += 0.5;
     this.#showLeaves();
@@ -276,10 +405,11 @@ export default class Scene {
         onEnded: () => {
           this.#gameScene.removeParticle();
           this.#showTrophy(() => {
-          const sound = Asset.shared.get("AUDIO",
+            const sound = Asset.shared.get("AUDIO",
             ASSET_PATH.tournamentWin);
-          sound.volume = 0.8;
-          this.#bgm.current.volume -= 0.1;
+          sound.volume = 0.5;
+            this.#bgm.current.volume = Math.max(
+            this.#bgm.current.volume - 0.1, 0.05);
           sound.play();
           sound.addEventListener("ended", () => {
             this.#bgm.current.volume = this.#bgm.volume;
@@ -344,6 +474,7 @@ export default class Scene {
   }
 
   goToGamePosition(onEnded) {
+    // TODO: match event listener
     this.#moveObject({
       target: this.#camera,
       dest: {...this.cameraPositions.play},
@@ -360,13 +491,14 @@ export default class Scene {
 
   #showTrophy(onEnded) {
     if (!this.#trophy) {
-      console.error("trophy is not loaded");
+      if (DEBUG.isDebug())
+        console.error("trophy is not loaded");
       return ;
     }
     this.#trophy.position.set(
       this.#camera.position.x,
       this.#camera.position.y + 0.5, 
-      this.#camera.position.z - 1.5
+      this.#camera.position.z - 1.
     )
     const spotLight = new THREE.SpotLight(new THREE.Color("white"));
     spotLight.intensity = 100;
@@ -599,7 +731,7 @@ export default class Scene {
         const mac = this.#scene_objs["macintosh"];
 
 
-        /** @type {THREE.Mesh} */
+        /** @type {THREE.Mesh} */ //@ts-ignore
         const screen = mac.children[0].children[0].children[1]
 
         const screenBox= new THREE.Box3().setFromObject(screen);
@@ -649,7 +781,6 @@ export default class Scene {
         this.#gameScene.getWorldPosition(screenPos);
         if (this.#isDebug)
           this.#controls.target = screenPos;
-
         this.#loadboomBox(boombox => {
           boombox.scale.set(
             0.5,
@@ -673,6 +804,7 @@ export default class Scene {
           curve: AnimationCurves.easein,
           onEnded: () => {
             this.#sceneParticle.isPlaying = false;
+            this.#sceneParticle.remove();
             this.goToGamePosition(); 
           }
         });
@@ -852,9 +984,10 @@ export default class Scene {
 
 
   #setLights() {
-    const gameAmbientLight = new THREE.AmbientLight(this.lightConfigs.ambientColor, this.lightConfigs.ambientIntensity);
+    const gameAmbientLight = new THREE.AmbientLight(this.lightConfigs.ambientColor.default, this.lightConfigs.ambientIntensity);
     const gameDirectionalLight = new THREE.DirectionalLight(
     );
+    gameAmbientLight.position.set(0, 0, 1);
     gameDirectionalLight.castShadow = true;
     gameDirectionalLight.shadow.mapSize.set(1024, 1024);
     gameDirectionalLight.shadow.camera.far = 15;
@@ -876,25 +1009,30 @@ export default class Scene {
       })
     );
     this.#sceneParticle= new ParticleGenerator({
-      count: 500,
-      particleSize: 0.3,
-      computeDepth: true,
+      count: 100,
+      particleSize: 2000,
+      useShader: false,
       maxSize: {
-        x: 2, 
-        y: 2,
-        z: 2
+        x: 100, 
+        y: 100,
+        z: 1
       },
     });
-    this.#sceneParticle.animationConfig.speedCoefficient = 0.0001;
-    this.#sceneParticle.animationConfig.speedVariantConstant = 1;
-    this.#sceneParticle.setColor(["#ffffff", "#ddd0b2", "#f8edde", "#3ac4d6"]);
-
-    this.#sceneParticle.createParticles();
-    const particles = this.#sceneParticle.getParticles();
-    container.add(particles);
-    container.scale.set(100, 100, 100);
-    this.#scene.add(container);
-
+   this.#sceneParticle.animationConfig.speedCoefficient = 2.;
+    this.#sceneParticle.animationConfig.randomCoefficent = 1;
+    this.#sceneParticle.setColor([
+      "#49243E",
+      "#704264",
+      "#FFEBB2",
+      "#E9C874",
+      "#008DDA",
+    ]);
+    this.#sceneParticle.createParticles()
+      .then(() => {
+        const particles = this.#sceneParticle.getParticles();
+        container.add(particles);
+        this.#scene.add(container);
+      });
     return this;
   }
 
@@ -902,11 +1040,11 @@ export default class Scene {
     const list = ASSET_PATH.bgms.map(
       bgm => Asset.shared.get(
         "AUDIO", bgm.path
-    ));
+      ));
     this.#bgm = {
       list,
       current: list[0],
-      volume: 0.2
+      volume: 0.15
     };
     this.#playBgm();
     return this;
@@ -967,7 +1105,8 @@ export default class Scene {
     this.#renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.#renderer.setSize(this.#windowSize.width, 
       this.#windowSize.height);
-    this.#renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    const pixelRatio = Math.min(window.devicePixelRatio, 2);
+    this.#renderer.setPixelRatio(pixelRatio);
 
     return this;
   }
@@ -1023,7 +1162,6 @@ export default class Scene {
 
       const width = this.#canvas.parentElement.offsetWidth;
       const height = this.#canvas.parentElement.offsetHeight;
-
       this.#windowSize = {
         width,
         height,
@@ -1032,9 +1170,11 @@ export default class Scene {
       this.#camera.aspect = width / height;
       this.#camera.updateProjectionMatrix();
       this.#renderer.setSize(width, height);
-      this.#renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      const pixelRatio = Math.min(window.devicePixelRatio, 2);
+      this.#renderer.setPixelRatio(pixelRatio);
+      this.#gameScene.pixelRatio = pixelRatio;
 
-    }).bind(this);
+    });
     window.addEventListener("resize", () => resizeCallback()) 
     return this;
   }
@@ -1051,7 +1191,7 @@ export default class Scene {
         this.#controls.update()
       this.#gameScene.update(frameTime);
       this.#runAnimations();
-      this.#sceneParticle.animate();
+      this.#sceneParticle.animate(frameTime);
       this.#leaf.animate();
       this.#renderer.render(this.#scene, this.#camera);
     });
@@ -1069,6 +1209,16 @@ export default class Scene {
         }
       })
     this.#animations = this.#animations.filter(e => !e.animation.isFinished);
+  }
+
+  #listenPowerUp() {
+    /** @type {ObservableObject} */ //@ts-ignore
+    const gameData = this.#gameData;
+    gameData.subscribe("powerUps", (powerup) => {
+      this.#updateLabels();
+    })
+
+    return this;
   }
 
   _addHelper() {
@@ -1091,7 +1241,7 @@ export default class Scene {
 
     const light = this.gui.addFolder("light");
 
-    light.addColor(this.lightConfigs, "ambientColor")
+    light.addColor(this.lightConfigs.ambientColor, "default")
       .onChange(color => {
         this.#lights.ambientLight.color.set(color);
       })
@@ -1110,6 +1260,23 @@ export default class Scene {
       .min(0).max(5)
       .step(0.01)
       .onChange(value => this.#lights.directionalLight.intensity = value);
+
+    light.add(this.#lights.directionalLight.position, "x")
+      .name("lightPosX")
+      .min(-20)
+      .max(20)
+      .step(0.1)
+    light.add(this.#lights.directionalLight.position, "y")
+      .name("lightPosY")
+      .min(-20)
+      .max(20)
+      .step(0.1);
+    light.add(this.#lights.directionalLight.position, "z")
+      .name("lightPosZ")
+      .min(-20)
+      .max(20)
+      .step(0.1);
+    
 
     return this;
   }

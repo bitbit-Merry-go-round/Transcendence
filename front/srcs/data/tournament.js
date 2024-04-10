@@ -1,4 +1,5 @@
 import Player from "@/data/player";
+import { DEBUG } from "./global";
 
 /** @typedef {Object} Match 
  *  @property {{
@@ -87,8 +88,11 @@ export default class Tournament {
 
     if (this.#_currentMatchIndex + 1 < this.#_currentRound.matches.length) 
       this.#_currentMatchIndex += 1;
-    else if (this.isLastRound)
-      console.error ("tournament is finished");
+    else if (this.isLastRound) {
+      if (DEBUG.isDebug())
+        console.error ("tournament is finished");
+      return ;
+    }
     else {
       this.#goToNextRound();
       this.#_currentMatchIndex = 0;

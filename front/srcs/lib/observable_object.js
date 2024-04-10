@@ -1,4 +1,7 @@
 //@ts-nocheck
+
+import { DEBUG } from "@/data/global";
+
 /**
  * ObservableObject wrapper
  */
@@ -11,9 +14,11 @@ export default class ObservableObject {
       /** @param {_ObservableObject} obj */
       get: (obj, prop) => {
         if (prop == "_proxy") {
-          if (!obj._proxy)
-            console.error("proxy is not set");
-          return this;
+          if (!obj._proxy) {
+            if (DEBUG.isDebug())
+              console.error("proxy is not set");
+            return this;
+          }
         }
         if (typeof obj[prop] === 'function')
           return obj[prop].bind(inner);
@@ -136,7 +141,8 @@ class _ObservableObject {
    */
   subscribe(key, listener) {
     if (this.#sumNumberOfLisetners() >= _ObservableObject.MAX_LISTENER) {
-      console.error("max listener is exceeded");
+      if (DEBUG.isDebug())
+        console.error("max listener is exceeded");
       return -1;
     }
     if (!this.#listeners.hasOwnProperty(key)) {

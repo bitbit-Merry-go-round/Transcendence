@@ -16,6 +16,7 @@ export const NAVIGATE_DRIRECTION = Object.freeze({
 
 class Router {
 
+  /** @type Router */
   static #_shared;
   static get transitionDistX() {
     return 30;
@@ -34,6 +35,9 @@ class Router {
     current: null,
     next: null
   };
+  get hasPrevPage() {
+    return this.#pages.prev != null;
+  }
 
   static get shared() {
     if (!this.#_shared) {

@@ -1,4 +1,5 @@
 //@ts-nocheck
+import { DEBUG } from "@/data/global";
 import { getValue, setValue, testValue } from "@/utils/keypath";
 
 const COMPONENT_KEY = 'data-component';
@@ -153,7 +154,8 @@ export default class View extends HTMLElement {
       if (matches)  {
         const key = matches[1].split('.')[0];
         if (!this.#reRenderTriggers[key]) {
-          console.log("Fail to add rerender trigget for ", this, key);
+          if (DEBUG.isDebug())
+            console.log("Fail to add rerender trigget for ", this, key);
           continue;
         }
         this.#reRenderTriggers[key].push({
@@ -191,7 +193,7 @@ export default class View extends HTMLElement {
     const keys = node.getAttribute(LOOP_KEY).split("in")
       .map(key => key.trim());
 
-    if (keys.length < 2)  {
+    if (keys.length < 2 && DEBUG.isDebug())  {
       console.err("Not valid for loop use 'A in B'", node);
       return;
     }
@@ -200,10 +202,9 @@ export default class View extends HTMLElement {
       ...additionalData
     }: this.data;    
     let values = getValue(container, keys[1]);
-    if (!values || !Array.isArray(values)) {
-      console.error(`Data for ${keys[1]} is not array  is it inner loop?`, 
-        values
-      );
+    if ((!values || !Array.isArray(values))) {
+      if (DEBUG.isDebug())
+        console.error(`Data for ${keys[1]} is not array  is it inner loop?`, values);
       return ;
     }
 
@@ -233,8 +234,9 @@ export default class View extends HTMLElement {
           const innerKeys = innerRoot.getAttribute(LOOP_KEY).split("in")
             .map(key => key.trim());
 
-          if (innerKeys.length < 2)  {
-            console.err("Not valid for loop use 'A in B'", node);
+          if (innerKeys.length < 2) {
+            if (DEBUG.isDebug())
+              console.err("Not valid for loop use 'A in B'", node);
             return;
           }
           const innerValues = getValue(elem, innerKeys[1]);

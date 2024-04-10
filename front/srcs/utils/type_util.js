@@ -25,3 +25,8 @@ export function getRandomFromObject(obj) {
   return {key, value: obj[key]};
 }
 
+/** @param {Array<any>} arr */
+export function getRandomFromArray(arr) {
+  const index = Math.floor(Math.random() * arr.length)
+  return arr[index];
+}
