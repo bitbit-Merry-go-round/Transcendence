@@ -38,6 +38,18 @@ body {
     background-color: #ECEEE7;
 }
 
+.home-view-bg {
+    background-image: url(./assets/home_bg.png);
+    height: 100vh; 
+    background-repeat: no-repeat; 
+    background-size: contain;
+    background-position: right;
+}
+
+.explain-text {
+    color:rgb(105, 105, 105);
+}
+
 .img-login {
     background-image: url(./assets/forest.jpeg);
     background-color: black;
@@ -69,8 +81,8 @@ body {
     --bs-btn-active-border-color: #b3baa5;
     --bs-btn-active-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
     --bs-btn-disabled-color: #fff;
-    --bs-btn-disabled-bg: #D0D8C0;
-    --bs-btn-disabled-border-color: #D0D8C0;
+    --bs-btn-disabled-bg: #bebebe;
+    --bs-btn-disabled-border-color: #bebebe;
 }
 
 .navbar {
@@ -260,7 +272,7 @@ ul {
 .mode-box {
     background-color: white;
     border-radius: 2em;
-    width: 30vw;
+    width: 50vw;
     height: 50vh;
     margin-top: 10vh;
     margin-left: 10vh;
@@ -342,6 +354,19 @@ ul {
 }
 
 /* 토너먼트 */
+.vibration {
+    background-color: rgb(255, 240, 240);
+    animation: vibration .1s infinite;
+}
+@keyframes vibration {
+    from {
+        transform: rotate(0.5deg);
+    }
+    to {
+        transform: rotate(-0.5deg);
+    }
+}
+
 .tournament-box {
     background-color: #B1C59A;
     border-radius: 2em;
@@ -355,13 +380,14 @@ ul {
     border-radius: 0.5em;
     padding: 1em;
     height: 3em;
-    font-size: x-large;
+    font-size: 2.5em;
     border-color: #ffffff00;
 }
 
 .btn-tournament {
     background-color: #756655;
     border-color: #756655;
+    font-size: 2em;
 }
 
 .tournament-footer {
@@ -421,8 +447,8 @@ ul {
 /* match */
 .match-player-card {
     overflow: hidden;
-    height: 100%;
-    width: 20%;
+    height: 500px;
+    width: 300px;
 }
 
 .match-container {
@@ -451,7 +477,8 @@ ul {
 
 .user-avatar-match {
     border-radius: 50%;
-    width: 60%;
+    width: 200px;
+    height: 200px;
 }
 
 .game-play {
@@ -582,4 +609,21 @@ input[type="file"] {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
+}
+
+/* auth view */
+input::-webkit-inner-spin-button {
+    appearance: none;
+    -moz-appearance: none;
+    -webkit-appearance: none;
+}
+
+.input-otp {
+    align-items: center;
+    text-align: center;
+    height: 70px;
+    width: 400px;
+    font-size: 40px;
+    border: #6B7964 solid 5px;
+    border-radius: 10px;
 }

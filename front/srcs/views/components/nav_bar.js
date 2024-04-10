@@ -28,10 +28,11 @@ export default class NavBar extends View {
   }
 
   _initModalData (data) {
-    const userAvatar = this.querySelector('.user-avatar');
-    const userLevelId = this.querySelector('.user-level-id');
-    const userScore = this.querySelector('.score');
-    const stateMessage = this.querySelector('.state-message');
+    const profileCardModal = this.querySelector('#profileCardModal');
+    const userAvatar = profileCardModal.querySelector('.user-avatar');
+    const userLevelId = profileCardModal.querySelector('.user-level-id');
+    const userScore = profileCardModal.querySelector('.score');
+    const stateMessage = profileCardModal.querySelector('.state-message');
     if (!userLevelId)
     {
       // 왜 this 아래 아무것도 없는지 의아.
@@ -62,11 +63,26 @@ export default class NavBar extends View {
     await httpRequest('GET', url, null, this._initNavbarData.bind(this));
   }
     
+  _logoutEvent() {
+    const url = `http://${window.location.hostname}:8000/logout/`;
+    const logoutBtn = this.querySelector('#logout');
+    const body = JSON.stringify({
+      refresh: `${localStorage.getItem('refresh')}`
+    })
+    logoutBtn.addEventListener('click', () => {
+      httpRequest('POST', url, body, () => {
+        alert('Logout success');
+      }, () => {
+      })
+      localStorage.clear();
+    })
+  }
+
   connectedCallback() {
     super.connectedCallback();
     
     this._fetchInfo();
-    // 가능하다면, 한 번 받아온 데이터를 두 군데서 초기화해줄 수 있도록 처리하기.
+    this._logoutEvent();
     this._modalToggler();    
   }
 }
