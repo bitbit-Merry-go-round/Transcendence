@@ -65,15 +65,15 @@ class Router {
       }
     }
 
-
     const page = new view({
       data: {
-        gameData: global.gameData
+        gameData: global.gameData,
+        gameMap: global.gameMap
       },
       registerGame: {
         local: global.registerTournamentGame,
         tournament: global.registerTournamentGame,
-        paramameter: global.setGameParameter
+        parameter: global.setGameParameter
       },
       endGame: global.removeGame
     });
@@ -248,12 +248,33 @@ export async function route({
 
 /** @param {HTMLElement | Document | View} parent */
 export function anchorToLink(parent) {
+  const page = (parent instanceof View) ? parent.constructor.name : null;
 
   /** @type {HTMLAnchorElement[]} */
   const links = Array.from(parent.querySelectorAll("a[data-link]"));
   links.forEach((link) => {
+    link.setAttribute("page", page);
     link.addEventListener("click", (e) => {
       e.preventDefault();
+      if (link.pathname == "/game") { //@ts-ignore
+        const page = e.target.getAttribute("page");
+        if (!page)
+          return ;
+        switch (page) {
+          case ("MatchView"):
+            try {
+              global.registerLocalGame();
+            } catch {}
+            break;
+          case ("TournamentView"):
+            try {
+              global.registerTournamentGame();
+            } catch {}
+            break;
+          default: break;
+        }
+        return ;
+      }
       addHistory(link.pathname);
       route({
         path: link.pathname

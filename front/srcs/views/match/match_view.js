@@ -1,15 +1,26 @@
 import View from "@/lib/view";
 import httpRequest from "@/utils/httpRequest";
-import global from "@/data/global";
+import * as GLOBAL from "@/data/global";
 
 export default class MatchView extends View {
 
 
   mapModal = {};
 
-  constructor({data}) {
+  setNickname;
+  setMap;
+  setSpeed;
+
+  constructor({data, registerGame}) {
     super();
     this.data = data
+    const { parameter } = registerGame;
+    this.setNickname = /** @param{ string[] } nicknames */
+      (nicknames) => parameter({nicknames})
+    this.setMap =  /** @param{ any }  map */
+      (map) => parameter({map})
+    this.setSpeed = /** @param{ number} speed */
+      (speed) => parameter({ speed })
   }
 
   _initUserCard(data) {
@@ -43,11 +54,15 @@ export default class MatchView extends View {
 
         this.mapModal["allMaps"] = allCanvas;
         allCanvas.forEach(c => {
-          c.addEventListener("click", (e) => {
-            global.setGameParameter({map: c.dataset.map})
-          }) 
+          c.addEventListener("click", 
+            () => this.setMap(c.dataset.map)
+          ) 
         })
       }
+    })
+    this.querySelector("#paddleSpeed").addEventListener("input", (event) => { //@ts-ignore
+      this.setSpeed( Number(event.target.value) )
+
     })
     paddleModalBtn.addEventListener('click', () => {
       paddleModal.style.display = 'flex'

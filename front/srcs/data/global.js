@@ -5,6 +5,12 @@ import GameAnalytics from "@/data/game_analytics";
 import { generateRandomName } from "@/utils/random_name.js";
 import { GameMap }  from "@/data/game_map";
 
+/** @typedef {(params: {
+ * speed?: number,
+ * map?: any,
+ * nicknames?: string[]
+ * }) => void } SetGameParameter */
+
 export const DEBUG = (() => {
   let isDebug = false;
 
@@ -73,7 +79,7 @@ const globalData = (() =>{
     }
     if (map) {
       const walls = JSON.parse(map);
-      gameMap = GameMap.createFromWalls(walls);
+      gameParameter.walls = walls;
     }
     if (nicknames && Array.isArray(nicknames) && nicknames.length > 0 &&
       nicknames.findIndex(name => typeof(name) != "string" || name.trim().length == 0) == -1) {
@@ -81,27 +87,46 @@ const globalData = (() =>{
     }
   };
 
+  const isParameterValid = () => {
+    if (gameParameter.nicknames == null) {
+      console.error("nicknames not set setGameParameter({nicknames})");
+      return false;
+    }
+    else if (gameParameter.walls == null) {
+      console.error("map not set setGameParameter({map})");
+      return false;
+    }
+  }
+
   const registerLocalGame = () => {
-    if (gameParameter.nicknames == null || gameParameter.walls == null) {
-      console.error("setGameParameter({nicknames, map})");
+    if (!isParameterValid())
+      return ;
+    else if (gameParameter.nicknames.length < 2) {
+      console.error(`nicknames.length = ${gameParameter.nicknames}`);
       return ;
     }
     gameData = GameData.createLocalGame(gameParameter);
     gameParameter.nicknames = null;
+    gameParameter.walls = null;
   };
 
   const registerTournamentGame = () => {
-    if (gameParameter.nicknames == null || gameParameter.walls == null) {
-      console.error("setGameParameter({nicknames, map})");
+    if (!isParameterValid())
+      return ;
+    else if (gameParameter.nicknames.length < 3) {
+      console.error(`nicknames.length = ${gameParameter.nicknames}`);
       return ;
     }
-
+    gameData = GameData.createTournamentGame(gameParameter);
+    gameParameter.nicknames = null;
+    gameParameter.walls = null;
   }
 
   const removeGame = () => { gameData = null };
 
   const createMap = () => {
-
+    gameMap = GameMap.createFromWalls(gameParameter.walls);
+    return gameMap;
   }
 
   return ({ 
@@ -110,8 +135,10 @@ const globalData = (() =>{
     registerLocalGame,
     registerTournamentGame, 
     removeGame, 
-    setGameParameter });
+    setGameParameter 
+  });
 })();
 
 
 export default globalData;
+export const Types = {};
