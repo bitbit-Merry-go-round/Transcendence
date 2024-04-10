@@ -19,7 +19,7 @@ re: fclean
 fclean:
 	$(if $(DOCKER_ID), docker rm -f $(DOCKER_ID))
 	$(if $(DOCKER_VOLUME), docker volume rm $(DOCKER_VOLUME))
-	docker rmi nginx
+	docker rmi -f nginx
 # docker system prune -af
 # $(if $(DOCKER_IMAGE_ID), docker rmi $(DOCKER_IMAGE_ID))
 

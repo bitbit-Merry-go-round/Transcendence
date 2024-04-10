@@ -46,10 +46,9 @@ body {
     background-position: right;
 }
 
-.btn-start {
-
+.explain-text {
+    color:rgb(105, 105, 105);
 }
-
 
 .img-login {
     background-image: url(./assets/forest.jpeg);
@@ -381,13 +380,14 @@ ul {
     border-radius: 0.5em;
     padding: 1em;
     height: 3em;
-    font-size: x-large;
+    font-size: 2.5em;
     border-color: #ffffff00;
 }
 
 .btn-tournament {
     background-color: #756655;
     border-color: #756655;
+    font-size: 2em;
 }
 
 .tournament-footer {
@@ -447,8 +447,8 @@ ul {
 /* match */
 .match-player-card {
     overflow: hidden;
-    height: 100%;
-    width: 20%;
+    height: 500px;
+    width: 300px;
 }
 
 .match-container {
@@ -477,7 +477,8 @@ ul {
 
 .user-avatar-match {
     border-radius: 50%;
-    width: 60%;
+    width: 200px;
+    height: 200px;
 }
 
 .game-play {
