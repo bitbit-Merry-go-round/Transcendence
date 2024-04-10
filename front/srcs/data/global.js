@@ -56,8 +56,13 @@ const globalData = (() =>{
 
   /** @type { GameData | null } */
   let gameData = new ObservableObject(
-    GameData.createLocalGame({
-      nicknames: ["pong master", "fighter"],
+    GameData.createTournamentGame({
+      nicknames: [
+        "pong master", 
+        "fighter",
+        "heshin",
+        "bart"
+      ],
       peddleSpeed: 1.0,
       powerUp: false
     })

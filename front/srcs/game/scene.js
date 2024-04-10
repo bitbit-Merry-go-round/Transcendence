@@ -1207,7 +1207,7 @@ export default class Scene {
       ({animation, speed, onProgress, key, onEnded}) => {
         animation.proceed(speed);
         onProgress(animation.current);
-        if (animation.isFinished) {
+        if (animation.isFinished && onEnded) {
           onEnded(animation.current);
         }
       })

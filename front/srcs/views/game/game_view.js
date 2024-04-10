@@ -424,11 +424,8 @@ export default class GameView extends View {
     }
   }
 
-  /** @param {{
-   *  [key in string] :number
-   * }} scores 
-   */
-  #findWinner(scores) {
+  #findWinner() {
+    const scores = this.#gameData.scores;
     const players = this.#gameData.currentPlayers;
     if (scores[players[0].nickname] > scores[players[1].nickname]) {
       return players[0];
@@ -437,8 +434,6 @@ export default class GameView extends View {
   }
 
   async #onFinishGame() {
-    const scores = this.#gameData.scores;
-    this.#sendResult(scores);
     let delay = 1;
     if (this.#gameData.gameType == GAME_TYPE.localTournament) {
       delay = 2;
@@ -447,7 +442,7 @@ export default class GameView extends View {
     const modal = new ResultModal({
       data: {
         delay,
-        text: this.#findWinner(scores).nickname + "의 승리!"
+        text: this.#findWinner().nickname + "의 승리!"
       },
       confirmHandler: () => {
         route({
@@ -457,6 +452,8 @@ export default class GameView extends View {
     });
     await modal.render();
     this.appendChild(modal); 
+    const finalScores = this.#gameData.finalScores;
+    sendResult(finalScores, this.#gameData.gameType);
   }
 
   #returnToGame() {
@@ -469,7 +466,141 @@ export default class GameView extends View {
       .#givePowerUps();
   }
 
-  #sendResult(scores) {
+}
 
+async function getToken(needRefresh = false) {
+  const accessToken = localStorage.getItem("access");
+  const refreshToken = localStorage.getItem("refresh");
+
+  if (!accessToken)
+    return null;
+
+  if (!needRefresh)
+    return accessToken;
+
+  if (!refreshToken)
+    return null;
+
+  const url = window.location.hostname + "/token/refresh";
+  const res = await fetch(url, {
+    method: "POST",
+    mode: "cors",
+    cache: "no-cache",
+    credentials: "same-origin",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + accessToken
+    },
+    body: JSON.stringify( {
+      "refresh": refreshToken
+    })
+  });
+  if (!res.ok)
+    return null;
+  const json = await res.json(); 
+  const { access, refresh } = json;
+  if (access)
+    localStorage.setItem("access", access);
+
+  if (refresh) 
+    localStorage.setItem("refresh", refresh);
+  return acces ?? null;
+}
+
+async function getUsername(retry = false) {
+  return "pong master";
+  const accessToken = await getToken();
+  if (!accessToken)
+    return null;
+  const url = window.location.hostname + "/users/me/profile";
+  const res = await fetch(url, {
+    method: "POST",
+    mode: "cors",
+    cache: "no-cache",
+    credentials: "same-origin",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + accessToken
+    },
+  });
+  if (!res.ok && !retry && res.status == 401) {
+    return await getUsername(true); 
   }
+  else if (!res.ok)
+    return null;
+  const json = await res.json();
+  return json["username"] ?? null;
+}
+
+async function sendResult(scores, gameType) {
+  const username = await getUsername();
+  const accessToken = await getToken();
+  if (!username || !accessToken)
+    return ;
+
+  let url = window.location.hostname;
+  const time = dateFormat(new Date());
+  let body = null;
+ 
+  switch (gameType) {
+    case (GAME_TYPE.local1on1):
+      let player1 = Object.keys(scores[0]).find(name => name == username);
+      if (!player1) {
+        player1 = Object.keys(scores[0])[0];
+      }
+      const player2 = Object.keys(scores[0]).find(name => name != player1);
+      if (!player1 || !player2)
+        return ;
+      url += "/game/me/1v1s";
+      body = {
+        player_1: player1,
+        player_2: player2,
+        player_1_score: scores[0][player1],
+        player_2_score: scores[0][player2],
+        time
+      };
+      break;
+    case (GAME_TYPE.localTournament):
+      url += "/game/me/tournaments";
+      body = [];
+      scores.forEach(score => {
+        body.push({ 
+          player_1: score["playerA"].name,
+          player_1_score: score["playerA"].score,
+          player_2: score["playerB"].name,
+          player_2_score: score["playerB"].score,
+          time: dateFormat(score["time"])
+        })
+      });
+      break;
+    default:
+      return ;
+  }
+  fetch(url, {
+    method: "POST",
+    mode: "cors",
+    cache: "no-cache",
+    credentials: "same-origin",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + accessToken
+    },
+    body: JSON.stringify(body)
+  }).catch(e => console.error(e));
+}
+
+function dateFormat(date) {
+  let month = date.getMonth() + 1;
+  let day = date.getDate();
+  let hour = date.getHours();
+  let minute = date.getMinutes();
+  let second = date.getSeconds();
+
+  month = month >= 10 ? month : '0' + month;
+  day = day >= 10 ? day : '0' + day;
+  hour = hour >= 10 ? hour : '0' + hour;
+  minute = minute >= 10 ? minute : '0' + minute;
+  second = second >= 10 ? second : '0' + second;
+
+  return date.getFullYear() + '-' + month + '-' + day + ' ' + hour + ':' + minute + ':' + second;
 }

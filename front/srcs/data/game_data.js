@@ -299,6 +299,16 @@ export default class GameData {
     return scores;
   }
 
+  get finalScores() {
+    switch (this.#_gameType) {
+      case (GAME_TYPE.local1on1):
+        return [this.scores];
+      case (GAME_TYPE.localTournament):
+        return this.#_tournament.allMatches;
+      default: return ;
+    }
+  }
+
   get currentPlayers() {
     if (this.#_gameType == GAME_TYPE.local1on1)
       return [...this.#players];

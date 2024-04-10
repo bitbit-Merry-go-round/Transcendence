@@ -12,6 +12,7 @@ import { DEBUG } from "./global";
  *    score: number | "",
  *    class: string
  *  }} playerB
+ *  @property { Date } time
 */
 
 /** Tournament. */
@@ -38,7 +39,7 @@ export default class Tournament {
 
   /** @type {{
    *    numberOfPlayers: number,
-   *    matches: Match[]
+   *    matches: Match[],
    * }} */
   #_currentRound;
 
@@ -46,6 +47,14 @@ export default class Tournament {
 
   get allRounds() {
     return this.#_allRounds;
+  }
+
+  get allMatches() {
+    const allMatches = [];
+    this.#_allRounds.forEach(round => 
+      allMatches.push(...round.matches)
+    );
+    return allMatches;
   }
 
   /** @type {Player[]} */
@@ -99,6 +108,7 @@ export default class Tournament {
     }
     this.#_currentRound.matches[this.#_currentMatchIndex].playerA.score = 0;
     this.#_currentRound.matches[this.#_currentMatchIndex].playerB.score = 0;
+    this.#_currentRound.matches[this.#_currentMatchIndex].time = new Date();
   }
 
   get isCurrentMatchFinished() {
@@ -132,7 +142,7 @@ export default class Tournament {
       return names;
     }, new Set);
 
-    const newRound= this.#createRound(
+    const newRound = this.#createRound(
       this.#allPlayers.filter(
         player => nameOfWinners.has(player.nickname)
       )
@@ -156,6 +166,7 @@ export default class Tournament {
     this.#_allRounds = [this.#_currentRound];
     this.#_currentRound.matches[this.#_currentMatchIndex].playerA.score = 0;
     this.#_currentRound.matches[this.#_currentMatchIndex].playerB.score = 0;
+    this.#_currentRound.matches[this.#_currentMatchIndex].time = new Date();
   }
 
   /** @param { Player[] } players */
@@ -182,7 +193,7 @@ export default class Tournament {
           name: playerB?.nickname ?? "",
           score: "",
           class: ""
-        }
+        },
       })
       numberOfPlayers -= 2;
     }
