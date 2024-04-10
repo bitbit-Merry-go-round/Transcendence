@@ -1,6 +1,6 @@
 import View from "@/lib/view";
 import HomeView from "@/views/home/home_view";
-import globalData from "@/data/global";
+import global from "@/data/global";
 import { routes } from "@/views/config";
 
 /** @typedef {Object} Page 
@@ -65,11 +65,19 @@ class Router {
       }
     }
 
+
     const page = new view({
       data: {
-        ...globalData
-      }
+        gameData: global.gameData
+      },
+      registerGame: {
+        local: global.registerTournamentGame,
+        tournament: global.registerTournamentGame,
+        paramameter: global.setGameParameter
+      },
+      endGame: global.removeGame
     });
+
     await page.render();
     if (!this.#pages.current) {
       await this.#setCurrentPage({page, path: destPath});

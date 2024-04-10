@@ -15,10 +15,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   const history = window.history.state?.history;
   const index = window.history.state?.index;
 
-  if (!path.includes("login") &&
-  !localStorage.getItem("access") && !DEBUG.isDebug()) {
-    path = "/login";
-  }
+  //  if (!path.includes("login") &&
+  //  !localStorage.getItem("access") && !DEBUG.isDebug()) {
+  //    path = "/login";
+  //  }
 
   if (!DEBUG.isDebug() && 
     (!history || index == undefined)) {

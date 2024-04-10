@@ -1,6 +1,6 @@
 import View from "@/lib/view";
 import httpRequest from "@/utils/httpRequest";
-import MapSelector from "@/views/components/map_selector.js";
+import global from "@/data/global";
 
 export default class MatchView extends View {
 
@@ -10,10 +10,6 @@ export default class MatchView extends View {
   constructor({data}) {
     super();
     this.data = data
-  }
-
-  selectMap(map) {
-    console.log("select", map);
   }
 
   _initUserCard(data) {
@@ -48,7 +44,7 @@ export default class MatchView extends View {
         this.mapModal["allMaps"] = allCanvas;
         allCanvas.forEach(c => {
           c.addEventListener("click", (e) => {
-            this.selectMap(c.dataset.map);
+            global.setGameParameter({map: c.dataset.map})
           }) 
         })
       }

@@ -49,6 +49,14 @@ export class GameMap {
    */
   #allWallBySize = {};
 
+  /** @param {Wall[]} walls */
+  static createFromWalls(walls) {
+     return new GameMap({
+      safeWalls: walls.filter(wall => wall.type == WALL_TYPES.safe),
+      trapWalls: walls.filter(wall => wall.type == WALL_TYPES.trap)
+    });
+  }
+
   /**
    * constructor.
    * @params {Object} params
@@ -196,3 +204,5 @@ export class GameMap {
       height: key % 1000 })
   }
 }
+
+export const Types = {};

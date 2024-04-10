@@ -17,19 +17,20 @@ export const GAME_TYPE = Object.freeze({
  */
 export default class GameData {
 
-  static createLocalGame() {
-    return new GameData({
+  static createLocalGame(parameter) {
+    const game = new GameData({
       players: [
         new Player({ nickname: generateRandomName() }),
         new Player({ nickname: generateRandomName() })
       ],
-      type: GAME_TYPE.local1on1
+      type: GAME_TYPE.local1on1,
     })
+    game.#_peddleSpeed = parameter.peddleSpeed ?? 1.0;
+    return game;
   }
 
-  /** @param {string[]} playerNames */
-  static createTournamentGame(playerNames) {
-    const players = playerNames.map(
+  static createTournamentGame(parameter) {
+    const players = parameter.playerNames.map(
       nickname => new Player({nickname})
     );
     const game = new GameData({ players, type: GAME_TYPE.localTournament });
@@ -37,6 +38,7 @@ export default class GameData {
       players,
       winScore: game.winScore
     });
+    game.#_peddleSpeed = parameter.peddleSpeed ?? 1.0;
     return game;
   }
 
@@ -142,6 +144,12 @@ export default class GameData {
   #_isPowerAvailable;
   get isPowerAvailable() {
     return this.#_isPowerAvailable;
+  }
+
+  /** @type { number } */
+  #_peddleSpeed = 1.0;
+  get peddleSpeedRatio() {
+    return this.#_peddleSpeed;
   }
 
   /** @type {TM.Match} */

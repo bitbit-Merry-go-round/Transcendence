@@ -11,6 +11,7 @@ import Observable from "@/lib/observable";
 import { getRandomFromArray } from "@/utils/type_util";
 import GameDataEmitter from "@/game/game_data_emitter";
 import { DEBUG, STATE } from "@/data/global";
+import { route } from "@/router";
 
 export default class GameView extends View {
 
@@ -40,19 +41,21 @@ export default class GameView extends View {
   /** @type {GameDataEmitter} */
   #dataEmitter;
 
+  // @ts-ignore
   constructor({data}) {
-    super({data: data.gameData});
+    super({data: data.gameData()});
+    const game = data.gameData();
+    if (!data.gameData() || !data.gameMap()){
+      return ;
+    }
     this.#setState();
-    this.#data = data.gameData;
+    this.#data = game;
     //@ts-ignore
-    this.#gameData = data.gameData;
+    this.#gameData = game;
     this.#data.subscribe("scores", 
       (/**@type {{ [key: string]: number }} */ newScores) =>
       this.#onScoreUpdate(newScores));
-    this.#gameMap = new GameMap({
-      safeWalls: [],
-      trapWalls: [],
-    });
+    this.#gameMap = data.gameMap();
     this.#gameMap.addBorderWalls();
     this.#gameMap.addWalls([
       {
@@ -72,6 +75,10 @@ export default class GameView extends View {
 
   connectedCallback() {
     super.connectedCallback();
+    if (this.#data == null) {
+      window.history.back();
+      return ;
+    }
     Asset.shared.onLoaded(() => {
       if (DEBUG.isDebug())
         console.log(`Asset load ${Asset.shared.loadedPercentage * 100}%`);
@@ -379,8 +386,11 @@ export default class GameView extends View {
   }
 
   disconnectedCallback() {
-    this.#scene.prepareDisappear();
+    if (this.#data == null) {
+      return ;
+    }
     super.disconnectedCallback();
+    this.#scene.prepareDisappear();
     STATE.setPlayingGame(false);
   }
 
