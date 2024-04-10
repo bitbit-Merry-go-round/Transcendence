@@ -163,3 +163,16 @@ export function isAvailableAddress(path) {
 
   return (availableAddress.indexOf(_path) != -1);
 }
+
+/** @param { string } path 
+ *  @returns { boolean }
+ */
+export function isNavigatableAddress(path) {
+  if (path.length == 0) {
+    return true;
+  }
+  let _path = path[0] == "/" ? path.substring(1): path;
+  const notAvailableAddress = [ "game" ];
+
+  return (notAvailableAddress.indexOf(_path) == -1);
+}

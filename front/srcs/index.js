@@ -1,7 +1,7 @@
 import init from "@/init";
 import { anchorToLink, route, NAVIGATE_DRIRECTION } from "@/router";
-import { DEBUG } from "@/data/global";
-import { isAvailableAddress } from "@/views/config";
+import { DEBUG, STATE } from "@/data/global";
+import { isAvailableAddress, isNavigatableAddress } from "@/views/config";
 
 anchorToLink(document);
 
@@ -16,7 +16,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const index = window.history.state?.index;
 
   if (!localStorage.getItem("access") && !DEBUG.isDebug())
-    path = "/login";
+  path = "/login";
 
   if (!DEBUG.isDebug() && 
     (!history || index == undefined)) {
@@ -43,11 +43,28 @@ window.addEventListener("popstate",
     if (!history || index == undefined)
       return;
     event.preventDefault();
-    const path = history[index];
-    route({
-      path,
-      direction: NAVIGATE_DRIRECTION.backward,
-    })
+    let path = history[index];
+
+    if (!isNavigatableAddress(path))
+      return ;
+
+    if (STATE.isPlayingGame()) {
+      STATE.requestCancelGame().then(
+      (cancel) => {
+        if (!cancel)
+          return ;
+        route({
+          path,
+          direction: NAVIGATE_DRIRECTION.backward,
+        })
+      })
+    }
+    else {
+      route({
+        path,
+        direction: NAVIGATE_DRIRECTION.backward,
+      })
+    }
   }
 )
 

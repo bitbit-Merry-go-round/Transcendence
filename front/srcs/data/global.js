@@ -14,6 +14,37 @@ export const DEBUG = (() => {
   });
 })();
 
+export const STATE = (() => {
+  let isPlayingGame = false;
+  /** @type {(() => Promise<boolean>) | null} */
+  let cancelGameCallback = null;
+  let isRequestPending = false;
+
+  return ({
+    isPlayingGame: () => isPlayingGame,
+    setPlayingGame: /** @param {boolean} play*/ 
+    (play) => isPlayingGame = play,
+    /** @type {() => Promise<boolean>} */
+    requestCancelGame: () => {
+      if (isRequestPending)
+        return Promise.resolve(false);
+      else if (cancelGameCallback) {
+        isRequestPending = true;
+        return (cancelGameCallback()
+          .then(res => {
+            isRequestPending = false
+            return res;
+          }
+          ));
+      }
+      return Promise.resolve(true);
+    },
+    setCancelGameCallback: 
+    /** @param{(() => Promise<boolean>) | null} callback */
+    (callback) => cancelGameCallback = callback
+  })
+})();
+
 const globalData = (() =>{
 
   let game = GameData.createTournamentGame(

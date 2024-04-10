@@ -10,7 +10,7 @@ import ColorPicker from "@/views/components/color_picker.js";
 import Observable from "@/lib/observable";
 import { getRandomFromArray } from "@/utils/type_util";
 import GameDataEmitter from "@/game/game_data_emitter";
-import { DEBUG } from "@/data/global";
+import { DEBUG, STATE } from "@/data/global";
 
 export default class GameView extends View {
 
@@ -42,6 +42,7 @@ export default class GameView extends View {
 
   constructor({data}) {
     super({data: data.gameData});
+    this.#setState();
     this.#data = data.gameData;
     //@ts-ignore
     this.#gameData = data.gameData;
@@ -91,6 +92,57 @@ export default class GameView extends View {
       this.#dataEmitter.startCollecting();
       this.#dataEmitter.startEmit();
     }
+  }
+
+  #setState() {
+    STATE.setPlayingGame(true);
+    STATE.setCancelGameCallback(
+      () => new Promise(resolve => 
+        this.#onRequestCancel(resolve)
+      )
+    );
+  }
+
+  /** @param {(_: boolean) => void} callback */
+  #onRequestCancel(callback) {
+    
+    const alert = this.querySelector("#close-alert" );
+    alert.animate([
+      { transform: `translateY(-150%)`},
+      { transform: `translateY(0%)`},
+    ],
+      {
+        duration: 500,
+        fill: "forwards"
+      }
+    )
+    this.#setAlertButton(callback, alert);
+  }
+
+  #setAlertButton(callback, alert) {
+    const closeButton = this.querySelector("#close-button");
+    closeButton.addEventListener("click", 
+      () => {
+        callback(true);
+      }
+    );
+
+    const cancelButton = this.querySelector("#cancel-button");
+    cancelButton.addEventListener("click",
+      () => {
+        callback(false);
+
+        alert.animate([
+          { transform: `translateY(0%)`},
+          { transform: `translateY(-150%)`},
+        ],
+          {
+            duration: 500,
+            fill: "forwards"
+          }
+        )
+      }
+    );
   }
 
   #createScene() {
@@ -329,6 +381,7 @@ export default class GameView extends View {
   disconnectedCallback() {
     this.#scene.prepareDisappear();
     super.disconnectedCallback();
+    STATE.setPlayingGame(false);
   }
 
   async #updatedTournamentBoard(panel) {
