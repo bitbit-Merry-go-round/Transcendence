@@ -243,6 +243,7 @@ export default class GameScene extends THREE.Group {
     this
       .#updatePowerUps(frameTime)
       .#updateObjects({frameTime, frameSlice})
+    this.#capturePeddles();
     if (this.#ball.physicsId) {
       this.#captureBall()
     }
@@ -1190,6 +1191,25 @@ export default class GameScene extends THREE.Group {
       this.#lostSide = "BOTTOM";
       this.#handleScoreChange();
     }
+  }
+
+  #capturePeddles() {
+    this.#peddles.forEach(peddle  => {
+      const state = this.#physics.getState(peddle.physicsId);
+      let modifyX = null;
+      if (state.position.x < -50) {
+        modifyX = -45;
+      }
+      else if (state.position.x + state.width > 50) {
+        modifyX = 45 - state.width;
+      }
+      if (modifyX) {
+        this.#physics.setState(peddle.physicsId, () => ({ position: {
+          x: modifyX,
+          y: state.position.y
+        } }));
+      }
+    })
   }
 
   #handleScoreChange() {
