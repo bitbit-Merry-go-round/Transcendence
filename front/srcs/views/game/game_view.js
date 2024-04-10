@@ -517,7 +517,7 @@ async function getUsername(retry = false) {
     return null;
   const url = window.location.hostname + "/users/me/profile";
   const res = await fetch(url, {
-    method: "POST",
+    method: "GET",
     mode: "cors",
     cache: "no-cache",
     credentials: "same-origin",
