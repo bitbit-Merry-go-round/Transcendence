@@ -45,7 +45,8 @@ export default class GameView extends View {
   constructor({data}) {
     super({data: data.gameData()});
     const game = data.gameData();
-    if (!data.gameData() || !data.gameMap()){
+    console.log("game", data.gameData(), "map", data.gameMap())
+    if (!game || !data.gameMap()){
       return ;
     }
     this.#setState();
@@ -234,7 +235,7 @@ export default class GameView extends View {
     if (this.#gameData.gameType != GAME_TYPE.localTournament) {
 
       this.#tournamentButton.style.visibility = "hidden";
-      return ;
+      return this;
     }
     this.#tournamentButton.style.opacity = "0.3";
     this.#tournamentButton.addEventListener("click",
@@ -275,7 +276,7 @@ export default class GameView extends View {
     };
     for (let i = 0; i < containers.length; ++i) {
       const playerColor = new Observable(this.#scene.getPlayerColor(this.#gameData.currentPlayers[i]));
-        this.#pickerColors.push(playerColor);
+      this.#pickerColors.push(playerColor);
       const colorPicker = new ColorPicker({
         color: playerColor,
         onPickColor: (color) => {

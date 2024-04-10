@@ -55,23 +55,26 @@ export const STATE = (() => {
 const globalData = (() =>{
 
   /** @type { GameData | null } */
-  let gameData = null;
+  let gameData = new ObservableObject(GameData.createLocalGame({nicknames: ["heshin", "bart"], peddleSpeed: 1.0}));
   /** @type { GameMap| null } */
-  let gameMap = null;
+  let gameMap = new GameMap({safeWalls: [], trapWalls: []});
+  gameMap.addBorderWalls();
 
   const gameParameter = {
     peddleSpeed: 1.0,
     nicknames: null,
     walls: null,
+    powerUp: null
   };
 
   /** @param {{
    * speed?: number,
    * map?: any,
-   * nicknames?: string[]
+   * nicknames?: string[],
+   * powerUp: boolean
    * }} params */
   const setGameParameter = ({
-    speed, map, nicknames
+    speed, map, nicknames, powerUp
   }) => {
     if (speed && typeof(speed) == "number" 
       && speed > 0 && speed < 5) {
@@ -85,6 +88,8 @@ const globalData = (() =>{
       nicknames.findIndex(name => typeof(name) != "string" || name.trim().length == 0) == -1) {
       gameParameter.nicknames = nicknames; 
     }
+    if (powerUp)
+      gameParameter.powerUp = powerUp;
   };
 
   const isParameterValid = () => {
@@ -96,6 +101,10 @@ const globalData = (() =>{
       console.error("map not set setGameParameter({map})");
       return false;
     }
+    else if (gameParameter.powerUp == null) {
+      console.error("map not set setGameParameter({powerUp})");
+      return false;
+    }
   }
 
   const registerLocalGame = () => {
@@ -105,7 +114,7 @@ const globalData = (() =>{
       console.error(`nicknames.length = ${gameParameter.nicknames}`);
       return ;
     }
-    gameData = GameData.createLocalGame(gameParameter);
+    gameData = new ObservableObject(GameData.createLocalGame(gameParameter));
     gameParameter.nicknames = null;
     gameParameter.walls = null;
   };
@@ -117,7 +126,7 @@ const globalData = (() =>{
       console.error(`nicknames.length = ${gameParameter.nicknames}`);
       return ;
     }
-    gameData = GameData.createTournamentGame(gameParameter);
+    gameData = new ObservableObject(GameData.createTournamentGame(gameParameter));
     gameParameter.nicknames = null;
     gameParameter.walls = null;
   }

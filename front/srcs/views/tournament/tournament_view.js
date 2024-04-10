@@ -4,11 +4,20 @@ export default class TournamentView extends View {
 
   /** @param{ string[] } nicknames */
   setNickname;
+  setMap;
+  setSpeed;
+  setPowerUp;
 
   constructor({ registerGame }) {
     super();
     const { parameter} = registerGame;
-    this.setNickname = (nicknames) => parameter({nicknames})
+    this.setNickname = /** @param{ string[] } nicknames */(nicknames) => parameter({nicknames})
+    this.setMap =  /** @param{ any }  map */
+      (map) => parameter({map})
+    this.setSpeed = /** @param{ number } speed */
+      (speed) => parameter({ speed })
+    this.setPowerUp = /** @param{ boolean } powerUp */
+      (powerUp) => parameter({ powerUp })
   }
   _playerNameCheck() {
     const playerNameElements = this.querySelectorAll('.input-player');

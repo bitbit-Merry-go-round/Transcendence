@@ -1119,9 +1119,10 @@ export default class GameScene extends THREE.Group {
       this.#physics.setState(peddle.physicsId,
         (state) => {
           let vel = { ...state.velocity };
+          const ratio = this.#gameData.peddleSpeedRatio;
           const speedPowerUp = activePowerUp && activePowerUp.powerUp.targetStatus.velocity;
-          let accel = CONFIG.PEDDLE_ACCEL;
-          let decel = CONFIG.PEDDLE_DECEL_RATIO;
+          let accel = CONFIG.PEDDLE_ACCEL * ratio;
+          let decel = CONFIG.PEDDLE_DECEL_RATIO * ratio;
           if (speedPowerUp) {
             const status = activePowerUp.powerUp.targetStatus;
             vel.x = status.velocity.x;
@@ -1143,7 +1144,9 @@ export default class GameScene extends THREE.Group {
             vel.x += accel * (control.pressed.x > 0 ? 1: -1);
             if (!speedPowerUp) {
               vel.x = THREE.MathUtils.clamp(
-                vel.x,  -CONFIG.MAX_PEDDLE_SPEED, CONFIG.MAX_PEDDLE_SPEED);
+                vel.x,  
+                -CONFIG.MAX_PEDDLE_SPEED * ratio, 
+                CONFIG.MAX_PEDDLE_SPEED * ratio);
             }
           }
           return { velocity: {

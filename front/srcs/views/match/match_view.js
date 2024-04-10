@@ -10,6 +10,7 @@ export default class MatchView extends View {
   setNickname;
   setMap;
   setSpeed;
+  setPowerUp;
 
   constructor({data, registerGame}) {
     super();
@@ -19,8 +20,10 @@ export default class MatchView extends View {
       (nicknames) => parameter({nicknames})
     this.setMap =  /** @param{ any }  map */
       (map) => parameter({map})
-    this.setSpeed = /** @param{ number} speed */
+    this.setSpeed = /** @param{ number } speed */
       (speed) => parameter({ speed })
+    this.setPowerUp = /** @param{ boolean } powerUp */
+      (powerUp) => parameter({ powerUp })
   }
 
   _initUserCard(data) {
