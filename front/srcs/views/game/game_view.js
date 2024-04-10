@@ -511,7 +511,6 @@ async function getToken(needRefresh = false) {
 }
 
 async function getUsername(retry = false) {
-  return "pong master";
   const accessToken = await getToken();
   if (!accessToken)
     return null;

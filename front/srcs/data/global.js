@@ -58,6 +58,7 @@ const globalData = (() =>{
   let gameData = null;
   /** @type { GameMap| null } */
   let gameMap = null;
+
   /** @param {{
    * speed?: number,
    * map?: any,
