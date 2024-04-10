@@ -55,10 +55,9 @@ export const STATE = (() => {
 const globalData = (() =>{
 
   /** @type { GameData | null } */
-  let gameData = new ObservableObject(GameData.createLocalGame({nicknames: ["heshin", "bart"], peddleSpeed: 1.0}));
+  let gameData = null;
   /** @type { GameMap| null } */
-  let gameMap = new GameMap({safeWalls: [], trapWalls: []});
-  gameMap.addBorderWalls();
+  let gameMap = null;
 
   const gameParameter = {
     peddleSpeed: 1.0,
