@@ -18,14 +18,16 @@
 		</div>
 		<div class="d-flex justify-content-center">
 			<ul class="d-flex flex-column justify-content-start friend-list scroll align-self-center">
-				<li class="d-flex py-2 my-1 friend-list-element">
-					<img src="" style="width:3em; height:3em; border-radius: 50%;" id="profileCardModalBtn" class="img-button mx-3">
-					<div class="status-circle-sm"></div>
-					<div class="mb-0 mx-2 align-self-center">
-						<span class="me-2 user-level"></span>
-						<span class="user-name"></span>
-					</div>
-				</li>
+				<template id="list-item-template">
+					<li class="d-flex py-2 my-1 friend-list-element">
+						<img src="" style="width:3em; height:3em; border-radius: 50%;" id="profileCardModalBtn" class="img-button mx-3">
+						<div class="status-circle-sm"></div>
+						<div class="mb-0 mx-2 align-self-center">
+							<span class="me-2 user-level"></span>
+							<span class="user-name"></span>
+						</div>
+					</li>
+				</template>
 			</ul>
 		</div>
 	</div>
