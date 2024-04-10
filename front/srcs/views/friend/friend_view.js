@@ -12,20 +12,18 @@ export default class FriendView extends View {
     this.data = data
   }
 
-  
   async _modalBtnHandler(e) {
     let url;
     const profileCardModal = e.target.closest('#profileCardModal')
 
     const type = profileCardModal.getAttribute('data-user-type');
     const user = profileCardModal.getAttribute('data-user');
-    e.target.setAttribute('disabled', '');
-    e.target.classList.add('disabled');
     if (type === TYPE_DELETE)
     {
       url = `http://${window.location.hostname}:8000/users/me/friends/${user}/`;
       await httpRequest('DELETE', url, null, () => {
-        alert(`Your friend <${user}> is deleted!`);
+        this._fetchFriendList();
+        profileCardModal.style.display = 'none';
       });
     }
     else if (type === TYPE_ADD)
@@ -33,15 +31,16 @@ export default class FriendView extends View {
       url = `http://${window.location.hostname}:8000/users/me/friends/`;
       const body = JSON.stringify({"to_user": `${user}`})
       await httpRequest('POST', url, body, () => {
-        alert(`<${user}> is your friend now!`);
-      }, (res) => (console.log('failed res: ', res)));
+        this._fetchFriendList();
+        profileCardModal.style.display = 'none';
+      }, (res) => (console.log('failed to add: ', res)));
     }
   }
 
   _modalBtnEventSet() {
     const addFriendBtn = this.querySelector('.btn-add-friend');
 
-    addFriendBtn.addEventListener('click', this._modalBtnHandler);
+    addFriendBtn.addEventListener('click', this._modalBtnHandler.bind(this));
   }
 
   _modalBtnSetter(type)
@@ -72,16 +71,26 @@ export default class FriendView extends View {
     const url = `http://${window.location.hostname}:8000/users/me/friends/`;
     
     httpRequest('GET', url, null, (res) => {
+      friendGroup.classList.remove('justify-content-center', 'align-items-center');
+      while (friendGroup.lastChild.tagName !== 'TEMPLATE')
+      {
+        friendGroup.removeChild(friendGroup.lastChild)
+      }
       if (res.length === 0)
       {
+        const noFriends = document.createElement('p');
+        noFriends.textContent = "친구를 검색하여 추가해보세요🌱"
         friendGroup.classList.add('justify-content-center', 'align-items-center');
-        friendGroup.textContent = "친구를 검색하여 추가해보세요🌱";
+        friendGroup.appendChild(noFriends);
         return ;
       }
       else
       {
         for (const friend of res) {
-          const friendElement = friendGroup.firstChild.cloneNode(true);
+          const listTemplate = document.getElementById('list-item-template');
+
+          const documentFragment = document.importNode(listTemplate.content, true);
+          const friendElement = documentFragment.querySelector('li');
           friendElement.querySelector('img').src = `data:image;base64,${friend.avatar}`;
           if (friend.status === 'OF')
           {
@@ -97,7 +106,6 @@ export default class FriendView extends View {
           friendElement.setAttribute('data-user-type', `${TYPE_DELETE}`);
           friendGroup.appendChild(friendElement);
         }
-        friendGroup.removeChild(friendGroup.firstChild);
       }
     })
   }
@@ -174,7 +182,6 @@ export default class FriendView extends View {
       const url = `http://${window.location.hostname}:8000/users?search=${username}`;
 
       await httpRequest('GET', url, null, (res) => {
-        console.log(res);
         this._fillModalData(res);
         if (res.is_me === true)
         {
@@ -190,7 +197,6 @@ export default class FriendView extends View {
         }
         profileCardModal.style.display = 'flex';
       }, (url, res) => {
-        console.log(url, res);
         alert(`${username} is not exist.`)
       })
     });
