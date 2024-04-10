@@ -138,6 +138,10 @@ body {
     padding: 20px;
 }
 
+.state-message {
+    word-break: break-all;
+}
+
 .user-avatar {
     border-radius: 50%;
     width: 12em;
@@ -577,11 +581,10 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .edit-user-message-input {
-    /* text-align: start; */
-    vertical-align: top;
+    text-align: center;
     width: 20em;
     height: 7em;
-    /* padding-bottom: 6.5em  */
+    resize: none;
 }
 
 input[type="file"] {
