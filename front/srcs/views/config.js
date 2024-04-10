@@ -159,7 +159,7 @@ export function isAvailableAddress(path) {
     return true;
   }
   let _path = path[0] == "/" ? path.substring(1): path;
-  const notAvailable = [ "game" ];
+  const availableAddress = [ "login" ];
 
-  return (notAvailable.indexOf(_path) == -1);
+  return (availableAddress.indexOf(_path) != -1);
 }
