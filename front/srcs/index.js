@@ -26,7 +26,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       }, "42 Pong", "/");
     }
   }
-  const isLogin = handleLogin();
+  if (handleLogin())
+    return ;
   route({
     path,
     direction: NAVIGATE_DRIRECTION.forward
