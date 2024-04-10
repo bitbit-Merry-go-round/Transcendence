@@ -1,4 +1,7 @@
+uniform float uTime;
+
 varying vec3 vColor;
+varying float vAlpha;
 
 void main() {
 
@@ -12,8 +15,9 @@ void main() {
   float strength = pow(0.5 - dist, 5.0);
 
   vec3 color = mix(vec3(0.0), vColor, strength);
+  float alpha = sin(vAlpha) + cos(vAlpha + uTime * 0.5);
 
-  gl_FragColor = vec4(color, pow(1.0 - dist, 2.0));
+  gl_FragColor = vec4(color, max(alpha, 0.25)); 
 
 #include <colorspace_fragment>
 }

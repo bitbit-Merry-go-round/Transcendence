@@ -303,6 +303,9 @@ export default class GameScene extends THREE.Group {
       vertexShader: shaders["vertex"],
       fragmentShader: shaders["atMosphereFragment"],
       transparent: true,
+      uniforms: {
+        uGlow: { value: 0.0 }
+      }
     });
 
     const mesh = new THREE.Mesh(geometry, material);
@@ -458,11 +461,15 @@ export default class GameScene extends THREE.Group {
       const entities = this.#addWall(
         size,
         walls.map(wall => ({
-          x: (wall.centerX * 0.01 - 0.5) * this.#gameSize.width,
-          y: (wall.centerY * 0.01 - 0.5) * this.#gameSize.height,
-          z: this.#depth.wall * 0.5,
+          position: {
+            x: (wall.centerX * 0.01 - 0.5) * this.#gameSize.width,
+            y: (wall.centerY * 0.01 - 0.5) * this.#gameSize.height,
+            z: this.#depth.wall * 0.5,
+          },
+          textureName: wall.type == "SAFE" ?
+          "brick": "brick_dark"
         })
-        )
+        ),
       );
       for (let i = 0; i < walls.length; ++i) {
         const wall = walls[i];
@@ -484,43 +491,53 @@ export default class GameScene extends THREE.Group {
    *   width: number,
    *   height: number
    * }} wallSize
-   * @param {{
-   *   x: number,
-   *   y: number,
-   *   z: number
-   * }[]} wallPositions
+   * {{
+   *  position: {
+   *    x: number,
+   *    y: number,
+   *    z: number
+   *  },
+   *  textureName: string
+   * }[]} wallInfo
    */
-  #addWall(wallSize, wallPositions) {
+  #addWall(wallSize, wallInfo) {
 
     const geometry = new THREE.BoxGeometry(wallSize.width, wallSize.height, this.#depth.wall);
-    const material = this.#createMaterialFromTexture(
-      "brick", 
-      (texture) => {
-        resizeTexture({
-          texture,
-          x: wallSize.width * this.#wallTextureRepeat,
-          y: wallSize.height * this.#wallTextureRepeat,
-        })
-      }
-    ) 
 
-    const meshes = wallPositions.map(pos =>  {
+    let textures = {};
+    wallInfo.forEach(({textureName}) => {
+      if (!textures[textureName]) {
+        textures[textureName] = 
+          this.#createMaterialFromTexture(
+            textureName, 
+            (texture) => {
+              resizeTexture({
+                texture,
+                x: wallSize.width * this.#wallTextureRepeat,
+                y: wallSize.height * this.#wallTextureRepeat,
+              })
+            }
+          ) 
+      }
+    })
+
+    const meshes = wallInfo.map(({position, textureName}) =>  {
       const mesh = new THREE.Mesh(
         geometry, 
-        material
+        textures[textureName]
       );
-      mesh.position.set(pos.x, pos.y, pos.z);
+      mesh.position.set(position.x, position.y, position.z);
       return mesh;
     });
 
-    const physics = wallPositions.map(pos => {
+    const physics = wallInfo.map( ({ position })=> {
       return PhysicsEntity.createRect({
         type: "IMMOVABLE",
         width: wallSize.width,
         height: wallSize.height,
         center: {
-          x: pos.x, 
-          y: pos.y
+          x: position.x, 
+          y: position.y
         }
       });
     });
@@ -619,7 +636,7 @@ export default class GameScene extends THREE.Group {
     );
     this.#gameParticle = new ParticleGenerator({
       count: 100,
-      particleSize: 20. * this.pixelRatio,
+      particleSize: 16. * this.pixelRatio,
       maxSize: {
         x: 50,
         y: 50,
@@ -976,6 +993,11 @@ export default class GameScene extends THREE.Group {
 
           ball.velocity.x = CONFIG.MIN_BALL_SPEED* (ball.velocity.x < 0 ? -1: 1);
         }
+        if (this.#ball.atmosphere) { 
+          /** @type { THREE.ShaderMaterial } *///@ts-ignore
+          const material = this.#ball.atmosphere.material;
+          material.uniforms.uGlow.value = 0.5;
+        }
         /** @type {PhysicsEntity} */
         const peddle = ball == collider ? collidee: collider;
         ball.velocity.x += peddle.velocity.x * 0.1;
@@ -1089,6 +1111,7 @@ export default class GameScene extends THREE.Group {
    * }} args
    */
   #updateObjects({frameTime, frameSlice}) {
+    const frame = frameTime;
     this.#peddles.forEach((peddle, index) => {
       const control = this.#peddleControls[index];
       const activePowerUp = this.#activePowerUps.find(({physicsId}) => physicsId == peddle.physicsId);
@@ -1147,7 +1170,11 @@ export default class GameScene extends THREE.Group {
     if (this.#ball.mesh && this.#ball.atmosphere)  {
       const position = this.#ball.mesh.position;
       this.#ball.atmosphere.position.setX(position.x);
-      this.#ball.atmosphere.position.setY(position.y);
+      this.#ball.atmosphere.position.setY(position.y); 
+      /** @type { THREE.ShaderMaterial } *///@ts-ignore
+      const material = this.#ball.atmosphere.material;
+      material.uniforms.uGlow.value = Math.max(0, 
+        material.uniforms.uGlow.value - frame * 0.5);
     }
     return this;
   }
