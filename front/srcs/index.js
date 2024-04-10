@@ -24,7 +24,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       window.history.replaceState({
         history: [ path ],
         index: 0,
-      }, "42 Pong", login ?? path : "/");
+      }, "42 Pong", login ? path : "/");
     }
   }
   if (login)
