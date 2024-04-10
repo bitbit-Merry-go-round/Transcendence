@@ -160,8 +160,7 @@ export function isAvailableAddress(path) {
   }
   let _path = path[0] == "/" ? path.substring(1): path;
   const availableAddress = [ "login" ];
-
-  return (availableAddress.indexOf(_path) != -1);
+  return (availableAddress.findIndex(addr => _path.includes(addr)) != -1);
 }
 
 /** @param { string } path 
