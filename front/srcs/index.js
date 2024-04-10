@@ -15,18 +15,19 @@ document.addEventListener("DOMContentLoaded", async () => {
   let path = window.location.pathname;
   const history = window.history.state?.history;
   const index = window.history.state?.index;
+  const login = handleLogin();
 
   if (!DEBUG.isDebug() && 
     (!history || index == undefined)) {
-    path = isAvailableAddress(path) ? path:  "/";
+    path = (login || isAvailableAddress(path)) ? path:  "/";
     if (!history || index == undefined) {
       window.history.replaceState({
         history: [ path ],
         index: 0,
-      }, "42 Pong", "/");
+      }, "42 Pong", login ?? path : "/");
     }
   }
-  if (handleLogin())
+  if (login)
     return ;
   route({
     path,
