@@ -358,11 +358,12 @@ export default class GameScene extends THREE.Group {
 
   #moveBall() {
 
+    const ratio = (this.#gameData.peddleSpeedRatio - 1.0) * 0.8 + 1.0;
     this.#ballStartDirection.x = (Math.random() > 0.5) ? DIRECTION.left: DIRECTION.right;
     this.#ballStartDirection.y = (this.#lostSide == DIRECTION.top) ? DIRECTION.bottom: DIRECTION.top;
     const velocity = {
-      x: (this.#ballStartDirection.x == DIRECTION.right? 1 : -1) * this.#ballSpeed * (Math.random() + 0.5),
-      y: (this.#ballStartDirection.y == DIRECTION.top? 1 : -1) * this.#ballSpeed
+      x: (this.#ballStartDirection.x == DIRECTION.right? 1 : -1) * this.#ballSpeed * ratio * (1.0 + (Math.random() - 0.5) * 0.5),
+      y: (this.#ballStartDirection.y == DIRECTION.top? 1 : -1) * this.#ballSpeed * ratio
     };
     this.#physics.setState(this.#ball.physicsId,
       () => ({ velocity })
@@ -987,12 +988,14 @@ export default class GameScene extends THREE.Group {
         /** @type {PhysicsEntity} */
         const ball = collider.isShape("CIRCLE") ? collider: collidee;
         const ballSpeedX = Math.abs(ball.velocity.x);
-        if (ballSpeedX > CONFIG.MAX_BALL_SPEED) {
-          ball.velocity.x = CONFIG.MAX_BALL_SPEED * (ball.velocity.x < 0 ? -1: 1);
+        const maxSpeed = CONFIG.MAX_BALL_SPEED * this.#gameData.peddleSpeedRatio;
+        const minSpeed = CONFIG.MIN_BALL_SPEED * this.#gameData.peddleSpeedRatio;
+        if (ballSpeedX > maxSpeed ) {
+          ball.velocity.x = maxSpeed * (ball.velocity.x < 0 ? -1: 1);
         }
-        else if (ballSpeedX < CONFIG.MIN_BALL_SPEED) {
+        else if (ballSpeedX < minSpeed) {
 
-          ball.velocity.x = CONFIG.MIN_BALL_SPEED* (ball.velocity.x < 0 ? -1: 1);
+          ball.velocity.x = minSpeed * (ball.velocity.x < 0 ? -1: 1);
         }
         if (this.#ball.atmosphere) { 
           /** @type { THREE.ShaderMaterial } *///@ts-ignore
@@ -1113,13 +1116,13 @@ export default class GameScene extends THREE.Group {
    */
   #updateObjects({frameTime, frameSlice}) {
     const frame = frameTime;
+    const ratio = this.#gameData.peddleSpeedRatio;
     this.#peddles.forEach((peddle, index) => {
       const control = this.#peddleControls[index];
       const activePowerUp = this.#activePowerUps.find(({physicsId}) => physicsId == peddle.physicsId);
       this.#physics.setState(peddle.physicsId,
         (state) => {
           let vel = { ...state.velocity };
-          const ratio = this.#gameData.peddleSpeedRatio;
           const speedPowerUp = activePowerUp && activePowerUp.powerUp.targetStatus.velocity;
           let accel = CONFIG.PEDDLE_ACCEL * ratio;
           let decel = CONFIG.PEDDLE_DECEL_RATIO * ratio;

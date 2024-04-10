@@ -57,21 +57,6 @@ export default class GameView extends View {
       (/**@type {{ [key: string]: number }} */ newScores) =>
       this.#onScoreUpdate(newScores));
     this.#gameMap = data.gameMap();
-    this.#gameMap.addBorderWalls();
-    this.#gameMap.addWalls([
-      {
-        width: 40,
-        height: 2,
-        centerX: 20,
-        centerY: 30
-      },
-      {
-        width: 40,
-        height: 2,
-        centerX: 80,
-        centerY: 70
-      }
-    ], WALL_TYPES.safe);
   }
 
   connectedCallback() {
@@ -408,7 +393,7 @@ export default class GameView extends View {
       const score = newScores[player.nickname];
       /** @type {HTMLSpanElement} */
       const label = this.querySelector(
-        `span[data-player=${player.nickname}]`);
+        `span[data-player='${player.nickname}']`);
       label.innerText = score.toString();
       if (score == this.#gameData.winScore) {
         this.#scene.endGame();

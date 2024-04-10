@@ -108,10 +108,10 @@ const globalData = (() =>{
 
   const registerLocalGame = () => {
     if (!isParameterValid())
-      return ;
+      throw "registerLocalGame";
     else if (gameParameter.nicknames.length < 2) {
       console.error(`nicknames.length = ${gameParameter.nicknames}`);
-      return ;
+      throw "registerLocalGame";
     }
     gameData = new ObservableObject(GameData.createLocalGame(gameParameter));
     gameParameter.nicknames = null;
@@ -120,10 +120,10 @@ const globalData = (() =>{
 
   const registerTournamentGame = () => {
     if (!isParameterValid())
-      return ;
+      throw "registerLocalGame";
     else if (gameParameter.nicknames.length < 3) {
       console.error(`nicknames.length = ${gameParameter.nicknames}`);
-      return ;
+      throw "registerLocalGame";
     }
     gameData = new ObservableObject(GameData.createTournamentGame(gameParameter));
     gameParameter.nicknames = null;

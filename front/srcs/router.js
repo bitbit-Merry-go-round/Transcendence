@@ -262,18 +262,15 @@ export function anchorToLink(parent) {
           return ;
         switch (page) {
           case ("MatchView"):
-            try {
-              global.registerLocalGame();
-            } catch {}
+            try { global.registerLocalGame(); } 
+            catch  { return ; }
             break;
           case ("TournamentView"):
-            try {
-              global.registerTournamentGame();
-            } catch {}
+            try { global.registerTournamentGame(); } 
+            catch { return ; }
             break;
           default: break;
         }
-        return ;
       }
       addHistory(link.pathname);
       route({
