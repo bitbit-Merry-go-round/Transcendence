@@ -3,7 +3,7 @@ import User, { createProfile } from "@/data/user";
 import GameData from "@/data/game_data";
 import GameAnalytics from "@/data/game_analytics";
 import { generateRandomName } from "@/utils/random_name.js";
-import { GameMap }  from "@/data/game_map";
+import { GameMap, examples }  from "@/data/game_map";
 
 /** @typedef {(params: {
  * speed?: number,
@@ -55,16 +55,9 @@ export const STATE = (() => {
 const globalData = (() =>{
 
   /** @type { GameData | null } */
-  let gameData = null; 
+  let gameData = null;
   /** @type { GameMap| null } */
   let gameMap = null;
-  const gameParameter = {
-    peddleSpeed: 1.0,
-    nicknames: null,
-    walls: null,
-    powerUp: null
-  };
-
   /** @param {{
    * speed?: number,
    * map?: any,
@@ -145,7 +138,6 @@ const globalData = (() =>{
     setGameParameter 
   });
 })();
-
 
 export default globalData;
 export const Types = {};

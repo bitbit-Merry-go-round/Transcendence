@@ -402,6 +402,9 @@ export default class GameView extends View {
         this.#scene.endGame(
           this.#gameData.isEnded ? () => this.#onFinishGame(): null);
         switch (this.#gameData.gameType) {
+          case (GAME_TYPE.local1on1):
+            this.#isReadyToPlay = false;
+            break;
           case GAME_TYPE.localTournament:
             const tournament = this.#gameData.tournament;
             if (tournament.isLastRound) {
