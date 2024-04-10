@@ -55,25 +55,9 @@ export const STATE = (() => {
 const globalData = (() =>{
 
   /** @type { GameData | null } */
-  let gameData = new ObservableObject(
-    GameData.createTournamentGame({
-      nicknames: [
-        "pong master", 
-        "fighter",
-        "heshin",
-        "bart"
-      ],
-      peddleSpeed: 1.0,
-      powerUp: false
-    })
-  );
+  let gameData = null; 
   /** @type { GameMap| null } */
-  let gameMap = new GameMap({
-    safeWalls: [],
-    trapWalls: []
-  });
-  gameMap.addBorderWalls();
-
+  let gameMap = null;
   const gameParameter = {
     peddleSpeed: 1.0,
     nicknames: null,
