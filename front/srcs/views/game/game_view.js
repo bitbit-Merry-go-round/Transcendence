@@ -12,6 +12,7 @@ import { getRandomFromArray } from "@/utils/type_util";
 import GameDataEmitter from "@/game/game_data_emitter";
 import { DEBUG, STATE } from "@/data/global";
 import { route } from "@/router";
+import ResultModal from "@/views/components/result_modal";
 
 export default class GameView extends View {
 
@@ -45,7 +46,6 @@ export default class GameView extends View {
   constructor({data}) {
     super({data: data.gameData()});
     const game = data.gameData();
-    console.log("game", data.gameData(), "map", data.gameMap())
     if (!game || !data.gameMap()){
       return ;
     }
@@ -334,6 +334,9 @@ export default class GameView extends View {
   }
 
   #givePowerUps() {
+    if (!this.#gameData.isPowerAvailable) {
+      return this;
+    }
     const allPowerUps = [
       PU.BUFFS.peddleSize,
       PU.BUFFS.peddleSpeed,
@@ -396,11 +399,9 @@ export default class GameView extends View {
         `span[data-player='${player.nickname}']`);
       label.innerText = score.toString();
       if (score == this.#gameData.winScore) {
-        this.#scene.endGame();
+        this.#scene.endGame(
+          this.#gameData.isEnded ? () => this.#onFinishGame(): null);
         switch (this.#gameData.gameType) {
-          case GAME_TYPE.local1on1:
-            // TODO: go to next view
-            return;
           case GAME_TYPE.localTournament:
             const tournament = this.#gameData.tournament;
             if (tournament.isLastRound) {
@@ -412,6 +413,8 @@ export default class GameView extends View {
             this.#startButton.disabled = true;
             this.#startButton.style.visibility = "hidden";
             this.#isReadyToPlay = false;
+            break;
+          default: break;
         }
       }
     }
@@ -419,6 +422,41 @@ export default class GameView extends View {
     if (this.#isReadyToPlay) {
       this.#startButton.style.visibility = "visible";
     }
+  }
+
+  /** @param {{
+   *  [key in string] :number
+   * }} scores 
+   */
+  #findWinner(scores) {
+    const players = this.#gameData.currentPlayers;
+    if (scores[players[0].nickname] > scores[players[1].nickname]) {
+      return players[0];
+    }
+    return players[1];
+  }
+
+  async #onFinishGame() {
+    const scores = this.#gameData.scores;
+    this.#sendResult(scores);
+    let delay = 1;
+    if (this.#gameData.gameType == GAME_TYPE.localTournament) {
+      delay = 2;
+    }
+   
+    const modal = new ResultModal({
+      data: {
+        delay,
+        text: this.#findWinner(scores).nickname + "의 승리!"
+      },
+      confirmHandler: () => {
+        route({
+          path: "/"
+        })
+      }
+    });
+    await modal.render();
+    this.appendChild(modal); 
   }
 
   #returnToGame() {
@@ -429,5 +467,9 @@ export default class GameView extends View {
     this
       .#showNextMatch()
       .#givePowerUps();
+  }
+
+  #sendResult(scores) {
+
   }
 }

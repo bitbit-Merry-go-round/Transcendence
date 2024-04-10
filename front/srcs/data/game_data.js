@@ -20,9 +20,10 @@ export default class GameData {
   /** @param {{
    *  nicknames: string[],
    *  peddleSpeed: number,
+   *  powerUp: boolean
    * }} params 
   * */
-  static createLocalGame({ nicknames, peddleSpeed }) {
+  static createLocalGame({ nicknames, peddleSpeed, powerUp }) {
     const game = new GameData({
       players: [
         new Player({ nickname: nicknames[0] }),
@@ -31,14 +32,16 @@ export default class GameData {
       type: GAME_TYPE.local1on1,
     })
     game.#_peddleSpeed = peddleSpeed ?? 1.0;
+    game.#_isPowerAvailable = powerUp;
     return game;
   }
 
   /** @param {{
    *  nicknames: string[],
    *  peddleSpeed: number,
+   *  powerUp: boolean
    * }} parameter */
-  static createTournamentGame({ nicknames, peddleSpeed }) {
+  static createTournamentGame({ nicknames, peddleSpeed, powerUp }) {
     const players = nicknames.map(
       nickname => new Player({nickname})
     );
@@ -47,6 +50,7 @@ export default class GameData {
       players,
       winScore: game.winScore
     });
+    game.#_isPowerAvailable = powerUp;
     game.#_peddleSpeed = peddleSpeed ?? 1.0;
     return game;
   }
@@ -61,6 +65,15 @@ export default class GameData {
   #_winScore;
   get winScore() {
     return this.#_winScore;
+  }
+
+  get isEnded() {
+    if (Object.values(this.scores)
+      .findIndex(score => score >= this.#_winScore) == -1)
+      return false;
+    if (this.#_gameType != GAME_TYPE.localTournament)
+      return true;
+    return (this.#_tournament.isLastRound);
   }
 
   /** @type {{

@@ -55,9 +55,19 @@ export const STATE = (() => {
 const globalData = (() =>{
 
   /** @type { GameData | null } */
-  let gameData = null;
+  let gameData = new ObservableObject(
+    GameData.createLocalGame({
+      nicknames: ["pong master", "fighter"],
+      peddleSpeed: 1.0,
+      powerUp: false
+    })
+  );
   /** @type { GameMap| null } */
-  let gameMap = null;
+  let gameMap = new GameMap({
+    safeWalls: [],
+    trapWalls: []
+  });
+  gameMap.addBorderWalls();
 
   const gameParameter = {
     peddleSpeed: 1.0,
@@ -101,7 +111,7 @@ const globalData = (() =>{
       return false;
     }
     else if (gameParameter.powerUp == null) {
-      console.error("map not set setGameParameter({powerUp})");
+      console.error("powerUp not set setGameParameter({powerUp})");
       return false;
     }
   }

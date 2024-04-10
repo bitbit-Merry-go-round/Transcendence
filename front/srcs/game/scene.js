@@ -377,7 +377,7 @@ export default class Scene {
     this.#gameScene.setPeddleColor(player, color); 
   }
 
-  endGame() {
+  endGame(onEnd) {
     if (this.#gameScene.ball.mesh)  {
       this.#gameScene.removeBall();
     }
@@ -413,6 +413,8 @@ export default class Scene {
           sound.play();
           sound.addEventListener("ended", () => {
             this.#bgm.current.volume = this.#bgm.volume;
+            if (onEnd)
+              onEnd();
           })
           });
         }
@@ -423,7 +425,8 @@ export default class Scene {
         target: this.#camera,
         dest: cameraDest,
         speed: 0.01,
-        curve: AnimationCurves.easein
+        curve: AnimationCurves.easein,
+        onEnded: onEnd ?? null
     });
     }
   }

@@ -2,6 +2,7 @@ import init from "@/init";
 import { anchorToLink, route, NAVIGATE_DRIRECTION } from "@/router";
 import { DEBUG, STATE } from "@/data/global";
 import { isAvailableAddress, isNavigatableAddress } from "@/views/config";
+import { handleLogin } from "@/views/login/login_view";
 
 anchorToLink(document);
 
@@ -25,6 +26,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       }, "42 Pong", "/");
     }
   }
+  const isLogin = handleLogin();
   route({
     path,
     direction: NAVIGATE_DRIRECTION.forward

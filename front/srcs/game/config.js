@@ -1,5 +1,5 @@
 export default {
-  WIN_SCORE: 3,
+  WIN_SCORE: 1,
   FRAME_TIME_THRESHOLD : 0.01,
   MAX_PEDDLE_SPEED : 50,
   PEDDLE_ACCEL : 10,
