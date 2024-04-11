@@ -43,12 +43,62 @@ export default class MatchView extends View {
 
     await httpRequest('GET', url, null, this._initUserCard.bind(this));
   }
+
+  _setPaddleModal() {
+    const paddleModalBtn = this.querySelector('#confPaddleBtn');
+    const paddleModal = this.querySelector('.paddle-wrap');
+
+    paddleModalBtn.addEventListener('click', () => {
+      paddleModal.style.display = 'flex'
+    })
+
+    paddleModal.querySelector('.btn-close').addEventListener('click', () => {
+      paddleModal.style.display = 'none';
+    })
+
+    paddleModal.querySelector('.submit').addEventListener('click', () => {
+      // TODO: submit paddle speed
+      paddleModal.style.display = 'none';
+    })
+
+    paddleModal.addEventListener('click', (e) => {
+      if (e.target === e.currentTarget)
+        paddleModal.style.display = 'none';
+    })
+
+    this.querySelector("#paddleSpeed").addEventListener("input", (event) => { //@ts-ignore
+      this.setSpeed( Number(event.target.value) )
+    })
+  }
+
+  _setItemModal() {
+    const itemModalBtn = this.querySelector('#confItemBtn');
+    const itemModal = this.querySelector('.item-wrap');
+    const itemBtns = this.querySelector('.item-btns');
+
+    itemModalBtn.addEventListener('click', () => {
+      itemModal.style.display = 'flex'
+    })
+
+    itemModal.querySelector('.btn-close').addEventListener('click', () => {
+      itemModal.style.display = 'none';
+    })
+
+    itemModal.addEventListener('click', (e) => {
+      if (e.target === e.currentTarget)
+        itemModal.style.display = 'none';
+    })
+
+    itemBtns.addEventListener('click', () => {
+      // TODO: use-item vs disuse-item
+      itemModal.style.display = 'none';
+    })
+  }
+
   connectedCallback() {
     super.connectedCallback();
     const mapModalBtn = this.querySelector('#confMapBtn');
     const mapModal = this.querySelector("#map-modal");
-    const paddleModalBtn = this.querySelector('#confPaddleBtn');
-    const paddleModal = this.querySelector('.paddle-wrap');
 
     mapModalBtn.addEventListener("click", () => {
       mapModal.style.display = "block";
@@ -63,23 +113,9 @@ export default class MatchView extends View {
         })
       }
     })
-    this.querySelector("#paddleSpeed").addEventListener("input", (event) => { //@ts-ignore
-      this.setSpeed( Number(event.target.value) )
-
-    })
-    paddleModalBtn.addEventListener('click', () => {
-      paddleModal.style.display = 'flex'
-    })
-
-    paddleModal.querySelector('.btn-close').addEventListener('click', () => {
-      paddleModal.style.display = 'none';
-    })
-
-    paddleModal.addEventListener('click', (e) => {
-      if (e.target === e.currentTarget)
-        paddleModal.style.display = 'none';
-    })
   
-      this._fetchUserInfo();
+    this._fetchUserInfo();
+    this._setPaddleModal();
+    this._setItemModal();
   }
 }

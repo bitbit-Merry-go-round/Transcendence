@@ -36,7 +36,7 @@
     <div class="d-flex flex-column justify-content-center align-items-center setting-container">
       <div class="d-flex justify-content-center align-items-center game-config">
         <div class="d-flex align-items-center my-auto text-secondary">
-          <span class="mx-2">🔨 게임 설정</span>
+          <span class="mx-2">⚙️ 게임 설정</span>
         </div>
         <div>
           <div id="map-modal" style="display: none;" >
@@ -44,6 +44,7 @@
           </div>
           <button id="confMapBtn" class="btn btn-primary ms-4">맵</button>
           <button id="confPaddleBtn" class="btn btn-primary ms-4">패들 속도</button>
+          <button id="confItemBtn" class="btn btn-primary ms-4">아이템</button>
         </div>
       </div>
       <div class="d-flex justify-content-end game-play">
@@ -57,7 +58,7 @@
         <span>맵</span>
         <button type="button" class="btn-close ms-auto"></button>
       </div>
-      <button class="btn btn-primary">확인</button>
+      <button type="submit" class="btn btn-primary submit"></button>
     </div>
   </div>
   <div class="paddle-wrap match-modal" style="display: none;">
@@ -67,7 +68,19 @@
         <button type="button" class="btn-close ms-auto"></button>
       </div>
       <input type="range" name="paddle-speed" id="paddleSpeed" max="5" min="0" step="1">
-      <button class="btn btn-primary">확인</button>
+      <button class="btn btn-primary submit">확인</button>
+    </div>
+  </div>
+  <div class="item-wrap match-modal" style="display: none;">
+    <div class="map-modal d-flex flex-column justify-content-center">
+      <div class="d-flex justify-content-between">
+        <span>아이템</span>
+        <button type="button" class="btn-close ms-auto"></button>
+      </div>
+      <div class="d-flex justify-content-between item-btns">
+        <button class="btn btn-primary me-3 disuse-item">안써용</button>
+        <button class="btn btn-primary use-item">써용</button>
+      </div>
     </div>
   </div>
 </match-view>

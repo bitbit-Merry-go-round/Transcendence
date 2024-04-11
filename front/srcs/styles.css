@@ -540,6 +540,11 @@ ul {
     padding: 20px;   
 }
 
+.disuse-item {
+    background-color: rgb(163, 104, 104);
+    border-color: rgb(163, 104, 104);
+}
+
 .img-map {
     width: 10em;
     height: 10em;
