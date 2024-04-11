@@ -1000,7 +1000,7 @@ export default class GameScene extends THREE.Group {
         if (this.#ball.atmosphere) { 
           /** @type { THREE.ShaderMaterial } *///@ts-ignore
           const material = this.#ball.atmosphere.material;
-          material.uniforms.uGlow.value = 0.5;
+          material.uniforms.uGlow.value = 0.8;
         }
         /** @type {PhysicsEntity} */
         const peddle = ball == collider ? collidee: collider;

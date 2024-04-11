@@ -59,6 +59,13 @@ const globalData = (() =>{
   /** @type { GameMap| null } */
   let gameMap = null;
 
+  const gameParameter = {
+    peddleSpeed: 1.0,
+    nicknames: null,
+    walls: null,
+    powerUp: null
+  };
+
   /** @param {{
    * speed?: number,
    * map?: any,
@@ -68,7 +75,7 @@ const globalData = (() =>{
   const setGameParameter = ({
     speed, map, nicknames, powerUp
   }) => {
-    if (speed && typeof(speed) == "number" 
+    if (speed != null && speed != undefined && typeof(speed) == "number" 
       && speed > 0 && speed < 5) {
       gameParameter.peddleSpeed = 1.0 + (speed - 2.5) * 0.1;
     }
@@ -76,11 +83,12 @@ const globalData = (() =>{
       const walls = JSON.parse(map);
       gameParameter.walls = walls;
     }
-    if (nicknames && Array.isArray(nicknames) && nicknames.length > 0 &&
-      nicknames.findIndex(name => typeof(name) != "string" || name.trim().length == 0) == -1) {
+
+    if (Boolean(nicknames) && Array.isArray(nicknames) && nicknames.length > 0 &&
+      nicknames.findIndex(name => (typeof(name) != "string") || name.trim().length == 0) == -1) {
       gameParameter.nicknames = nicknames; 
     }
-    if (powerUp)
+    if (powerUp != null && powerUp != undefined)
       gameParameter.powerUp = powerUp;
   };
 
@@ -97,6 +105,7 @@ const globalData = (() =>{
       console.error("powerUp not set setGameParameter({powerUp})");
       return false;
     }
+    return true;
   }
 
   const registerLocalGame = () => {
@@ -107,8 +116,10 @@ const globalData = (() =>{
       throw "registerLocalGame";
     }
     gameData = new ObservableObject(GameData.createLocalGame(gameParameter));
+    gameMap = GameMap.createFromWalls(gameParameter.walls);
     gameParameter.nicknames = null;
     gameParameter.walls = null;
+    gameParameter.powerUp = null;
   };
 
   const registerTournamentGame = () => {
@@ -118,12 +129,17 @@ const globalData = (() =>{
       console.error(`nicknames.length = ${gameParameter.nicknames}`);
       throw "registerLocalGame";
     }
+    gameMap = GameMap.createFromWalls(gameParameter.walls);
     gameData = new ObservableObject(GameData.createTournamentGame(gameParameter));
     gameParameter.nicknames = null;
     gameParameter.walls = null;
+    gameParameter.powerUp = null;
   }
 
-  const removeGame = () => { gameData = null };
+  const removeGame = () => { 
+    gameData = null; 
+    gameMap = null;
+  };
 
   const createMap = () => {
     gameMap = GameMap.createFromWalls(gameParameter.walls);

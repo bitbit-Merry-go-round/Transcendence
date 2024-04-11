@@ -1,16 +1,43 @@
+import Observable from "@/lib/observable";
 import View from "@/lib/view";
 import httpRequest from "@/utils/httpRequest";
-import * as GLOBAL from "@/data/global";
+import { getUsername } from "@/views/game/game_view";
 
 export default class MatchView extends View {
 
 
   mapModal = {};
 
+  /** @type { HTMLAnchorElement } */
+  #startButton;
   setNickname;
   setMap;
   setSpeed;
   setPowerUp;
+
+  /** @type {{
+   * nicknames: boolean,
+   * map: boolean,
+   * powerUp: boolean,
+   * peddleSpeed: boolean
+   * }} */ 
+  #parameter = {
+    nicknames: false,
+    map: false,
+    powerUp: false,
+    peddleSpeed: false
+  };
+
+  /** @param {string} name*/ 
+  #setParameter(name)  {
+    this.#parameter = ({
+      ...this.#parameter, //@ts-ignore
+      [name]: true
+    });
+    if (Object.values(this.#parameter).indexOf(false) == -1) {
+      this.#startButton.hidden = false;
+    }
+  }
 
   constructor({data, registerGame}) {
     super();
@@ -33,6 +60,7 @@ export default class MatchView extends View {
     const stateMessage = this.querySelector('.match-player-card .state-message');
 
     userLevelId.textContent = `Lv.${data.level} ${data.username}`
+    this.username = data.username;
     userAvatar.src = `data:image;base64,${data.avatar}`;
     userScore.textContent = `${data.wins} 승 ${data.loses} 패`;
     stateMessage.textContent = `${data.message}`;
@@ -57,8 +85,8 @@ export default class MatchView extends View {
     })
 
     paddleModal.querySelector('.submit').addEventListener('click', () => {
-      // TODO: submit paddle speed
       paddleModal.style.display = 'none';
+      this.#setParameter("peddleSpeed");
     })
 
     paddleModal.addEventListener('click', (e) => {
@@ -92,13 +120,25 @@ export default class MatchView extends View {
     itemBtns.addEventListener('click', () => {
       // TODO: use-item vs disuse-item
       itemModal.style.display = 'none';
+
     })
+    for (const child of Array.from(itemBtns.querySelectorAll("button"))) {
+      /** @type { HTMLButtonElement } */ //@ts-ignore
+      const button = child;
+      const useItem = button.classList.contains("use-item");
+      button.addEventListener("click", () => {
+        this.setPowerUp(useItem);
+        this.#setParameter("powerUp");
+      })
+    }
   }
 
   connectedCallback() {
     super.connectedCallback();
     const mapModalBtn = this.querySelector('#confMapBtn');
     const mapModal = this.querySelector("#map-modal");
+    this.#startButton = this.querySelector("a[href='/game']");
+    this.#startButton.hidden = true;
 
     mapModalBtn.addEventListener("click", () => {
       mapModal.style.display = "block";
@@ -108,14 +148,33 @@ export default class MatchView extends View {
         this.mapModal["allMaps"] = allCanvas;
         allCanvas.forEach(c => {
           c.addEventListener("click", 
-            () => this.setMap(c.dataset.map)
+            () =>  {
+              mapModal.style.display = "none";
+              this.setMap(c.dataset.map);
+              this.#setParameter("map");
+            }
           ) 
         })
       }
     })
-  
+
     this._fetchUserInfo();
     this._setPaddleModal();
     this._setItemModal();
+    this.#setNicknames();
+  }
+
+  async #setNicknames() {
+    let username = this.username ?? await getUsername();
+    const label = this.querySelector(".user-name");
+    if (!label)
+      return ; //@ts-ignore
+    const opponentName = label.innerText;
+    username = username ?? "PLAYER";
+    if (username.trim() == "" || opponentName.trim() == "")
+      return ;
+
+    this.setNickname([username, opponentName]);
+    this.#setParameter("nicknames");
   }
 }

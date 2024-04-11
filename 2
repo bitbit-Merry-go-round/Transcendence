@@ -1,12 +1,15 @@
+import Observable from "@/lib/observable";
 import View from "@/lib/view";
-import { route } from "@/router";
-import { generateRandomName } from "@/utils/random_name";
-import { getUsername } from "../game/game_view";
+import httpRequest from "@/utils/httpRequest";
+import { getUsername } from "@/views/game/game_view";
 
-export default class TournamentView extends View {
+export default class MatchView extends View {
+
 
   mapModal = {};
-  /** @param{ string[] } nicknames */
+
+  /** @type { HTMLAnchorElement } */
+  #startButton;
   setNickname;
   setMap;
   setSpeed;
@@ -32,65 +35,43 @@ export default class TournamentView extends View {
       [name]: true
     });
     if (Object.values(this.#parameter).indexOf(false) == -1) {
+      console.log("done");
     }
+    console.log(this.#parameter);
   }
-  constructor({ registerGame }) {
+  
+
+  constructor({data, registerGame}) {
     super();
-    const { parameter} = registerGame;
-    this.setNickname = /** @param{ string[] } nicknames */(nicknames) => parameter({nicknames})
+    this.data = data
+    const { parameter } = registerGame;
+    this.setNickname = /** @param{ string[] } nicknames */
+      (nicknames) => parameter({nicknames})
     this.setMap =  /** @param{ any }  map */
       (map) => parameter({map})
-
     this.setSpeed = /** @param{ number } speed */
       (speed) => parameter({ speed })
     this.setPowerUp = /** @param{ boolean } powerUp */
       (powerUp) => parameter({ powerUp })
   }
 
-  _setRandomPlayerName() {
-    const playerNameElements = this.querySelectorAll('.input-player');
-    
-    /** @type { HTMLInputElement } */ //@ts-ignore
-    const firstInput = playerNameElements[0];
-    firstInput.readOnly = true;
-    getUsername()
-      .then(name =>  {
-        if (name)
-          firstInput.value = name;
-        else  {
-          firstInput.readOnly = false;
-        firstInput.value = generateRandomName();
-        }
-      })
-      .catch(() => {
-        firstInput.value = generateRandomName();
-        firstInput.readOnly = false;
-      })
-    for (let i = 1; i < playerNameElements.length; ++i) {
-      /** @type { HTMLInputElement } */ //@ts-ignore
-      const input = playerNameElements[i];
-      input.value = generateRandomName();
-    }
+  _initUserCard(data) {
+    const userAvatar = this.querySelector('.match-player-card .user-avatar-match');
+    const userLevelId = this.querySelector('.match-player-card .user-level-id');
+    const userScore = this.querySelector('.match-player-card .score');
+    const stateMessage = this.querySelector('.match-player-card .state-message');
+
+    userLevelId.textContent = `Lv.${data.level} ${data.username}`
+    this.username = data.username;
+    userAvatar.src = `data:image;base64,${data.avatar}`;
+    userScore.textContent = `${data.wins} 승 ${data.loses} 패`;
+    stateMessage.textContent = `${data.message}`;
   }
 
-  _playerNameCheck() {
-    const playerNameElements = this.querySelectorAll('.input-player');
-    const errorMassage = this.querySelector('#error-message');
-    const playerNames = Array.from(playerNameElements, (ele) => ele.value).filter(ele => ele !== '');
-    const playerNameSet = new Set(playerNames);
-    
-    if (playerNames.length !== 4) {
-      errorMassage.textContent = '빈 문자열은 허용되지 않습니다.';
-      return false;
-    }
-    else if (playerNameSet.size !== 4) {
-      errorMassage.textContent = '중복된 이름은 허용되지 않습니다.';
-      return false;
-    }
-    else {
-      this.setNickname(playerNames);
-      return true;
-    }
+  async _fetchUserInfo() {
+    const url = `http://${window.location.hostname}:8000/users/me/profile`;
+
+    await httpRequest('GET', url, null, this._initUserCard.bind(this));
   }
 
   _setPaddleModal() {
@@ -139,14 +120,15 @@ export default class TournamentView extends View {
     })
 
     itemBtns.addEventListener('click', () => {
-      // TODO: use-item vs disuse-item 선택 적용
+      // TODO: use-item vs disuse-item
       itemModal.style.display = 'none';
-    })
 
+    })
     for (const child of Array.from(itemBtns.querySelectorAll("button"))) {
       /** @type { HTMLButtonElement } */ //@ts-ignore
       const button = child;
-      const useItem = button.classList.contains("use-item");
+      console.log(button);
+      const useItem = !(button.classList.contains("use-item"));
       button.addEventListener("click", () => {
         this.setPowerUp(useItem);
         this.#setParameter("powerUp");
@@ -154,39 +136,12 @@ export default class TournamentView extends View {
     }
   }
 
-  _inputDuplicateCheck() {
-    const confirmBtn = this.querySelector('.btn-play');
-    confirmBtn.addEventListener('click', (event) => {
-      const errorMassage = this.querySelector('#error-message');
-      const playerNameElements = this.querySelectorAll('.input-player');
-      const valid = this._playerNameCheck();
-      if (valid)
-        this.#setParameter("nicknames");
-
-      if (valid && Object.values(this.#parameter).indexOf(false) == -1) {
-        /** @type { HTMLAnchorElement } */
-        const a = this.querySelector("#game-link")
-        a.click();
-      }
-      else
-      {
-        errorMassage.style.display = 'flex';
-        for (const player of playerNameElements)
-        {
-          player.classList.add(`vibration`);
-          setTimeout(() => {
-            player.classList.remove("vibration");
-            errorMassage.style.display = 'none';
-          }, 500);
-        }
-      }
-    });
-  }
-
   connectedCallback() {
     super.connectedCallback();
     const mapModalBtn = this.querySelector('#confMapBtn');
     const mapModal = this.querySelector("#map-modal");
+    this.#startButton = this.querySelector("a[href='/game']");
+    this.#startButton.style.display = "none";
 
     mapModalBtn.addEventListener("click", () => {
       mapModal.style.display = "block";
@@ -196,8 +151,7 @@ export default class TournamentView extends View {
         this.mapModal["allMaps"] = allCanvas;
         allCanvas.forEach(c => {
           c.addEventListener("click", 
-            () => {
-              mapModal.style.display = "none";
+            () =>  {
               this.setMap(c.dataset.map);
               this.#setParameter("map");
             }
@@ -206,9 +160,23 @@ export default class TournamentView extends View {
       }
     })
 
-    this._setRandomPlayerName();
+    this._fetchUserInfo();
     this._setPaddleModal();
     this._setItemModal();
-    this._inputDuplicateCheck();
+    this.#setNicknames();
+  }
+
+  async #setNicknames() {
+    let username = this.username ?? await getUsername();
+    username = "heshin";
+    const label = this.querySelector(".user-name");
+    if (!username || !label)
+      return ; //@ts-ignore
+    const opponentName = label.innerText;
+    if (username.trim() == "" || opponentName.trim() == "")
+      return ;
+
+    this.setNickname({nicknames: [username, opponentName]});
+    this.#setParameter("nicknames");
   }
 }

@@ -263,7 +263,7 @@ export function anchorToLink(parent) {
         switch (page) {
           case ("MatchView"):
             try { global.registerLocalGame(); } 
-            catch  { return ; }
+            catch { return ; }
             break;
           case ("TournamentView"):
             try { global.registerTournamentGame(); } 
