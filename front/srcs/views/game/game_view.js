@@ -472,6 +472,11 @@ export default class GameView extends View {
 
 }
 
+function _url() {
+  return window.location.href;
+  return window.location.href.replace(":8080", ":8000");
+}
+
 async function getToken(needRefresh = false) {
   const accessToken = localStorage.getItem("access");
   const refreshToken = localStorage.getItem("refresh");
@@ -485,7 +490,7 @@ async function getToken(needRefresh = false) {
   if (!refreshToken)
     return null;
 
-  const url = window.location.hostname + "/token/refresh";
+  const url = new URL("/token/refresh", _url());
   const res = await fetch(url, {
     method: "POST",
     mode: "cors",
@@ -519,7 +524,7 @@ export async function getUsername(retry = false) {
   if (storageName)
     return storageName;
 
-  const url = window.location.hostname + "/users/me/profile";
+  const url = new URL("/users/me/profile", _url());
   const res = await fetch(url, {
     method: "GET",
     mode: "cors",
@@ -540,12 +545,14 @@ export async function getUsername(retry = false) {
 }
 
 async function sendResult(scores, gameType) {
-  const username = await getUsername();
   const accessToken = await getToken();
-  if (!username || !accessToken)
-    return ;
+  const username = await getUsername();
 
-  let url = window.location.hostname;
+  if (!username || !accessToken)
+  return ;
+
+  /** @type { URL | string } */
+  let url = _url();
   const time = dateFormat(new Date());
   let body = null;
  
@@ -558,31 +565,44 @@ async function sendResult(scores, gameType) {
       const player2 = Object.keys(scores[0]).find(name => name != player1);
       if (!player1 || !player2)
         return ;
-      url += "/game/me/1v1s";
+      url = new URL("/game/me/1v1s", url);
       body = {
-        player_1: player1,
-        player_2: player2,
-        player_1_score: scores[0][player1],
-        player_2_score: scores[0][player2],
+        "player_one": player1,
+        "player_two": player2,
+        "player_one_score": scores[0][player1],
+        "player_two_score": scores[0][player2],
         time
       };
       break;
     case (GAME_TYPE.localTournament):
-      url += "/game/me/tournaments";
-      body = [];
-      scores.forEach(score => {
-        body.push({ 
-          player_1: score["playerA"].name,
-          player_1_score: score["playerA"].score,
-          player_2: score["playerB"].name,
-          player_2_score: score["playerB"].score,
-          time: dateFormat(score["time"])
-        })
-      });
+      if (scores.length < 3)
+        return ;
+
+      url = new URL("/game/me/tournaments", url);
+      body = {}
+      scores.slice(0, 3).forEach(
+      (score, i) => {
+        let key = "game_", one = "playerA", two = "playerB";
+        switch (i) {
+          case (0): key += "one"; break; 
+          case (1): key += "two"; one = "playerB"; two = "playerA"; break;
+          case (2): key += "three"; break;
+        }
+
+        body[key] = {
+          "player_one": score[one].name,
+          "player_two": score[two].name,
+          "player_one_score": score[one].score,
+          "player_two_score": score[two].score,
+            time: dateFormat(score["time"])
+          };
+        }
+      );
       break;
     default:
       return ;
   }
+
   fetch(url, {
     method: "POST",
     mode: "cors",
