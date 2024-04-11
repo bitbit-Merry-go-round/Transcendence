@@ -1,18 +1,6 @@
 import View from "@/lib/view";
 import httpRequest from "@/utils/httpRequest";
 
-export function handleLogin() {
-
-  const login = false;
-  if (login) {
-    // Login
-    return true;
-  }
-  else {
-    return false;
-  }
-}
-
 export default class LoginView extends View {
 
   constructor({data}) {

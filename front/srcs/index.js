@@ -2,9 +2,43 @@ import init from "@/init";
 import { anchorToLink, route, NAVIGATE_DRIRECTION } from "@/router";
 import { DEBUG, STATE } from "@/data/global";
 import { isAvailableAddress, isNavigatableAddress } from "@/views/config";
-import { handleLogin } from "@/views/login/login_view";
 
 anchorToLink(document);
+
+function handleLogin() {
+  const url = window.location.href;
+  if (!url.includes("code"))
+    return false;
+
+  const code = new URL(url).searchParams.get("code");
+  const callbackUrl = new URL("/42/callback", url.replace(":8080", ":8000"));
+  callbackUrl.searchParams.append("code", code);
+  fetch(callbackUrl, {
+    method: "GET",
+    mode: "cors",
+    cache: "no-cache",
+    credentials: "same-origin",
+    headers: {
+      "Content-Type": "application/json",
+    }
+  })
+    .then(res => res.json())
+    .then(json =>  {
+      if (json["username"]) {
+        localStorage.setItem("username", json.username);
+        route({
+          path: "/auth"
+        });
+        window.history.replaceState({
+          history: [ "/" ],
+          index: 0,
+        }, "42 Pong", "/");
+      }
+    });
+  return true;
+}
+
+
 
 document.addEventListener("DOMContentLoaded", async () => {
   init();
@@ -15,20 +49,20 @@ document.addEventListener("DOMContentLoaded", async () => {
   let path = window.location.pathname;
   const history = window.history.state?.history;
   const index = window.history.state?.index;
-  const login = handleLogin();
 
   if (!DEBUG.isDebug() && 
     (!history || index == undefined)) {
-    path = (login || isAvailableAddress(path)) ? path:  "/";
+    path = isAvailableAddress(path) ? path:  "/";
     if (!history || index == undefined) {
+      if (handleLogin()) {
+        return ;
+      }
       window.history.replaceState({
         history: [ path ],
         index: 0,
-      }, "42 Pong", login ? path : "/");
+      }, "42 Pong", path);
     }
   }
-  if (login)
-    return ;
   route({
     path,
     direction: NAVIGATE_DRIRECTION.forward
@@ -51,14 +85,14 @@ window.addEventListener("popstate",
 
     if (STATE.isPlayingGame()) {
       STATE.requestCancelGame().then(
-      (cancel) => {
-        if (!cancel)
-          return ;
-        route({
-          path,
-          direction: NAVIGATE_DRIRECTION.backward,
+        (cancel) => {
+          if (!cancel)
+            return ;
+          route({
+            path,
+            direction: NAVIGATE_DRIRECTION.backward,
+          })
         })
-      })
     }
     else {
       route({
