@@ -7,7 +7,7 @@
       </button>
     </div>
     <div class="d-flex justify-content-center align-self-center">
-      <div id="multiple-error" style="display: none; position: absolute; top: auto; color: rgb(250 109 109);">중복된 이름을 사용하지 마시오!</div>
+      <div id="error-message" style="display: none; position: absolute; top: auto; color: rgb(250 109 109);"></div>
       <div class="d-flex flex-column p-4 tournament-box justify-content-between">
         <input id="player1" type="text" name="player1" placeholder="player 1" class="input-player my-2 ">
         <input id="player2" type="text" name="player2" placeholder="player 2" class="input-player my-2 ">
@@ -18,9 +18,54 @@
     <div class="d-flex justify-content-center m-3">
       <p class="explain-text">경험치는 반영되지 않습니다</p>
     </div>
-    <div class="d-flex justify-content-end my-4 tournament-footer">
-      <div class="btn btn-primary btn-tournament" data-link>확인</div>
-      <a href="/game" id="move-to-game" data-link></a>
+    <div class="d-flex flex-column justify-content-center align-items-center setting-container">
+      <div class="d-flex justify-content-center align-items-center game-config">
+        <div class="d-flex align-items-center my-auto text-secondary">
+          <span class="mx-2">⚙️ 게임 설정</span>
+        </div>
+        <div>
+          <div id="map-modal" style="display: none;" >
+            <map-selector data-component="MapSelector"></map-selector>
+          </div>
+          <button id="confMapBtn" class="btn btn-primary ms-4">맵</button>
+          <button id="confPaddleBtn" class="btn btn-primary ms-4">패들 속도</button>
+          <button id="confItemBtn" class="btn btn-primary ms-4">아이템</button>
+        </div>
+      </div>
+      <div class="d-flex justify-content-end game-play">
+        <a href="/game" class="btn btn-primary btn-play" data-link>PLAY</a>
+      </div>
+    </div>
+  </div>
+  <div class="map-wrap match-modal" style="display: none;">
+    <div class="map-modal d-flex flex-column justify-content-center">
+      <div class="d-flex justify-content-between">
+        <span>맵</span>
+        <button type="button" class="btn-close ms-auto"></button>
+      </div>
+      <button type="submit" class="btn btn-primary submit"></button>
+    </div>
+  </div>
+  <div class="paddle-wrap match-modal" style="display: none;">
+    <div class="map-modal d-flex flex-column justify-content-center">
+      <div class="d-flex justify-content-between">
+        <span>패들 속도</span>
+        <button type="button" class="btn-close ms-auto"></button>
+      </div>
+      <input type="range" name="paddle-speed" id="paddleSpeed" max="5" min="0" step="1">
+      <button class="btn btn-primary submit">확인</button>
+    </div>
+  </div>
+  <div class="item-wrap match-modal" style="display: none;">
+    <div class="map-modal d-flex flex-column justify-content-center">
+      <div class="d-flex justify-content-between">
+        <span>아이템</span>
+        <button type="button" class="btn-close ms-auto"></button>
+      </div>
+      <div class="d-flex justify-content-between item-btns">
+        <button class="btn btn-primary me-3 disuse-item">안써용</button>
+        <button class="btn btn-primary use-item">써용</button>
+      </div>
     </div>
   </div>
 </tournament-view>
