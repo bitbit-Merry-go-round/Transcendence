@@ -1,4 +1,5 @@
 import View from "@/lib/view";
+import { route } from "@/router";
 import httpRequest from "@/utils/httpRequest";
 
 const TYPE_EDIT = "TYPE_EDIT"
@@ -18,6 +19,7 @@ export default class FriendView extends View {
 
     const type = profileCardModal.getAttribute('data-user-type');
     const user = profileCardModal.getAttribute('data-user');
+    e.preventDefault();
     if (type === TYPE_DELETE)
     {
       url = `http://${window.location.hostname}:8000/users/me/friends/${user}/`;
@@ -35,6 +37,12 @@ export default class FriendView extends View {
         profileCardModal.style.display = 'none';
       }, (res) => (console.log('failed to add: ', res)));
     }
+    else
+    {
+      route({
+        path: "/edit",
+      })
+    }
   }
 
   _modalBtnEventSet() {
@@ -51,18 +59,15 @@ export default class FriendView extends View {
     if (type === TYPE_EDIT)
     {
       addFriendBtn.textContent = '정보변경';
-      addFriendBtn.href = '/edit';
     }
     else if (type === TYPE_ADD)
     {
       addFriendBtn.textContent = '친구추가';
-      addFriendBtn.href = '/friend';
     }
     else
     {
       addFriendBtn.classList.add('btn-del-friend');
       addFriendBtn.textContent = '친구삭제';
-      addFriendBtn.href = '/friend';
     }
   }
 
@@ -172,11 +177,16 @@ export default class FriendView extends View {
     
     friendNameInput.addEventListener('keydown', async (e) => {
       const username = e.target.value;
+      const warningMessage = this.querySelector('.warning-message');
       if (e.key !== 'Enter')
         return ;
       if (!is_alnum(username))
       {
-        alert(`${username} is not valid.`)
+        warningMessage.textContent = `valid error❗️`;
+        warningMessage.style.display = 'flex';
+        setTimeout(() => {
+          warningMessage.style.display = 'none';
+        }, 2000);
         return ;
       }
       const url = `http://${window.location.hostname}:8000/users?search=${username}`;
@@ -196,8 +206,13 @@ export default class FriendView extends View {
           this._modalBtnSetter(TYPE_ADD)
         }
         profileCardModal.style.display = 'flex';
-      }, (url, res) => {
-        alert(`${username} is not exist.`)
+      }, () => {
+        warningMessage.textContent = `'${username}' dose not exist.`;
+        warningMessage.style.display = 'flex';
+
+        setTimeout(() => {
+          warningMessage.style.display = 'none';
+        }, 2000);
       })
     });
   }

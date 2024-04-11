@@ -13,6 +13,14 @@ function handleLogin() {
   const code = new URL(url).searchParams.get("code");
   const callbackUrl = new URL("/42/callback", url.replace(":8080", ":8000"));
   callbackUrl.searchParams.append("code", code);
+  
+  document.body.innerHTML = `
+      <div id="app">
+        <div class="loading-wrap">
+        <div class="loading-spinner my-5"></div>
+        <p id="loadingMessage" class="mt-5 loading-message">접속 중...</p>
+      </div>
+    `
   fetch(callbackUrl, {
     method: "GET",
     mode: "cors",
@@ -37,8 +45,6 @@ function handleLogin() {
     });
   return true;
 }
-
-
 
 document.addEventListener("DOMContentLoaded", async () => {
   init();

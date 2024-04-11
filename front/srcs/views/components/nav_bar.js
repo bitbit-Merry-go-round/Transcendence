@@ -1,4 +1,5 @@
 import View from "@/lib/view";
+import { NAVIGATE_DRIRECTION, route } from "@/router";
 import httpRequest from "@/utils/httpRequest";
 
 export default class NavBar extends View {
@@ -12,12 +13,20 @@ export default class NavBar extends View {
     const profileCardModal = this.querySelector('#profileCardModal');
     const modalCloseBtn = this.querySelector('.btn-close');
     const editBtn = profileCardModal.querySelector('.btn-to-edit');
+    
     profileCardModalBtn.addEventListener('click', () => {
       editBtn.textContent = '정보변경';
-      editBtn.href = '/edit';
-      editBtn.setAttribute('data-link', '');
       profileCardModal.style.display = 'flex';
     });
+    editBtn.addEventListener('click', (e) => {
+      if (!editBtn.closest('friend-view'))
+      {
+        e.preventDefault();
+        route({
+          path: "/edit",
+        })
+      }
+    })
     modalCloseBtn.addEventListener('click', () => {
       profileCardModal.style.display = 'none';
     });
