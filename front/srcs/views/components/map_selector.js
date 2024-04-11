@@ -1,37 +1,8 @@
 import View from "@/lib/view";
 import MapImageGenarator from "@/game/map_image_generator";
-import { GameMap } from "@/data/game_map";
+import { GameMap, examples } from "@/data/game_map";
 import ASSET_PATH from "@/assets/path";
 
-const examples = [1, 2, 3, 4].map(i => ({
-  textureName: "brick",
-  map: new GameMap({
-    safeWalls: [
-      {
-        centerX: 10 * i + 10,
-        centerY: 30,
-        width: 30,
-        height: 5
-      },
-      {
-        centerX: 10 * i + 20,
-        centerY: 50,
-        width: 5,
-        height: 20
-      },
-      {
-        centerX: 80,
-        centerY: 10 * i + 25,
-        width: 10,
-        height: 40
-      }
-    ],
-    trapWalls: [
-        
-    ]
-  })})
-)
-examples.forEach(({map}) => map.addBorderWalls());
 
 export default class MapSelector extends View {
 
@@ -64,7 +35,7 @@ export default class MapSelector extends View {
     this.#background = this.querySelector("#map-selector-background");
 
     this.querySelector("#map-selector-close-button")
-    .addEventListener("click", () => this.hide());
+      .addEventListener("click", () => this.hide());
     this.#drawMaps();
   }
 
@@ -91,7 +62,7 @@ export default class MapSelector extends View {
 
   showMap(map) {
   }
-  
+
   disconnectedCallback() {
     super.disconnectedCallback();
   }

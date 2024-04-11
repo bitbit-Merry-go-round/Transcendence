@@ -243,6 +243,7 @@ export default class GameScene extends THREE.Group {
     this
       .#updatePowerUps(frameTime)
       .#updateObjects({frameTime, frameSlice})
+    this.#capturePeddles();
     if (this.#ball.physicsId) {
       this.#captureBall()
     }
@@ -357,11 +358,12 @@ export default class GameScene extends THREE.Group {
 
   #moveBall() {
 
+    const ratio = (this.#gameData.peddleSpeedRatio - 1.0) * 0.8 + 1.0;
     this.#ballStartDirection.x = (Math.random() > 0.5) ? DIRECTION.left: DIRECTION.right;
     this.#ballStartDirection.y = (this.#lostSide == DIRECTION.top) ? DIRECTION.bottom: DIRECTION.top;
     const velocity = {
-      x: (this.#ballStartDirection.x == DIRECTION.right? 1 : -1) * this.#ballSpeed * (Math.random() + 0.5),
-      y: (this.#ballStartDirection.y == DIRECTION.top? 1 : -1) * this.#ballSpeed
+      x: (this.#ballStartDirection.x == DIRECTION.right? 1 : -1) * this.#ballSpeed * ratio * (1.0 + (Math.random() - 0.5) * 0.5),
+      y: (this.#ballStartDirection.y == DIRECTION.top? 1 : -1) * this.#ballSpeed * ratio
     };
     this.#physics.setState(this.#ball.physicsId,
       () => ({ velocity })
@@ -986,12 +988,14 @@ export default class GameScene extends THREE.Group {
         /** @type {PhysicsEntity} */
         const ball = collider.isShape("CIRCLE") ? collider: collidee;
         const ballSpeedX = Math.abs(ball.velocity.x);
-        if (ballSpeedX > CONFIG.MAX_BALL_SPEED) {
-          ball.velocity.x = CONFIG.MAX_BALL_SPEED * (ball.velocity.x < 0 ? -1: 1);
+        const maxSpeed = CONFIG.MAX_BALL_SPEED * this.#gameData.peddleSpeedRatio;
+        const minSpeed = CONFIG.MIN_BALL_SPEED * this.#gameData.peddleSpeedRatio;
+        if (ballSpeedX > maxSpeed ) {
+          ball.velocity.x = maxSpeed * (ball.velocity.x < 0 ? -1: 1);
         }
-        else if (ballSpeedX < CONFIG.MIN_BALL_SPEED) {
+        else if (ballSpeedX < minSpeed) {
 
-          ball.velocity.x = CONFIG.MIN_BALL_SPEED* (ball.velocity.x < 0 ? -1: 1);
+          ball.velocity.x = minSpeed * (ball.velocity.x < 0 ? -1: 1);
         }
         if (this.#ball.atmosphere) { 
           /** @type { THREE.ShaderMaterial } *///@ts-ignore
@@ -1112,6 +1116,7 @@ export default class GameScene extends THREE.Group {
    */
   #updateObjects({frameTime, frameSlice}) {
     const frame = frameTime;
+    const ratio = this.#gameData.peddleSpeedRatio;
     this.#peddles.forEach((peddle, index) => {
       const control = this.#peddleControls[index];
       const activePowerUp = this.#activePowerUps.find(({physicsId}) => physicsId == peddle.physicsId);
@@ -1119,8 +1124,8 @@ export default class GameScene extends THREE.Group {
         (state) => {
           let vel = { ...state.velocity };
           const speedPowerUp = activePowerUp && activePowerUp.powerUp.targetStatus.velocity;
-          let accel = CONFIG.PEDDLE_ACCEL;
-          let decel = CONFIG.PEDDLE_DECEL_RATIO;
+          let accel = CONFIG.PEDDLE_ACCEL * ratio;
+          let decel = CONFIG.PEDDLE_DECEL_RATIO * ratio;
           if (speedPowerUp) {
             const status = activePowerUp.powerUp.targetStatus;
             vel.x = status.velocity.x;
@@ -1142,7 +1147,9 @@ export default class GameScene extends THREE.Group {
             vel.x += accel * (control.pressed.x > 0 ? 1: -1);
             if (!speedPowerUp) {
               vel.x = THREE.MathUtils.clamp(
-                vel.x,  -CONFIG.MAX_PEDDLE_SPEED, CONFIG.MAX_PEDDLE_SPEED);
+                vel.x,  
+                -CONFIG.MAX_PEDDLE_SPEED * ratio, 
+                CONFIG.MAX_PEDDLE_SPEED * ratio);
             }
           }
           return { velocity: {
@@ -1190,6 +1197,25 @@ export default class GameScene extends THREE.Group {
       this.#lostSide = "BOTTOM";
       this.#handleScoreChange();
     }
+  }
+
+  #capturePeddles() {
+    this.#peddles.forEach(peddle  => {
+      const state = this.#physics.getState(peddle.physicsId);
+      let modifyX = null;
+      if (state.position.x < -50) {
+        modifyX = -45;
+      }
+      else if (state.position.x + state.width > 50) {
+        modifyX = 45 - state.width;
+      }
+      if (modifyX) {
+        this.#physics.setState(peddle.physicsId, () => ({ position: {
+          x: modifyX,
+          y: state.position.y
+        } }));
+      }
+    })
   }
 
   #handleScoreChange() {

@@ -1,6 +1,6 @@
 import View from "@/lib/view";
 import HomeView from "@/views/home/home_view";
-import globalData from "@/data/global";
+import global from "@/data/global";
 import { routes } from "@/views/config";
 
 /** @typedef {Object} Page 
@@ -63,16 +63,21 @@ class Router {
       if (currentPath == "/" && destPath == "/login") {
         direction = NAVIGATE_DRIRECTION.backward;
       }
-      else if (destPath == "/") {
-        direction = currentPath== "/login" ? NAVIGATE_DRIRECTION.forward: NAVIGATE_DRIRECTION.backward;
-      } 
     }
 
     const page = new view({
       data: {
-        ...globalData
-      }
+        gameData: global.gameData,
+        gameMap: global.gameMap
+      },
+      registerGame: {
+        local: global.registerTournamentGame,
+        tournament: global.registerTournamentGame,
+        parameter: global.setGameParameter
+      },
+      endGame: global.removeGame
     });
+
     await page.render();
     if (!this.#pages.current) {
       await this.#setCurrentPage({page, path: destPath});
@@ -231,39 +236,63 @@ class Router {
 
 
 export async function route({
+  path,
   direction = NAVIGATE_DRIRECTION.forward
 }) {
   const match = routes.find((route) => {
-    return route.path == location.pathname
+    return route.path == path
   })
   const view = match ? match.view : HomeView;   
   await Router.shared.navigate(view, direction);
 }
 
-/** @param {string | URL} url */
-function navigate(url) {
-  if (typeof url === "string") {
-    const path = new URL(url).pathname;
-    if (window.location.pathname == path) {
-      return;
-    }
-    history.pushState(null, null, url);
-    route({
-      direction: NAVIGATE_DRIRECTION.forward
-    });
-  }
-}
-
 /** @param {HTMLElement | Document | View} parent */
 export function anchorToLink(parent) {
+  const page = (parent instanceof View) ? parent.constructor.name : null;
 
   /** @type {HTMLAnchorElement[]} */
   const links = Array.from(parent.querySelectorAll("a[data-link]"));
   links.forEach((link) => {
+    link.setAttribute("page", page);
     link.addEventListener("click", (e) => {
       e.preventDefault();
-      navigate(link.href);
+      if (link.pathname == "/game") { //@ts-ignore
+        const page = e.target.getAttribute("page");
+        if (!page)
+          return ;
+        switch (page) {
+          case ("MatchView"):
+            try { global.registerLocalGame(); } 
+            catch  { return ; }
+            break;
+          case ("TournamentView"):
+            try { global.registerTournamentGame(); } 
+            catch { return ; }
+            break;
+          default: break;
+        }
+      }
+      addHistory(link.pathname);
+      route({
+        path: link.pathname
+      });
     })
   })
 }
- 
+
+function addHistory(path) {
+
+  let index = window.history.state?.index;
+  const history = window.history.state?.history;
+  if (!history || index == undefined)
+    return;
+  if (history[history.length - 1] != path) {
+    history.push(path);
+    index++;
+  }
+  window.history.pushState({
+    history,
+    index,
+  },
+    "42 Pong", "/");
+}

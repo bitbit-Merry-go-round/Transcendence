@@ -1,7 +1,23 @@
 import View from "@/lib/view";
+import * as GLOBAL from "@/data/global";
 export default class TournamentView extends View {
-  constructor() {
+
+  /** @param{ string[] } nicknames */
+  setNickname;
+  setMap;
+  setSpeed;
+  setPowerUp;
+
+  constructor({ registerGame }) {
     super();
+    const { parameter} = registerGame;
+    this.setNickname = /** @param{ string[] } nicknames */(nicknames) => parameter({nicknames})
+    this.setMap =  /** @param{ any }  map */
+      (map) => parameter({map})
+    this.setSpeed = /** @param{ number } speed */
+      (speed) => parameter({ speed })
+    this.setPowerUp = /** @param{ boolean } powerUp */
+      (powerUp) => parameter({ powerUp })
   }
   _playerNameCheck() {
     const playerNameElements = this.querySelectorAll('.input-player');
@@ -10,8 +26,10 @@ export default class TournamentView extends View {
     console.log(playerNames.length, playerNameSet.size);
     if (playerNames.length !== playerNameSet.size)
       return false;
-    else
+    else {
+      this.setNickname(playerNames);
       return true;
+    }
   }
   connectedCallback() {
     super.connectedCallback();
@@ -20,8 +38,9 @@ export default class TournamentView extends View {
       const errorPassage = this.querySelector('#multiple-error');
       const playerNameElements = this.querySelectorAll('.input-player');
       const valid = this._playerNameCheck();
-      if (valid)
+      if (valid) {
         this.querySelector('#move-to-game').click();
+      }
       else
       {
         errorPassage.style.display = 'flex';

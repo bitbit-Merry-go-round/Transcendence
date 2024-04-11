@@ -10,7 +10,9 @@ import ColorPicker from "@/views/components/color_picker.js";
 import Observable from "@/lib/observable";
 import { getRandomFromArray } from "@/utils/type_util";
 import GameDataEmitter from "@/game/game_data_emitter";
-import { DEBUG } from "@/data/global";
+import { DEBUG, STATE } from "@/data/global";
+import { route } from "@/router";
+import ResultModal from "@/views/components/result_modal";
 
 export default class GameView extends View {
 
@@ -40,37 +42,29 @@ export default class GameView extends View {
   /** @type {GameDataEmitter} */
   #dataEmitter;
 
+  // @ts-ignore
   constructor({data}) {
-    super({data: data.gameData});
-    this.#data = data.gameData;
+    super({data: data.gameData()});
+    const game = data.gameData();
+    if (!game || !data.gameMap()){
+      return ;
+    }
+    this.#setState();
+    this.#data = game;
     //@ts-ignore
-    this.#gameData = data.gameData;
+    this.#gameData = game;
     this.#data.subscribe("scores", 
       (/**@type {{ [key: string]: number }} */ newScores) =>
       this.#onScoreUpdate(newScores));
-    this.#gameMap = new GameMap({
-      safeWalls: [],
-      trapWalls: [],
-    });
-    this.#gameMap.addBorderWalls();
-    this.#gameMap.addWalls([
-      {
-        width: 40,
-        height: 2,
-        centerX: 20,
-        centerY: 30
-      },
-      {
-        width: 40,
-        height: 2,
-        centerX: 80,
-        centerY: 70
-      }
-    ], WALL_TYPES.safe);
+    this.#gameMap = data.gameMap();
   }
 
   connectedCallback() {
     super.connectedCallback();
+    if (this.#data == null) {
+      window.history.back();
+      return ;
+    }
     Asset.shared.onLoaded(() => {
       if (DEBUG.isDebug())
         console.log(`Asset load ${Asset.shared.loadedPercentage * 100}%`);
@@ -91,6 +85,57 @@ export default class GameView extends View {
       this.#dataEmitter.startCollecting();
       this.#dataEmitter.startEmit();
     }
+  }
+
+  #setState() {
+    STATE.setPlayingGame(true);
+    STATE.setCancelGameCallback(
+      () => new Promise(resolve => 
+        this.#onRequestCancel(resolve)
+      )
+    );
+  }
+
+  /** @param {(_: boolean) => void} callback */
+  #onRequestCancel(callback) {
+    
+    const alert = this.querySelector("#close-alert" );
+    alert.animate([
+      { transform: `translateY(-150%)`},
+      { transform: `translateY(0%)`},
+    ],
+      {
+        duration: 500,
+        fill: "forwards"
+      }
+    )
+    this.#setAlertButton(callback, alert);
+  }
+
+  #setAlertButton(callback, alert) {
+    const closeButton = this.querySelector("#close-button");
+    closeButton.addEventListener("click", 
+      () => {
+        callback(true);
+      }
+    );
+
+    const cancelButton = this.querySelector("#cancel-button");
+    cancelButton.addEventListener("click",
+      () => {
+        callback(false);
+
+        alert.animate([
+          { transform: `translateY(0%)`},
+          { transform: `translateY(-150%)`},
+        ],
+          {
+            duration: 500,
+            fill: "forwards"
+          }
+        )
+      }
+    );
   }
 
   #createScene() {
@@ -175,7 +220,7 @@ export default class GameView extends View {
     if (this.#gameData.gameType != GAME_TYPE.localTournament) {
 
       this.#tournamentButton.style.visibility = "hidden";
-      return ;
+      return this;
     }
     this.#tournamentButton.style.opacity = "0.3";
     this.#tournamentButton.addEventListener("click",
@@ -216,7 +261,7 @@ export default class GameView extends View {
     };
     for (let i = 0; i < containers.length; ++i) {
       const playerColor = new Observable(this.#scene.getPlayerColor(this.#gameData.currentPlayers[i]));
-        this.#pickerColors.push(playerColor);
+      this.#pickerColors.push(playerColor);
       const colorPicker = new ColorPicker({
         color: playerColor,
         onPickColor: (color) => {
@@ -289,6 +334,9 @@ export default class GameView extends View {
   }
 
   #givePowerUps() {
+    if (!this.#gameData.isPowerAvailable) {
+      return this;
+    }
     const allPowerUps = [
       PU.BUFFS.peddleSize,
       PU.BUFFS.peddleSpeed,
@@ -327,8 +375,12 @@ export default class GameView extends View {
   }
 
   disconnectedCallback() {
-    this.#scene.prepareDisappear();
+    if (this.#data == null) {
+      return ;
+    }
     super.disconnectedCallback();
+    this.#scene.prepareDisappear();
+    STATE.setPlayingGame(false);
   }
 
   async #updatedTournamentBoard(panel) {
@@ -344,14 +396,15 @@ export default class GameView extends View {
       const score = newScores[player.nickname];
       /** @type {HTMLSpanElement} */
       const label = this.querySelector(
-        `span[data-player=${player.nickname}]`);
+        `span[data-player='${player.nickname}']`);
       label.innerText = score.toString();
       if (score == this.#gameData.winScore) {
-        this.#scene.endGame();
+        this.#scene.endGame(
+          this.#gameData.isEnded ? () => this.#onFinishGame(): null);
         switch (this.#gameData.gameType) {
-          case GAME_TYPE.local1on1:
-            // TODO: go to next view
-            return;
+          case (GAME_TYPE.local1on1):
+            this.#isReadyToPlay = false;
+            break;
           case GAME_TYPE.localTournament:
             const tournament = this.#gameData.tournament;
             if (tournament.isLastRound) {
@@ -363,6 +416,8 @@ export default class GameView extends View {
             this.#startButton.disabled = true;
             this.#startButton.style.visibility = "hidden";
             this.#isReadyToPlay = false;
+            break;
+          default: break;
         }
       }
     }
@@ -370,6 +425,38 @@ export default class GameView extends View {
     if (this.#isReadyToPlay) {
       this.#startButton.style.visibility = "visible";
     }
+  }
+
+  #findWinner() {
+    const scores = this.#gameData.scores;
+    const players = this.#gameData.currentPlayers;
+    if (scores[players[0].nickname] > scores[players[1].nickname]) {
+      return players[0];
+    }
+    return players[1];
+  }
+
+  async #onFinishGame() {
+    let delay = 1;
+    if (this.#gameData.gameType == GAME_TYPE.localTournament) {
+      delay = 2;
+    }
+   
+    const modal = new ResultModal({
+      data: {
+        delay,
+        text: this.#findWinner().nickname + "의 승리!"
+      },
+      confirmHandler: () => {
+        route({
+          path: "/"
+        })
+      }
+    });
+    await modal.render();
+    this.appendChild(modal); 
+    const finalScores = this.#gameData.finalScores;
+    sendResult(finalScores, this.#gameData.gameType);
   }
 
   #returnToGame() {
@@ -381,4 +468,141 @@ export default class GameView extends View {
       .#showNextMatch()
       .#givePowerUps();
   }
+
+}
+
+async function getToken(needRefresh = false) {
+  const accessToken = localStorage.getItem("access");
+  const refreshToken = localStorage.getItem("refresh");
+
+  if (!accessToken)
+    return null;
+
+  if (!needRefresh)
+    return accessToken;
+
+  if (!refreshToken)
+    return null;
+
+  const url = window.location.hostname + "/token/refresh";
+  const res = await fetch(url, {
+    method: "POST",
+    mode: "cors",
+    cache: "no-cache",
+    credentials: "same-origin",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + accessToken
+    },
+    body: JSON.stringify( {
+      "refresh": refreshToken
+    })
+  });
+  if (!res.ok)
+    return null;
+  const json = await res.json(); 
+  const { access, refresh } = json;
+  if (access)
+    localStorage.setItem("access", access);
+
+  if (refresh) 
+    localStorage.setItem("refresh", refresh);
+  return acces ?? null;
+}
+
+async function getUsername(retry = false) {
+  const accessToken = await getToken();
+  if (!accessToken)
+    return null;
+  const url = window.location.hostname + "/users/me/profile";
+  const res = await fetch(url, {
+    method: "GET",
+    mode: "cors",
+    cache: "no-cache",
+    credentials: "same-origin",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + accessToken
+    },
+  });
+  if (!res.ok && !retry && res.status == 401) {
+    return await getUsername(true); 
+  }
+  else if (!res.ok)
+    return null;
+  const json = await res.json();
+  return json["username"] ?? null;
+}
+
+async function sendResult(scores, gameType) {
+  const username = await getUsername();
+  const accessToken = await getToken();
+  if (!username || !accessToken)
+    return ;
+
+  let url = window.location.hostname;
+  const time = dateFormat(new Date());
+  let body = null;
+ 
+  switch (gameType) {
+    case (GAME_TYPE.local1on1):
+      let player1 = Object.keys(scores[0]).find(name => name == username);
+      if (!player1) {
+        player1 = Object.keys(scores[0])[0];
+      }
+      const player2 = Object.keys(scores[0]).find(name => name != player1);
+      if (!player1 || !player2)
+        return ;
+      url += "/game/me/1v1s";
+      body = {
+        player_1: player1,
+        player_2: player2,
+        player_1_score: scores[0][player1],
+        player_2_score: scores[0][player2],
+        time
+      };
+      break;
+    case (GAME_TYPE.localTournament):
+      url += "/game/me/tournaments";
+      body = [];
+      scores.forEach(score => {
+        body.push({ 
+          player_1: score["playerA"].name,
+          player_1_score: score["playerA"].score,
+          player_2: score["playerB"].name,
+          player_2_score: score["playerB"].score,
+          time: dateFormat(score["time"])
+        })
+      });
+      break;
+    default:
+      return ;
+  }
+  fetch(url, {
+    method: "POST",
+    mode: "cors",
+    cache: "no-cache",
+    credentials: "same-origin",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + accessToken
+    },
+    body: JSON.stringify(body)
+  }).catch(e => console.error(e));
+}
+
+function dateFormat(date) {
+  let month = date.getMonth() + 1;
+  let day = date.getDate();
+  let hour = date.getHours();
+  let minute = date.getMinutes();
+  let second = date.getSeconds();
+
+  month = month >= 10 ? month : '0' + month;
+  day = day >= 10 ? day : '0' + day;
+  hour = hour >= 10 ? hour : '0' + hour;
+  minute = minute >= 10 ? minute : '0' + minute;
+  second = second >= 10 ? second : '0' + second;
+
+  return date.getFullYear() + '-' + month + '-' + day + ' ' + hour + ':' + minute + ':' + second;
 }

@@ -15,6 +15,7 @@ import ProfileCard from "@/views/components/profile_card";
 import UserLabel from "@/views/components/user_label";
 import ColorPicker from "@/views/components/color_picker.js";
 import GraphView from "@/views/dash_board/graph_view";
+import ResultModal from "@/views/components/result_modal";
 
 /**
  * fileName for view class MUST contain '_' or '-' (Web components requirement)
@@ -47,6 +48,10 @@ export default {
       {
         "className": "ColorPicker",
         "fileName": "color_picker.html"
+      },
+      {
+        "className": "ResultModal",
+        "fileName": "result_modal.html"
       },
     ],
     "home": [ 
@@ -135,7 +140,8 @@ export const viewConstructors = {
   UserLabel,
   TournamentPanel,
   ColorPicker,
-  GraphView
+  GraphView,
+  ResultModal
 };
 
 export const routes = [
@@ -159,7 +165,19 @@ export function isAvailableAddress(path) {
     return true;
   }
   let _path = path[0] == "/" ? path.substring(1): path;
-  const notAvailable = [ "game" ];
+  const availableAddress = [ "login" ];
+  return (availableAddress.findIndex(addr => _path.includes(addr)) != -1);
+}
 
-  return (notAvailable.indexOf(_path) == -1);
+/** @param { string } path 
+ *  @returns { boolean }
+ */
+export function isNavigatableAddress(path) {
+  if (path.length == 0) {
+    return true;
+  }
+  let _path = path[0] == "/" ? path.substring(1): path;
+  const notAvailableAddress = [ "game" ];
+
+  return (notAvailableAddress.indexOf(_path) == -1);
 }

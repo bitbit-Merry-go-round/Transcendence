@@ -17,19 +17,32 @@ export const GAME_TYPE = Object.freeze({
  */
 export default class GameData {
 
-  static createLocalGame() {
-    return new GameData({
+  /** @param {{
+   *  nicknames: string[],
+   *  peddleSpeed: number,
+   *  powerUp: boolean
+   * }} params 
+  * */
+  static createLocalGame({ nicknames, peddleSpeed, powerUp }) {
+    const game = new GameData({
       players: [
-        new Player({ nickname: generateRandomName() }),
-        new Player({ nickname: generateRandomName() })
+        new Player({ nickname: nicknames[0] }),
+        new Player({ nickname: nicknames[1] })
       ],
-      type: GAME_TYPE.local1on1
+      type: GAME_TYPE.local1on1,
     })
+    game.#_peddleSpeed = peddleSpeed ?? 1.0;
+    game.#_isPowerAvailable = powerUp;
+    return game;
   }
 
-  /** @param {string[]} playerNames */
-  static createTournamentGame(playerNames) {
-    const players = playerNames.map(
+  /** @param {{
+   *  nicknames: string[],
+   *  peddleSpeed: number,
+   *  powerUp: boolean
+   * }} parameter */
+  static createTournamentGame({ nicknames, peddleSpeed, powerUp }) {
+    const players = nicknames.map(
       nickname => new Player({nickname})
     );
     const game = new GameData({ players, type: GAME_TYPE.localTournament });
@@ -37,6 +50,8 @@ export default class GameData {
       players,
       winScore: game.winScore
     });
+    game.#_isPowerAvailable = powerUp;
+    game.#_peddleSpeed = peddleSpeed ?? 1.0;
     return game;
   }
 
@@ -50,6 +65,15 @@ export default class GameData {
   #_winScore;
   get winScore() {
     return this.#_winScore;
+  }
+
+  get isEnded() {
+    if (Object.values(this.scores)
+      .findIndex(score => score >= this.#_winScore) == -1)
+      return false;
+    if (this.#_gameType != GAME_TYPE.localTournament)
+      return true;
+    return (this.#_tournament.isLastRound);
   }
 
   /** @type {{
@@ -142,6 +166,12 @@ export default class GameData {
   #_isPowerAvailable;
   get isPowerAvailable() {
     return this.#_isPowerAvailable;
+  }
+
+  /** @type { number } */
+  #_peddleSpeed = 1.0;
+  get peddleSpeedRatio() {
+    return this.#_peddleSpeed;
   }
 
   /** @type {TM.Match} */
@@ -267,6 +297,16 @@ export default class GameData {
       [match.playerB.name]: match.playerB.score
     };
     return scores;
+  }
+
+  get finalScores() {
+    switch (this.#_gameType) {
+      case (GAME_TYPE.local1on1):
+        return [this.scores];
+      case (GAME_TYPE.localTournament):
+        return this.#_tournament.allMatches;
+      default: return ;
+    }
   }
 
   get currentPlayers() {

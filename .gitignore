@@ -3,3 +3,6 @@ tags
 blender/
 .env
 package-lock.json
+nohup.out
+*/.DS_Store
+
