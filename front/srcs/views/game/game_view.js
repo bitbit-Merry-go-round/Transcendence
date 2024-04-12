@@ -450,11 +450,12 @@ export default class GameView extends View {
     if (this.#gameData.gameType == GAME_TYPE.localTournament) {
       delay = 2;
     }
+    const winner = this.#findWinner().nickname;
    
     const modal = new ResultModal({
       data: {
         delay,
-        text: this.#findWinner().nickname + "의 승리!"
+        text: winner + "의 승리!"
       },
       confirmHandler: () => {
         route({
@@ -595,15 +596,39 @@ async function sendResult(scores, gameType) {
         return ;
 
       url = new URL("/game/me/tournaments/", url);
-      body = {}
+      body = {};
+      let lastOne = null;
+      if (scores[0]["playerA"].score > scores[0]["playerB"].score) {
+        lastOne = scores[0]["playerA"];
+      }
+      else
+        lastOne = scores[0]["playerB"];
+      let lastTwo = null;
+      if (scores[1]["playerA"].score > scores[2]["playerB"].score) {
+        lastTwo = scores[1]["playerA"];
+      }
+      else
+        lastTwo = scores[1]["playerB"];
+
       scores.slice(0, 3).forEach(
       (score, i) => {
+        let winner = null;
         let key = "game_", one = "playerA", two = "playerB";
         switch (i) {
           case (0): key += "one"; break; 
           case (1): key += "two"; one = "playerB"; two = "playerA"; break;
           case (2): key += "three"; break;
         }
+        if (i == 2) {
+          body[key] = {
+            "player_one": lastOne.nickname,
+            "player_two": lastTwo.nickname,
+            "player_one_score": lastOne.score,
+            "player_two_score": lastTwo.score,
+            time: dateFormat(score["time"])
+          };
+        }
+        else {
 
         body[key] = {
           "player_one": score[one].name,
@@ -613,7 +638,9 @@ async function sendResult(scores, gameType) {
             time: dateFormat(score["time"])
           };
         }
+      }
       );
+      console.log("body", body);
       break;
     default:
       return ;
