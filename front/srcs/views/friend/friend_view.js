@@ -97,7 +97,7 @@ export default class FriendView extends View {
           const documentFragment = document.importNode(listTemplate.content, true);
           const friendElement = documentFragment.querySelector('li');
           friendElement.querySelector('img').src = `data:image;base64,${friend.avatar}`;
-          if (friend.status === 'OF')
+          if (friend.status === 'OFFLINE')
           {
             friendElement.querySelector('.status-circle-sm').classList.add('status-offline');
           }
@@ -159,12 +159,14 @@ export default class FriendView extends View {
 
   _fillModalWithUserData() {
     const profileCardModalBtn = document.getElementById('profileCardModalBtn');
+    const profileCardModal = document.getElementById('profileCardModal');
 
     profileCardModalBtn.addEventListener('click', async () => {
       const url = `http://${window.location.hostname}:8000/users/me/profile/`;
 
       await httpRequest('GET', url, null, (res) => {
         this._fillModalData(res);
+        profileCardModal.setAttribute('data-user-type', TYPE_EDIT);
         this._modalBtnSetter(TYPE_EDIT);
       });
     });
