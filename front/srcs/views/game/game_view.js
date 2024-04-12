@@ -565,8 +565,8 @@ async function sendResult(scores, gameType) {
   const accessToken = await getToken();
   const username = await getUsername();
 
-  if (!username || !accessToken)
-  return ;
+  //if (!username || !accessToken)
+  //return ;
 
   /** @type { URL | string } */
   let url = _url();
@@ -603,8 +603,9 @@ async function sendResult(scores, gameType) {
       }
       else
         lastOne = scores[0]["playerB"];
+
       let lastTwo = null;
-      if (scores[1]["playerA"].score > scores[2]["playerB"].score) {
+      if (scores[1]["playerA"].score > scores[1]["playerB"].score) {
         lastTwo = scores[1]["playerA"];
       }
       else
@@ -612,7 +613,6 @@ async function sendResult(scores, gameType) {
 
       scores.slice(0, 3).forEach(
       (score, i) => {
-        let winner = null;
         let key = "game_", one = "playerA", two = "playerB";
         switch (i) {
           case (0): key += "one"; break; 
@@ -621,26 +621,24 @@ async function sendResult(scores, gameType) {
         }
         if (i == 2) {
           body[key] = {
-            "player_one": lastOne.nickname,
-            "player_two": lastTwo.nickname,
+            "player_one": lastOne.name,
+            "player_two": lastTwo.name,
             "player_one_score": lastOne.score,
             "player_two_score": lastTwo.score,
             time: dateFormat(score["time"])
           };
         }
         else {
-
-        body[key] = {
-          "player_one": score[one].name,
-          "player_two": score[two].name,
-          "player_one_score": score[one].score,
-          "player_two_score": score[two].score,
+          body[key] = {
+            "player_one": score[one].name,
+            "player_two": score[two].name,
+            "player_one_score": score[one].score,
+            "player_two_score": score[two].score,
             time: dateFormat(score["time"])
           };
         }
       }
       );
-      console.log("body", body);
       break;
     default:
       return ;
