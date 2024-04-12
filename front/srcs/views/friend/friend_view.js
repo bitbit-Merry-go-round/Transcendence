@@ -189,7 +189,7 @@ export default class FriendView extends View {
         }, 2000);
         return ;
       }
-      const url = `http://${window.location.hostname}:8000/users?search=${username}`;
+      const url = `http://${window.location.hostname}:8000/users/?search=${username}`;
 
       await httpRequest('GET', url, null, (res) => {
         this._fillModalData(res);

@@ -54,9 +54,10 @@ window.addEventListener("popstate",
           if (!cancel)
             return ;
           route({
-            path,
+            path: "/",
             direction: NAVIGATE_DRIRECTION.backward,
           })
+          window.location.assign("/");
         })
     }
     else {
@@ -74,7 +75,7 @@ function handleLogin() {
     return false;
 
   const code = new URL(url).searchParams.get("code");
-  const callbackUrl = new URL("/42/callback", url.replace(":8080", ":8000"));
+  const callbackUrl = new URL("/42/callback/", url.replace(":8080", ":8000"));
   callbackUrl.searchParams.append("code", code);
   
   document.body.innerHTML = `
@@ -93,10 +94,13 @@ function handleLogin() {
       "Content-Type": "application/json",
     }
   })
-    .then(res => res.json())
+    .then(res => {
+      console.log("logini res", res.status, res.body);
+      return res.json();
+    })
     .then(json =>  {
       if (json["username"]) {
-        localStorage.setItem("username", json.username);
+        window.localStorage.setItem("username", json["username"]);
         route({
           path: "/auth"
         });

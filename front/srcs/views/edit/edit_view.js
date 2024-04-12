@@ -16,7 +16,7 @@ export default class EditView extends View {
     const imgInput = editProfileImg.querySelector('input');
     const imgContainer = editProfileImg.querySelector('.test');
     
-    const url = `http://${window.location.hostname}:8000/users/me/profile`
+    const url = `http://${window.location.hostname}:8000/users/me/profile/`
 
     await httpRequest('GET', url, null, (data) => {
       profileImg.src = `data:image;base64,${data.avatar}`;

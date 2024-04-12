@@ -237,13 +237,16 @@ class Router {
 
 export async function route({
   path,
-  direction = NAVIGATE_DRIRECTION.forward
+  direction = NAVIGATE_DRIRECTION.forward,
+  callback = () => {}
 }) {
   const match = routes.find((route) => {
     return route.path == path
   })
   const view = match ? match.view : HomeView;   
   await Router.shared.navigate(view, direction);
+  if (callback)
+    callback();
 }
 
 /** @param {HTMLElement | Document | View} parent */

@@ -69,7 +69,7 @@ export default class MatchView extends View {
   }
 
   async _fetchUserInfo() {
-    const url = `http://${window.location.hostname}:8000/users/me/profile`;
+    const url = `http://${window.location.hostname}:8000/users/me/profile/`;
 
     await httpRequest('GET', url, null, this._initUserCard.bind(this));
   }
@@ -178,7 +178,7 @@ export default class MatchView extends View {
 
   async #setNicknames() {
     let username = this.username ?? await getUsername();
-    const opponentName = 'GUEST';
+    const opponentName = 'guest';
     username = username ?? "PLAYER";
     if (username.trim() == "" || opponentName.trim() == "")
       return ;
