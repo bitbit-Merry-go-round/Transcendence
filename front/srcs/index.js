@@ -54,9 +54,10 @@ window.addEventListener("popstate",
           if (!cancel)
             return ;
           route({
-            path,
+            path: "/",
             direction: NAVIGATE_DRIRECTION.backward,
           })
+          window.location.assign("/");
         })
     }
     else {
