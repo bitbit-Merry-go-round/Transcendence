@@ -69,7 +69,7 @@ export default class MatchView extends View {
   }
 
   async _fetchUserInfo() {
-    const url = `http://${window.location.hostname}:8000/users/me/profile/`;
+    const url = `${window.location.protocol}//${window.location.host}/api/users/me/profile/`;
 
     await httpRequest('GET', url, null, this._initUserCard.bind(this));
   }

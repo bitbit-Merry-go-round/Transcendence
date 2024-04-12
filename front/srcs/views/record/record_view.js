@@ -8,7 +8,7 @@ export default class RecordView extends View {
   }
 
   async #fetchAndRenderPvpResults() {
-    const url = "http://127.0.0.1:8000/game/me/1v1s/";
+    const url = `${window.location.protocol}//${window.location.host}/api/game/me/1v1s/`;
 
     httpRequest("GET", url, null, (res) => {
       const pvpLists = document.getElementById("pvp-lists");
@@ -62,7 +62,7 @@ export default class RecordView extends View {
 
     moreInfoBtn.addEventListener("click", async (e) => {
       const tournamentId = e.target.closest('li').getAttribute('data-game-id');
-      const url =  `http://127.0.0.1:8000/game/tournaments/${tournamentId}/`
+      const url = `${window.location.protocol}//${window.location.host}/api/game/tournaments/${tournamentId}/`
       await httpRequest("GET", url, null, this.#fetchTournamentDetail.bind(this), (url, res) => {
         console.error(`can't fetch record data: `, res);
       })
@@ -84,7 +84,7 @@ export default class RecordView extends View {
   }
   
   async #fetchAndRenderTournamentResults() {
-    const url = 'http://127.0.0.1:8000/game/me/tournaments/';
+    const url = `${window.location.protocol}//${window.location.host}/api/game/me/tournaments/`;
 
     httpRequest("GET", url, null, (res) => {
       // 토너먼트 결과를 렌더링할 요소 선택
@@ -109,7 +109,7 @@ export default class RecordView extends View {
   }
 
   #fetchProfileInfo() {
-    const url = `http://127.0.0.1:8000/users/me/profile/`;
+    const url = `${window.location.protocol}//${window.location.host}/api/users/me/profile/`;
 
     httpRequest("GET", url, null, this.#initProfileData.bind(this), (res) => {
       console.log('Error fetching Profile data: ', res);

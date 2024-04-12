@@ -67,13 +67,13 @@ export default class NavBar extends View {
   }
 
   async _fetchInfo() {
-    const url = `http://${window.location.hostname}:8000/users/me/profile/`;
+    const url = `${window.location.protocol}//${window.location.host}/api/users/me/profile/`;
 
     await httpRequest('GET', url, null, this._initNavbarData.bind(this));
   }
     
   _logoutEvent() {
-    const url = `http://${window.location.hostname}:8000/logout/`;
+    const url = `${window.location.protocol}//${window.location.host}/api/logout/`;
     const logoutBtn = this.querySelector('#logout');
     const body = JSON.stringify({
       refresh: `${localStorage.getItem('refresh')}`

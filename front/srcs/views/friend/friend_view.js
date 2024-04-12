@@ -22,7 +22,7 @@ export default class FriendView extends View {
     e.preventDefault();
     if (type === TYPE_DELETE)
     {
-      url = `http://${window.location.hostname}:8000/users/me/friends/${user}/`;
+      url = `${window.location.protocol}//${window.location.host}/api/users/me/friends/${user}/`;
       await httpRequest('DELETE', url, null, () => {
         this._fetchFriendList();
         profileCardModal.style.display = 'none';
@@ -30,7 +30,7 @@ export default class FriendView extends View {
     }
     else if (type === TYPE_ADD)
     {
-      url = `http://${window.location.hostname}:8000/users/me/friends/`;
+      url = `${window.location.protocol}//${window.location.host}/api/users/me/friends/`;
       const body = JSON.stringify({"to_user": `${user}`})
       await httpRequest('POST', url, body, () => {
         this._fetchFriendList();
@@ -73,7 +73,7 @@ export default class FriendView extends View {
 
   async _fetchFriendList() {
     const friendGroup = this.querySelector('ul');
-    const url = `http://${window.location.hostname}:8000/users/me/friends/`;
+    const url = `${window.location.protocol}//${window.location.host}/api/users/me/friends/`;
     
     httpRequest('GET', url, null, (res) => {
       friendGroup.classList.remove('justify-content-center', 'align-items-center');
@@ -142,7 +142,7 @@ export default class FriendView extends View {
     const clickedList = e.target.closest('li');
     const user = clickedList.getAttribute('data-user');
     const profileCardModal = document.getElementById('profileCardModal');
-    const url = `http://${window.location.hostname}:8000/users/${user}/profile/`;
+    const url = `${window.location.protocol}//${window.location.host}/api/users/${user}/profile/`;
     
     await httpRequest('GET', url, null, (res) => {
       this._fillModalData(res);
@@ -162,7 +162,7 @@ export default class FriendView extends View {
     const profileCardModal = document.getElementById('profileCardModal');
 
     profileCardModalBtn.addEventListener('click', async () => {
-      const url = `http://${window.location.hostname}:8000/users/me/profile/`;
+      const url = `${window.location.protocol}//${window.location.host}/api/users/me/profile/`;
 
       await httpRequest('GET', url, null, (res) => {
         this._fillModalData(res);
@@ -191,7 +191,7 @@ export default class FriendView extends View {
         }, 2000);
         return ;
       }
-      const url = `http://${window.location.hostname}:8000/users/?search=${username}`;
+      const url = `${window.location.protocol}//${window.location.host}/api/users/?search=${username}`;
 
       await httpRequest('GET', url, null, (res) => {
         this._fillModalData(res);
