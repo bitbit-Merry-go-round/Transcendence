@@ -149,7 +149,8 @@ class Router {
     const nextContent = navbarPreserved ? this.#getContent(this.#pages.current.view): null;
     if (navbarPreserved && prevContent && nextContent) {
       const prevNavbar = prevPage.querySelector("nav-bar");
-      prevNavbar.remove();
+      if (prevNavbar)
+        prevNavbar.remove();
       prevContent.animate(
         outgoingAnimation.keyframe,
         outgoingAnimation.option

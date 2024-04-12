@@ -599,17 +599,26 @@ async function sendResult(scores, gameType) {
       body = {};
       let lastOne = null;
       if (scores[0]["playerA"].score > scores[0]["playerB"].score) {
-        lastOne = scores[0]["playerA"];
+        lastOne = { name: scores[0]["playerA"].name };
       }
       else
-        lastOne = scores[0]["playerB"];
-
+        lastOne = { name: scores[0]["playerB"].name };
+      
       let lastTwo = null;
       if (scores[1]["playerA"].score > scores[1]["playerB"].score) {
-        lastTwo = scores[1]["playerA"];
+        lastTwo = { name: scores[1]["playerA"].name };
       }
       else
-        lastTwo = scores[1]["playerB"];
+        lastTwo = { name: scores[1]["playerB"].name };
+
+      if (scores[2]["playerA"].name == lastOne.name) {
+        lastOne.score = scores[2]["playerA"].score;
+        lastTwo.score = scores[2]["playerB"].score;
+      }
+      else {
+        lastOne.score = scores[2]["playerB"].score;
+        lastTwo.score = scores[2]["playerA"].score;
+      }
 
       scores.slice(0, 3).forEach(
       (score, i) => {
@@ -644,6 +653,7 @@ async function sendResult(scores, gameType) {
       return ;
   }
 
+  console.log("body", body);
   fetch(url, {
     method: "POST",
     mode: "cors",
