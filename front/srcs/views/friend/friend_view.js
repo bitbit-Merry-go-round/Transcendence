@@ -144,6 +144,8 @@ export default class FriendView extends View {
     if (e.target === e.currentTarget)
       return ;
     const clickedList = e.target.closest('li');
+    if (!clickedList)
+      return ;
     const user = clickedList.getAttribute('data-user');
     const profileCardModal = document.getElementById('profileCardModal');
     const url = `${window.location.protocol}//${window.location.host}/api/users/${user}/profile/`;
