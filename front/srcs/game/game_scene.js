@@ -8,7 +8,6 @@ import GameData  from "@/data/game_data";
 import Player, { PLAYER_POSITION } from "@/data/player";
 import ParticleGenerator from "@/game/particle_generator";
 import { WALL_TYPES, DIRECTION, GameMap } from "@/data/game_map";
-import GUI from "node_modules/lil-gui/dist/lil-gui.esm.min.js";
 import { resizeTexture } from "@/utils/three_util";
 import Timer from "@/game/timer";
 import PowerUp, { POWER_UP_CONFIG } from "@/data/power_up";
@@ -1342,7 +1341,10 @@ export default class GameScene extends THREE.Group {
   }
 
   _addHelper() {
-    this.gui = new GUI();
+    //this.gui = new GUI();
+    this.gui = null;
+    if (this.gui)
+      return ;
     this.gui.close();
 
     const color = this.gui.addFolder("color");
