@@ -1,5 +1,6 @@
 import View from "@/lib/view";
 import * as GLOBAL from "@/data/global";
+import { NAVIGATE_DRIRECTION, route } from "@/router";
 export default class TournamentView extends View {
 
   /** @param{ string[] } nicknames */
@@ -54,5 +55,13 @@ export default class TournamentView extends View {
         }
       }
     });
+
+    const backBtn = document.getElementById('move-to-mode');
+    backBtn.addEventListener('click', () => {
+      route({
+        path: '/mode',
+        direction: NAVIGATE_DRIRECTION.backward
+      })
+    })
   }
 }
