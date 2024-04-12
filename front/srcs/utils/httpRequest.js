@@ -1,7 +1,7 @@
 import { NAVIGATE_DRIRECTION, route } from "@/router";
 
 function fetch_failed(url, res) {
-    console.error(`fetch to ${url} failed`, `result: ${res}`);
+    // console.error(`fetch to ${url} failed`, `result: ${res}`);
     // TODO: access 토큰 또는 refresh 토큰 유효하지 않을 경우 처리할 로직.
 //   route({
 //     path: "/login",
@@ -63,16 +63,16 @@ export default function httpRequest(method, url, body, success, fail = fetch_fai
             })
             .then(() => {
                 httpRequest(method, url, body, success, () => {
-                    throw new Error(`${res.status}`);
+                    // throw new Error(`${res.status}`);
                 })
             })
             .catch(() => {
                 localStorage.removeItem('refresh');
-                throw new Error('failed to refresh token.');
+                // throw new Error('failed to refresh token.');
             })
         }
         else {
-            console.log('res', res)
+            // console.log('res', res)
             throw new Error(`${res.status}`);
         }
     })
