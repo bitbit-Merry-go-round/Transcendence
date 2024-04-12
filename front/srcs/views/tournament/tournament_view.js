@@ -1,4 +1,5 @@
 import View from "@/lib/view";
+import * as GLOBAL from "@/data/global";
 import { NAVIGATE_DRIRECTION, route } from "@/router";
 import { generateRandomName } from "@/utils/random_name";
 import { getUsername } from "../game/game_view";
@@ -181,43 +182,6 @@ export default class TournamentView extends View {
         }
       }
     });
-
-    const backBtn = document.getElementById('move-to-mode');
-    backBtn.addEventListener('click', () => {
-      route({
-        path: '/mode',
-        direction: NAVIGATE_DRIRECTION.backward
-      })
-    })
-
-
-  connectedCallback() {
-    super.connectedCallback();
-    const mapModalBtn = this.querySelector('#confMapBtn');
-    const mapModal = this.querySelector("#map-modal");
-
-    mapModalBtn.addEventListener("click", () => {
-      mapModal.style.display = "block";
-      if (!this.mapModal["allMaps"]) {
-        const allCanvas = mapModal.querySelectorAll("canvas");
-
-        this.mapModal["allMaps"] = allCanvas;
-        allCanvas.forEach(c => {
-          c.addEventListener("click", 
-            () => {
-              mapModal.style.display = "none";
-              this.setMap(c.dataset.map);
-              this.#setParameter("map");
-            }
-          ) 
-        })
-      }
-    })
-
-    this._setRandomPlayerName();
-    this._setPaddleModal();
-    this._setItemModal();
-    this._inputDuplicateCheck();
   }
 
   connectedCallback() {
@@ -247,5 +211,14 @@ export default class TournamentView extends View {
     this._setPaddleModal();
     this._setItemModal();
     this._inputDuplicateCheck();
+
+
+    const backBtn = document.getElementById('move-to-mode');
+    backBtn.addEventListener('click', () => {
+      route({
+        path: '/mode',
+        direction: NAVIGATE_DRIRECTION.backward
+      })
+    })
   }
 }
