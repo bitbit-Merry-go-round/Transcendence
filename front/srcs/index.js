@@ -5,47 +5,6 @@ import { isAvailableAddress, isNavigatableAddress } from "@/views/config";
 
 anchorToLink(document);
 
-function handleLogin() {
-  const url = window.location.href;
-  if (!url.includes("code"))
-    return false;
-
-  const code = new URL(url).searchParams.get("code");
-  const callbackUrl = new URL("/42/callback", url.replace(":8080", ":8000"));
-  callbackUrl.searchParams.append("code", code);
-  
-  document.body.innerHTML = `
-      <div id="app">
-        <div class="loading-wrap">
-        <div class="loading-spinner my-5"></div>
-        <p id="loadingMessage" class="mt-5 loading-message">접속 중...</p>
-      </div>
-    `
-  fetch(callbackUrl, {
-    method: "GET",
-    mode: "cors",
-    cache: "no-cache",
-    credentials: "same-origin",
-    headers: {
-      "Content-Type": "application/json",
-    }
-  })
-    .then(res => res.json())
-    .then(json =>  {
-      if (json["username"]) {
-        localStorage.setItem("username", json.username);
-        route({
-          path: "/auth"
-        });
-        window.history.replaceState({
-          history: [ "/" ],
-          index: 0,
-        }, "42 Pong", "/");
-      }
-    });
-  return true;
-}
-
 document.addEventListener("DOMContentLoaded", async () => {
   init();
   const hash = window.location.hash;
@@ -95,9 +54,10 @@ window.addEventListener("popstate",
           if (!cancel)
             return ;
           route({
-            path,
+            path: "/",
             direction: NAVIGATE_DRIRECTION.backward,
           })
+          window.location.assign("/");
         })
     }
     else {
@@ -109,3 +69,46 @@ window.addEventListener("popstate",
   }
 )
 
+function handleLogin() {
+  const url = window.location.href;
+  if (!url.includes("code"))
+    return false;
+
+  const code = new URL(url).searchParams.get("code");
+  const callbackUrl = new URL("/42/callback/", url.replace(":8080", ":8000"));
+  callbackUrl.searchParams.append("code", code);
+  
+  document.body.innerHTML = `
+      <div id="app">
+        <div class="loading-wrap">
+        <div class="loading-spinner my-5"></div>
+        <p id="loadingMessage" class="mt-5 loading-message">접속 중...</p>
+      </div>
+    `
+  fetch(callbackUrl, {
+    method: "GET",
+    mode: "cors",
+    cache: "no-cache",
+    credentials: "same-origin",
+    headers: {
+      "Content-Type": "application/json",
+    }
+  })
+    .then(res => {
+      console.log("logini res", res.status, res.body);
+      return res.json();
+    })
+    .then(json =>  {
+      if (json["username"]) {
+        window.localStorage.setItem("username", json["username"]);
+        route({
+          path: "/auth"
+        });
+        window.history.replaceState({
+          history: [ "/" ],
+          index: 0,
+        }, "42 Pong", "/");
+      }
+    });
+  return true;
+}

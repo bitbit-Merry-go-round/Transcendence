@@ -97,7 +97,7 @@ export default class FriendView extends View {
           const documentFragment = document.importNode(listTemplate.content, true);
           const friendElement = documentFragment.querySelector('li');
           friendElement.querySelector('img').src = `data:image;base64,${friend.avatar}`;
-          if (friend.status === 'OF')
+          if (friend.status === 'OFFLINE')
           {
             friendElement.querySelector('.status-circle-sm').classList.add('status-offline');
           }
@@ -142,7 +142,7 @@ export default class FriendView extends View {
     const clickedList = e.target.closest('li');
     const user = clickedList.getAttribute('data-user');
     const profileCardModal = document.getElementById('profileCardModal');
-    const url = `http://${window.location.hostname}:8000/users/${user}/profile`;
+    const url = `http://${window.location.hostname}:8000/users/${user}/profile/`;
     
     await httpRequest('GET', url, null, (res) => {
       this._fillModalData(res);
@@ -159,12 +159,14 @@ export default class FriendView extends View {
 
   _fillModalWithUserData() {
     const profileCardModalBtn = document.getElementById('profileCardModalBtn');
+    const profileCardModal = document.getElementById('profileCardModal');
 
     profileCardModalBtn.addEventListener('click', async () => {
-      const url = `http://${window.location.hostname}:8000/users/me/profile`;
+      const url = `http://${window.location.hostname}:8000/users/me/profile/`;
 
       await httpRequest('GET', url, null, (res) => {
         this._fillModalData(res);
+        profileCardModal.setAttribute('data-user-type', TYPE_EDIT);
         this._modalBtnSetter(TYPE_EDIT);
       });
     });
@@ -189,7 +191,7 @@ export default class FriendView extends View {
         }, 2000);
         return ;
       }
-      const url = `http://${window.location.hostname}:8000/users?search=${username}`;
+      const url = `http://${window.location.hostname}:8000/users/?search=${username}`;
 
       await httpRequest('GET', url, null, (res) => {
         this._fillModalData(res);
@@ -207,7 +209,7 @@ export default class FriendView extends View {
         }
         profileCardModal.style.display = 'flex';
       }, () => {
-        warningMessage.textContent = `'${username}' dose not exist.`;
+        warningMessage.textContent = `'${username}' does not exist.`;
         warningMessage.style.display = 'flex';
 
         setTimeout(() => {

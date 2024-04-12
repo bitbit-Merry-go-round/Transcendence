@@ -10,8 +10,8 @@ import ColorPicker from "@/views/components/color_picker.js";
 import Observable from "@/lib/observable";
 import { getRandomFromArray } from "@/utils/type_util";
 import GameDataEmitter from "@/game/game_data_emitter";
-import { DEBUG, STATE } from "@/data/global";
-import { route } from "@/router";
+import globalData, { DEBUG, STATE } from "@/data/global";
+import { NAVIGATE_DRIRECTION, route } from "@/router";
 import ResultModal from "@/views/components/result_modal";
 
 export default class GameView extends View {
@@ -109,7 +109,15 @@ export default class GameView extends View {
         fill: "forwards"
       }
     )
-    this.#setAlertButton(callback, alert);
+
+    const onPress = (cancel) => {
+      if (cancel)
+        globalData.removeGame();
+
+      callback(cancel);
+    };
+
+    this.#setAlertButton(onPress, alert);
   }
 
   #setAlertButton(callback, alert) {
@@ -380,6 +388,7 @@ export default class GameView extends View {
     }
     super.disconnectedCallback();
     this.#scene.prepareDisappear();
+    this.#scene = null;
     STATE.setPlayingGame(false);
   }
 
@@ -441,22 +450,28 @@ export default class GameView extends View {
     if (this.#gameData.gameType == GAME_TYPE.localTournament) {
       delay = 2;
     }
+    const winner = this.#findWinner().nickname;
    
     const modal = new ResultModal({
       data: {
         delay,
-        text: this.#findWinner().nickname + "의 승리!"
+        text: winner + "의 승리!"
       },
       confirmHandler: () => {
         route({
-          path: "/"
-        })
+          path: "/",
+          direction: NAVIGATE_DRIRECTION.backward,
+          callback: () => window.location.assign("/")
+        }, 
+
+        )
       }
     });
     await modal.render();
     this.appendChild(modal); 
     const finalScores = this.#gameData.finalScores;
-    sendResult(finalScores, this.#gameData.gameType);
+    sendResult(finalScores, this.#gameData.gameType)
+      .then(() => globalData.removeGame());
   }
 
   #returnToGame() {
@@ -469,6 +484,10 @@ export default class GameView extends View {
       .#givePowerUps();
   }
 
+}
+
+function _url() {
+  return window.location.href.replace(":8080", ":8000");
 }
 
 async function getToken(needRefresh = false) {
@@ -484,7 +503,7 @@ async function getToken(needRefresh = false) {
   if (!refreshToken)
     return null;
 
-  const url = window.location.hostname + "/token/refresh";
+  const url = new URL("/token/refresh/", _url());
   const res = await fetch(url, {
     method: "POST",
     mode: "cors",
@@ -507,14 +526,19 @@ async function getToken(needRefresh = false) {
 
   if (refresh) 
     localStorage.setItem("refresh", refresh);
-  return acces ?? null;
+  return access ?? null;
 }
 
-async function getUsername(retry = false) {
+export async function getUsername(retry = false) {
   const accessToken = await getToken();
   if (!accessToken)
-    return null;
-  const url = window.location.hostname + "/users/me/profile";
+    return "USER";
+  const storageName = localStorage.getItem("username");
+  if (storageName)
+    return storageName;
+
+  const url = new URL("/users/me/profile/", _url());
+  try {
   const res = await fetch(url, {
     method: "GET",
     mode: "cors",
@@ -524,23 +548,28 @@ async function getUsername(retry = false) {
       "Content-Type": "application/json",
       "Authorization": "Bearer " + accessToken
     },
-  });
+  })
   if (!res.ok && !retry && res.status == 401) {
     return await getUsername(true); 
   }
   else if (!res.ok)
     return null;
   const json = await res.json();
-  return json["username"] ?? null;
+  return json["username"] ?? "USER";
+  } catch  {
+    return "USER";
+  }
 }
 
 async function sendResult(scores, gameType) {
-  const username = await getUsername();
   const accessToken = await getToken();
-  if (!username || !accessToken)
-    return ;
+  const username = await getUsername();
 
-  let url = window.location.hostname;
+  //if (!username || !accessToken)
+  //return ;
+
+  /** @type { URL | string } */
+  let url = _url();
   const time = dateFormat(new Date());
   let body = null;
  
@@ -553,31 +582,78 @@ async function sendResult(scores, gameType) {
       const player2 = Object.keys(scores[0]).find(name => name != player1);
       if (!player1 || !player2)
         return ;
-      url += "/game/me/1v1s";
+      url = new URL("/game/me/1v1s/", url);
       body = {
-        player_1: player1,
-        player_2: player2,
-        player_1_score: scores[0][player1],
-        player_2_score: scores[0][player2],
+        "player_one": player1,
+        "player_two": player2,
+        "player_one_score": scores[0][player1],
+        "player_two_score": scores[0][player2],
         time
       };
       break;
     case (GAME_TYPE.localTournament):
-      url += "/game/me/tournaments";
-      body = [];
-      scores.forEach(score => {
-        body.push({ 
-          player_1: score["playerA"].name,
-          player_1_score: score["playerA"].score,
-          player_2: score["playerB"].name,
-          player_2_score: score["playerB"].score,
-          time: dateFormat(score["time"])
-        })
-      });
+      if (scores.length < 3)
+        return ;
+
+      url = new URL("/game/me/tournaments/", url);
+      body = {};
+      let lastOne = null;
+      if (scores[0]["playerA"].score > scores[0]["playerB"].score) {
+        lastOne = { name: scores[0]["playerA"].name };
+      }
+      else
+        lastOne = { name: scores[0]["playerB"].name };
+      
+      let lastTwo = null;
+      if (scores[1]["playerA"].score > scores[1]["playerB"].score) {
+        lastTwo = { name: scores[1]["playerA"].name };
+      }
+      else
+        lastTwo = { name: scores[1]["playerB"].name };
+
+      if (scores[2]["playerA"].name == lastOne.name) {
+        lastOne.score = scores[2]["playerA"].score;
+        lastTwo.score = scores[2]["playerB"].score;
+      }
+      else {
+        lastOne.score = scores[2]["playerB"].score;
+        lastTwo.score = scores[2]["playerA"].score;
+      }
+
+      scores.slice(0, 3).forEach(
+      (score, i) => {
+        let key = "game_", one = "playerA", two = "playerB";
+        switch (i) {
+          case (0): key += "one"; break; 
+          case (1): key += "two"; one = "playerB"; two = "playerA"; break;
+          case (2): key += "three"; break;
+        }
+        if (i == 2) {
+          body[key] = {
+            "player_one": lastOne.name,
+            "player_two": lastTwo.name,
+            "player_one_score": lastOne.score,
+            "player_two_score": lastTwo.score,
+            time: dateFormat(score["time"])
+          };
+        }
+        else {
+          body[key] = {
+            "player_one": score[one].name,
+            "player_two": score[two].name,
+            "player_one_score": score[one].score,
+            "player_two_score": score[two].score,
+            time: dateFormat(score["time"])
+          };
+        }
+      }
+      );
       break;
     default:
       return ;
   }
+
+  console.log("body", body);
   fetch(url, {
     method: "POST",
     mode: "cors",
@@ -604,5 +680,5 @@ function dateFormat(date) {
   minute = minute >= 10 ? minute : '0' + minute;
   second = second >= 10 ? second : '0' + second;
 
-  return date.getFullYear() + '-' + month + '-' + day + ' ' + hour + ':' + minute + ':' + second;
+  return date.getFullYear() + '/' + month + '/' + day + ' ' + hour + ':' + minute + ':' + second;
 }

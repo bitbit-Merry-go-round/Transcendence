@@ -149,7 +149,8 @@ class Router {
     const nextContent = navbarPreserved ? this.#getContent(this.#pages.current.view): null;
     if (navbarPreserved && prevContent && nextContent) {
       const prevNavbar = prevPage.querySelector("nav-bar");
-      prevNavbar.remove();
+      if (prevNavbar)
+        prevNavbar.remove();
       prevContent.animate(
         outgoingAnimation.keyframe,
         outgoingAnimation.option
@@ -237,13 +238,16 @@ class Router {
 
 export async function route({
   path,
-  direction = NAVIGATE_DRIRECTION.forward
+  direction = NAVIGATE_DRIRECTION.forward,
+  callback = () => {}
 }) {
   const match = routes.find((route) => {
     return route.path == path
   })
   const view = match ? match.view : HomeView;   
   await Router.shared.navigate(view, direction);
+  if (callback)
+    callback();
 }
 
 /** @param {HTMLElement | Document | View} parent */
@@ -263,7 +267,7 @@ export function anchorToLink(parent) {
         switch (page) {
           case ("MatchView"):
             try { global.registerLocalGame(); } 
-            catch  { return ; }
+            catch { return ; }
             break;
           case ("TournamentView"):
             try { global.registerTournamentGame(); } 

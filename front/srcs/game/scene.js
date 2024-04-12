@@ -13,7 +13,6 @@ import ASSET_PATH from "@/assets/path";
 import Asset from "@/game/asset";
 import GameScene from "@/game/game_scene";
 import Timer from "@/game/timer";
-import GUI from "node_modules/lil-gui/dist/lil-gui.esm.min.js";
 import GameDataEmitter from "@/game/game_data_emitter";
 import { DEBUG } from "@/data/global";
 
@@ -703,6 +702,12 @@ export default class Scene {
   prepareDisappear() {
     this.#bgm.current.pause();
     this.#bgm.current.currentTime = 0;
+    this.#gameScene.removeParticle();
+    this.#gameScene.removeBall(); 
+    this.#gameScene.remove();
+    this.#timer.stop();
+    this.#gameScene = null;
+    this.#scene.remove.apply(this.#scene, this.#scene.children)
   }
 
   #loadAsset() {
@@ -1226,7 +1231,10 @@ export default class Scene {
 
   _addHelper() {
 
-    this.gui = new GUI();
+    //this.gui = new GUI();
+    this.gui = {};
+    if (!this.gui)
+      return ;
     const sound = this.gui.addFolder("sound");
 
     const configs = {
