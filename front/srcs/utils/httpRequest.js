@@ -28,6 +28,7 @@ export default function httpRequest(method, url, body, success, fail = fetch_fai
     }
     fetch(url, {
         method: method,
+        mode: "no-cors",
         headers: headers,
         body: body
     })

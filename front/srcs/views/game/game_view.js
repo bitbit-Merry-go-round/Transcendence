@@ -486,7 +486,6 @@ export default class GameView extends View {
 }
 
 function _url() {
-  return window.location.href;
   return window.location.href.replace(":8080", ":8000");
 }
 
@@ -503,10 +502,10 @@ async function getToken(needRefresh = false) {
   if (!refreshToken)
     return null;
 
-  const url = new URL("/token/refresh", _url());
+  const url = new URL("/token/refresh/", _url());
   const res = await fetch(url, {
     method: "POST",
-    mode: "cors",
+    mode: "no-cors",
     cache: "no-cache",
     credentials: "same-origin",
     headers: {
@@ -537,11 +536,11 @@ export async function getUsername(retry = false) {
   if (storageName)
     return storageName;
 
-  const url = new URL("/users/me/profile", _url());
+  const url = new URL("/users/me/profile/", _url());
   try {
   const res = await fetch(url, {
     method: "GET",
-    mode: "cors",
+    mode: "no-cors",
     cache: "no-cache",
     credentials: "same-origin",
     headers: {
@@ -582,7 +581,7 @@ async function sendResult(scores, gameType) {
       const player2 = Object.keys(scores[0]).find(name => name != player1);
       if (!player1 || !player2)
         return ;
-      url = new URL("/game/me/1v1s", url);
+      url = new URL("/game/me/1v1s/", url);
       body = {
         "player_one": player1,
         "player_two": player2,
@@ -595,7 +594,7 @@ async function sendResult(scores, gameType) {
       if (scores.length < 3)
         return ;
 
-      url = new URL("/game/me/tournaments", url);
+      url = new URL("/game/me/tournaments/", url);
       body = {}
       scores.slice(0, 3).forEach(
       (score, i) => {
@@ -622,7 +621,7 @@ async function sendResult(scores, gameType) {
 
   fetch(url, {
     method: "POST",
-    mode: "cors",
+    mode: "no-cors",
     cache: "no-cache",
     credentials: "same-origin",
     headers: {
