@@ -645,5 +645,5 @@ function dateFormat(date) {
   minute = minute >= 10 ? minute : '0' + minute;
   second = second >= 10 ? second : '0' + second;
 
-  return date.getFullYear() + '-' + month + '-' + day + ' ' + hour + ':' + minute + ':' + second;
+  return date.getFullYear() + '/' + month + '/' + day + ' ' + hour + ':' + minute + ':' + second;
 }

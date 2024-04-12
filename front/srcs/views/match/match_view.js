@@ -178,7 +178,7 @@ export default class MatchView extends View {
 
   async #setNicknames() {
     let username = this.username ?? await getUsername();
-    const opponentName = 'GUEST';
+    const opponentName = 'guest';
     username = username ?? "PLAYER";
     if (username.trim() == "" || opponentName.trim() == "")
       return ;
