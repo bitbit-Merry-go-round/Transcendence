@@ -385,11 +385,14 @@ ul {
 }
 
 .record-list-element {
+    align-items: center;
+    
     background-color: #fff;
     padding: 1em;
     border-radius: 3em;
     color: black;
     font-size: medium;
+    height: 50px;
 }
 
 .v-line {

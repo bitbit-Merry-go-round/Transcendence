@@ -28,20 +28,50 @@ export default class RecordView extends View {
         pvpLists.appendChild(pvpListElement);
       })
       }, (res) => {
-        console.error("can't fetch record data: ", res.status);
+        console.error("can't fetch record data: ", res);
       });
     }
 
-  #modalEventSet() {
-    var moreInfoBtn = document.getElementById("infoBtn");
-    // "more info" 버튼을 클릭할 때 모달 창을 보이게 합니다.
-    moreInfoBtn.addEventListener("click", function () {
+  #fetchTournamentDetail(res) {
+    const tournamentDetailGroup = document.getElementById('tournament-detail-list');
+    const tournamentDetails = tournamentDetailGroup.querySelectorAll('li');
+    let winner;
+
+    if (res.game_three.player_one_score > res.game_three.player_two_score)
+      winner = res.game_three.player_one;
+    else
+      winner = res.game_three.player_two;
+    this.querySelector('.tournament-winner').textContent = `👑 ${winner}`;
+    let data;
+    for (let i = 0; i < 3; i++)
+    {
+      if (i == 0)
+        data = res.game_one;
+      else if (i == 1)
+        data = res.game_two;
+      else
+        data = res.game_three;
+      tournamentDetails[i].querySelector('.tournament-play').textContent = `${data.player_one} VS ${data.player_two}`;
+      tournamentDetails[i].querySelector('.score-detail').textContent = `${data.player_one_score}:${data.player_two_score}`;
+      tournamentDetails[i].querySelector('.second-score-date').textContent = `${data.time}`;
+    }
+    
+  }
+
+  #modalEventSet(moreInfoBtn) {
+
+    moreInfoBtn.addEventListener("click", async (e) => {
+      const tournamentId = e.target.closest('li').getAttribute('data-game-id');
+      const url =  `http://127.0.0.1:8000/game/tournaments/${tournamentId}/`
+      await httpRequest("GET", url, null, this.#fetchTournamentDetail.bind(this), (url, res) => {
+        console.error(`can't fetch record data: `, res);
+      })
       modal.style.display = "block"; //모달 창을 보이게 설정
     });
     // 모달 창을 가져옵니다.
-    var modal = document.getElementById("infoModal");
+    const modal = document.getElementById("infoModal");
     // 모달 창의 닫기 버튼을 가져옵니다.
-    var closeModalBtn = document.getElementsByClassName("close")[0];
+    const closeModalBtn = document.getElementsByClassName("close")[0];
     // 모달 창의 닫기 버튼을 클릭할 때 모달 창을 숨깁니다.
     closeModalBtn.addEventListener("click", function () {
       modal.style.display = "none";
@@ -58,29 +88,31 @@ export default class RecordView extends View {
 
     httpRequest("GET", url, null, (res) => {
       // 토너먼트 결과를 렌더링할 요소 선택
-      const tournamentList = document.getElementById('tournament-list');
-      const tournamentTemplate = document.getElementById('tournament-template');
+      const tournamentGroup = document.getElementById('tournament-group');
+      const tournamentTemplate = document.getElementById('tournament-list-template');
       res.forEach((tournament, index) => {
         const documentFragment = document.importNode(tournamentTemplate.content, true);
         const tournamentElement = documentFragment.querySelector('li');
-        const winner = tournamentElement.querySelector('.tournament-winner');
+        const winner = tournamentElement.querySelector('.score-detail');
         const time = tournamentElement.querySelector('.tournament-time');
+        const moreInfoBtn = tournamentElement.querySelector('#infoBtn');
     
+        this.#modalEventSet(moreInfoBtn);
         winner.textContent = `${tournament.winner}`;
         time.textContent = `${tournament.time}`;
-    
-        tournamentList.appendChild(tournamentElement);
+        tournamentElement.setAttribute('data-game-id', `${tournament.id}`);
+        tournamentGroup.appendChild(tournamentElement);
       });
-    }, (res) => {
-      console.error('Error fetching and rendering tournament results:', res.status);
+    }, (url, res) => {
+      console.error('Error fetching and rendering tournament results:', url, res);
     })
   }
 
   #fetchProfileInfo() {
-    const url = `http://127.0.0.1:8000/users/me/profile`;
+    const url = `http://127.0.0.1:8000/users/me/profile/`;
 
     httpRequest("GET", url, null, this.#initProfileData.bind(this), (res) => {
-      console.log('Error fetching Profile data: ', res.status);
+      console.log('Error fetching Profile data: ', res);
     });
   }
 
@@ -100,11 +132,10 @@ export default class RecordView extends View {
 
   connectedCallback() {
     super.connectedCallback();
-
-    this.#modalEventSet();
+    
+    this.#fetchProfileInfo();
     this.#fetchAndRenderPvpResults();
     this.#fetchAndRenderTournamentResults();
-    this.#fetchProfileInfo();
   }
 }
 

@@ -38,7 +38,7 @@
       <!-- for 속성으로 record 탐색해야 함... -->
 			<ul id="pvp-lists" class="d-flex flex-column scroll justify-content-start record-list align-self-center">
         <template id="pvp-list-template">
-          <li class="d-flex py-2 my-1 record-list-element justify-content-between align-item-center">
+          <li class="d-flex py-2 my-1 record-list-element justify-content-between align-items-center">
             <div class="score-detail">10:1</div>
             <div class="score-date d-flex justify-content-center align-self-center">
               <div class="v-line"></div>
@@ -47,15 +47,17 @@
           </li>
         </template>
 			</ul>
-      <ul class="d-flex flex-column scroll justify-content-start record-list align-self-center">
-        <li class="d-flex py-2 my-1 record-list-element justify-content-between align-item-center">
-          <div class="score-detail">winner</div>
-          <div class="score-date d-flex justify-content-center align-self-center">
-            <div class="v-line"></div>
-              <span class="score-date">0000/00/00 00:00</span>
-            <button id="infoBtn" class="btn btn-primary ms-4">more info ..</button>
-          </div>
-        </li>
+      <ul id="tournament-group" class="d-flex flex-column scroll justify-content-start record-list tournament-group align-self-center">
+        <template id="tournament-list-template">
+          <li id="tournament-list" class="d-flex py-2 my-1 record-list-element justify-content-between align-items-center">
+            <div class="score-detail">winner</div>
+            <div class="score-date d-flex justify-content-center align-self-center">
+              <div class="v-line"></div>
+              <span class="tournament-time d-flex align-items-center justify-content-center">0000/00/00 00:00</span>
+              <button id="infoBtn" class="btn btn-primary ms-4">more info..</button>
+            </div>
+          </li>
+        </template>
 			</ul>
       <div id="infoModal" class="modal">
         <div class="modal-content">
@@ -64,8 +66,8 @@
           </div>
           <!-- <p> -->
             <div class="d-flex justify-content-center align-items-center tournament-winner mb-5">👑 jito</div>
-            <ul class="d-flex flex-column justify-content-between tournament-list align-self-center">
-              <li class="d-flex py-2 my-1 record-list-element justify-content-between align-item-center">
+            <ul id="tournament-detail-list" class="d-flex flex-column justify-content-between tournament-detail-list tournament-list align-self-center">
+              <li class="d-flex py-2 my-1 record-list-element justify-content-between align-items-center">
                 <div class="tournament-play">jito vs jiko</div>
                 <div class="info-modal-v-line"></div>
                 <div class="score-detail">10:1</div>
@@ -74,7 +76,7 @@
                   <span class="second-score-date">0000/00/00 00:00</span>
                 </div>
               </li>
-              <li class="d-flex py-2 my-1 record-list-element justify-content-between align-item-center">
+              <li class="d-flex py-2 my-1 record-list-element justify-content-between align-items-center">
                 <div class="tournament-play"> asdasd vs awdaw</div>
                 <div class="info-modal-v-line"></div>
                 <div class="score-detail">10:1</div>
@@ -83,7 +85,7 @@
                   <span class="second-score-date">0000/00/00 00:00</span>
                 </div>
               </li>
-              <li class="d-flex py-2 my-1 record-list-element justify-content-between align-item-center">
+              <li class="d-flex py-2 my-1 record-list-element justify-content-between align-items-center">
                 <div class="tournament-play"> asdasd vs awdaw</div>
                 <div class="info-modal-v-line"></div>
                 <div class="score-detail">9:10</div>
