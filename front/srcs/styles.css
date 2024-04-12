@@ -494,7 +494,7 @@ ul {
 }
 
 .btn-play {
-    display: flex;
+    display: flex!important;
     margin-top: 0.5em;
     border-radius: 1em;
     background-color: #756655;
