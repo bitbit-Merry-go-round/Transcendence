@@ -74,7 +74,7 @@ function handleLogin() {
     return false;
 
   const code = new URL(url).searchParams.get("code");
-  const callbackUrl = new URL("/42/callback", url.replace(":8080", ":8000"));
+  const callbackUrl = new URL("/42/callback/", url.replace(":8080", ":8000"));
   callbackUrl.searchParams.append("code", code);
   
   document.body.innerHTML = `

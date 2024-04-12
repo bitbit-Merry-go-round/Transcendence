@@ -142,7 +142,7 @@ export default class FriendView extends View {
     const clickedList = e.target.closest('li');
     const user = clickedList.getAttribute('data-user');
     const profileCardModal = document.getElementById('profileCardModal');
-    const url = `http://${window.location.hostname}:8000/users/${user}/profile`;
+    const url = `http://${window.location.hostname}:8000/users/${user}/profile/`;
     
     await httpRequest('GET', url, null, (res) => {
       this._fillModalData(res);
@@ -161,7 +161,7 @@ export default class FriendView extends View {
     const profileCardModalBtn = document.getElementById('profileCardModalBtn');
 
     profileCardModalBtn.addEventListener('click', async () => {
-      const url = `http://${window.location.hostname}:8000/users/me/profile`;
+      const url = `http://${window.location.hostname}:8000/users/me/profile/`;
 
       await httpRequest('GET', url, null, (res) => {
         this._fillModalData(res);
@@ -189,7 +189,7 @@ export default class FriendView extends View {
         }, 2000);
         return ;
       }
-      const url = `http://${window.location.hostname}:8000/users?search=${username}`;
+      const url = `http://${window.location.hostname}:8000/users/?search=${username}`;
 
       await httpRequest('GET', url, null, (res) => {
         this._fillModalData(res);
