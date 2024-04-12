@@ -494,7 +494,7 @@ ul {
 }
 
 .btn-play {
-    display: flex;
+    display: flex!important;
     margin-top: 0.5em;
     border-radius: 1em;
     background-color: #756655;
@@ -538,6 +538,11 @@ ul {
     background-color: #ECEEE7;
     border-radius: 1em;
     padding: 20px;   
+}
+
+.disuse-item {
+    background-color: rgb(163, 104, 104);
+    border-color: rgb(163, 104, 104);
 }
 
 .img-map {

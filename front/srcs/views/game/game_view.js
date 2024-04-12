@@ -10,7 +10,7 @@ import ColorPicker from "@/views/components/color_picker.js";
 import Observable from "@/lib/observable";
 import { getRandomFromArray } from "@/utils/type_util";
 import GameDataEmitter from "@/game/game_data_emitter";
-import { DEBUG, STATE } from "@/data/global";
+import globalData, { DEBUG, STATE } from "@/data/global";
 import { route } from "@/router";
 import ResultModal from "@/views/components/result_modal";
 
@@ -456,7 +456,8 @@ export default class GameView extends View {
     await modal.render();
     this.appendChild(modal); 
     const finalScores = this.#gameData.finalScores;
-    sendResult(finalScores, this.#gameData.gameType);
+    sendResult(finalScores, this.#gameData.gameType)
+      .then(() => globalData.removeGame());
   }
 
   #returnToGame() {
@@ -507,13 +508,17 @@ async function getToken(needRefresh = false) {
 
   if (refresh) 
     localStorage.setItem("refresh", refresh);
-  return acces ?? null;
+  return access ?? null;
 }
 
-async function getUsername(retry = false) {
+export async function getUsername(retry = false) {
   const accessToken = await getToken();
   if (!accessToken)
     return null;
+  const storageName = localStorage.getItem("username");
+  if (storageName)
+    return storageName;
+
   const url = window.location.hostname + "/users/me/profile";
   const res = await fetch(url, {
     method: "GET",
