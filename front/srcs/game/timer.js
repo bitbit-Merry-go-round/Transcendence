@@ -44,7 +44,7 @@ export default class Timer {
     const current = this.#clock.getElapsedTime();
     const time = current - this.#lastElapsedTime.value;
     this.#lastElapsedTime.value = current;
-    window.requestAnimationFrame(() => this.#tick());
+    this.#lastFrameId = window.requestAnimationFrame(() => this.#tick());
     for (let callback of this.#callbacks) {
       callback(time);
     }
