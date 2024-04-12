@@ -505,7 +505,7 @@ async function getToken(needRefresh = false) {
   const url = new URL("/token/refresh/", _url());
   const res = await fetch(url, {
     method: "POST",
-    mode: "no-cors",
+    mode: "cors",
     cache: "no-cache",
     credentials: "same-origin",
     headers: {
@@ -540,7 +540,7 @@ export async function getUsername(retry = false) {
   try {
   const res = await fetch(url, {
     method: "GET",
-    mode: "no-cors",
+    mode: "cors",
     cache: "no-cache",
     credentials: "same-origin",
     headers: {
@@ -621,7 +621,7 @@ async function sendResult(scores, gameType) {
 
   fetch(url, {
     method: "POST",
-    mode: "no-cors",
+    mode: "cors",
     cache: "no-cache",
     credentials: "same-origin",
     headers: {

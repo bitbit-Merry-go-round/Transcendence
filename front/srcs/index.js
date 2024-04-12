@@ -87,7 +87,7 @@ function handleLogin() {
     `
   fetch(callbackUrl, {
     method: "GET",
-    mode: "no-cors",
+    mode: "cors",
     cache: "no-cache",
     credentials: "same-origin",
     headers: {
