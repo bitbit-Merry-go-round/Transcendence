@@ -64,6 +64,7 @@ export default class MatchView extends View {
     userAvatar.src = `data:image;base64,${data.avatar}`;
     userScore.textContent = `${data.wins} 승 ${data.loses} 패`;
     stateMessage.textContent = `${data.message}`;
+    this.#setNicknames();
   }
 
   async _fetchUserInfo() {
@@ -161,19 +162,14 @@ export default class MatchView extends View {
     this._fetchUserInfo();
     this._setPaddleModal();
     this._setItemModal();
-    this.#setNicknames();
   }
 
   async #setNicknames() {
     let username = this.username ?? await getUsername();
-    const label = this.querySelector(".user-name");
-    if (!label)
-      return ; //@ts-ignore
-    const opponentName = label.innerText;
+    const opponentName = 'GUEST';
     username = username ?? "PLAYER";
     if (username.trim() == "" || opponentName.trim() == "")
       return ;
-
     this.setNickname([username, opponentName]);
     this.#setParameter("nicknames");
   }
