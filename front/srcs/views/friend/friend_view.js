@@ -207,7 +207,7 @@ export default class FriendView extends View {
         }
         profileCardModal.style.display = 'flex';
       }, () => {
-        warningMessage.textContent = `'${username}' dose not exist.`;
+        warningMessage.textContent = `'${username}' does not exist.`;
         warningMessage.style.display = 'flex';
 
         setTimeout(() => {
