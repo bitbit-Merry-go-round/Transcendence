@@ -1,5 +1,6 @@
 
 import View from "@/lib/view";
+import { route } from "@/router";
 import httpRequest from "@/utils/httpRequest";
 
 export default class EditView extends View {
@@ -54,7 +55,9 @@ export default class EditView extends View {
         });
         await httpRequest('PATCH', url, body, () => {
           alert(`profile is successfully edited!`);
-          history.back();
+          route({
+            path: 'home'
+          })
         })
         return ;
       }
@@ -68,14 +71,18 @@ export default class EditView extends View {
         });
         await httpRequest('PATCH', url, body, () => {
           alert(`profile is successfully edited!`);
-          history.back();
+          route({
+            path: 'home'
+          })
         })
       });
       reader.readAsBinaryString(file);
     });
 
     btnCancel.addEventListener('click', () => {
-      history.back();
+      route({
+        path: 'home'
+      })
     });
   }
     

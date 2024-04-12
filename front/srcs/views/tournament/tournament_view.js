@@ -1,5 +1,6 @@
 import View from "@/lib/view";
-import { route } from "@/router";
+import * as GLOBAL from "@/data/global";
+import { NAVIGATE_DRIRECTION, route } from "@/router";
 import { generateRandomName } from "@/utils/random_name";
 import { getUsername } from "../game/game_view";
 
@@ -210,5 +211,14 @@ export default class TournamentView extends View {
     this._setPaddleModal();
     this._setItemModal();
     this._inputDuplicateCheck();
+
+
+    const backBtn = document.getElementById('move-to-mode');
+    backBtn.addEventListener('click', () => {
+      route({
+        path: '/mode',
+        direction: NAVIGATE_DRIRECTION.backward
+      })
+    })
   }
 }

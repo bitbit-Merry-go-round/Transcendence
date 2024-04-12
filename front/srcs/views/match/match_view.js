@@ -1,5 +1,6 @@
 import Observable from "@/lib/observable";
 import View from "@/lib/view";
+import { NAVIGATE_DRIRECTION, route } from "@/router";
 import httpRequest from "@/utils/httpRequest";
 import { getUsername } from "@/views/game/game_view";
 
@@ -165,6 +166,14 @@ export default class MatchView extends View {
     this._fetchUserInfo();
     this._setPaddleModal();
     this._setItemModal();
+
+    const backBtn = document.getElementById('move-to-mode');
+    backBtn.addEventListener('click', () => {
+      route({
+        path: '/mode',
+        direction: NAVIGATE_DRIRECTION.backward
+      })
+    })
   }
 
   async #setNicknames() {
