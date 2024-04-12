@@ -32,3 +32,4 @@ export function generateRandomName() {
   usedIndices.add(index);
   return names[index];
 }
+

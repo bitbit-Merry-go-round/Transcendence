@@ -244,13 +244,13 @@ const exampleWalls = [
   {
     safeWalls: [ 
       {
-        centerX: 30,
+        centerX: 20,
         centerY: 35,
         width: 30,
         height: 20,
       },
       {
-        centerX: 70,
+        centerX: 80,
         centerY: 65,
         width: 30,
         height: 20,

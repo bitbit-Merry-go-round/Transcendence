@@ -35,9 +35,11 @@ export default class MatchView extends View {
       [name]: true
     });
     if (Object.values(this.#parameter).indexOf(false) == -1) {
-      this.#startButton.hidden = false;
+      console.log("done");
     }
+    console.log(this.#parameter);
   }
+  
 
   constructor({data, registerGame}) {
     super();
@@ -64,7 +66,6 @@ export default class MatchView extends View {
     userAvatar.src = `data:image;base64,${data.avatar}`;
     userScore.textContent = `${data.wins} 승 ${data.loses} 패`;
     stateMessage.textContent = `${data.message}`;
-    this.#setNicknames();
   }
 
   async _fetchUserInfo() {
@@ -126,7 +127,8 @@ export default class MatchView extends View {
     for (const child of Array.from(itemBtns.querySelectorAll("button"))) {
       /** @type { HTMLButtonElement } */ //@ts-ignore
       const button = child;
-      const useItem = button.classList.contains("use-item");
+      console.log(button);
+      const useItem = !(button.classList.contains("use-item"));
       button.addEventListener("click", () => {
         this.setPowerUp(useItem);
         this.#setParameter("powerUp");
@@ -139,7 +141,7 @@ export default class MatchView extends View {
     const mapModalBtn = this.querySelector('#confMapBtn');
     const mapModal = this.querySelector("#map-modal");
     this.#startButton = this.querySelector("a[href='/game']");
-    this.#startButton.hidden = true;
+    this.#startButton.style.display = "none";
 
     mapModalBtn.addEventListener("click", () => {
       mapModal.style.display = "block";
@@ -150,7 +152,6 @@ export default class MatchView extends View {
         allCanvas.forEach(c => {
           c.addEventListener("click", 
             () =>  {
-              mapModal.style.display = "none";
               this.setMap(c.dataset.map);
               this.#setParameter("map");
             }
@@ -162,15 +163,20 @@ export default class MatchView extends View {
     this._fetchUserInfo();
     this._setPaddleModal();
     this._setItemModal();
+    this.#setNicknames();
   }
 
   async #setNicknames() {
     let username = this.username ?? await getUsername();
-    const opponentName = 'GUEST';
-    username = username ?? "PLAYER";
+    username = "heshin";
+    const label = this.querySelector(".user-name");
+    if (!username || !label)
+      return ; //@ts-ignore
+    const opponentName = label.innerText;
     if (username.trim() == "" || opponentName.trim() == "")
       return ;
-    this.setNickname([username, opponentName]);
+
+    this.setNickname({nicknames: [username, opponentName]});
     this.#setParameter("nicknames");
   }
 }
