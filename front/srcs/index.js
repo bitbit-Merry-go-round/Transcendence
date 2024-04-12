@@ -100,6 +100,7 @@ function handleLogin() {
     })
     .then(json =>  {
       if (json["username"]) {
+        window.localStorage.setItem("username", json["username"]);
         route({
           path: "/auth"
         });
