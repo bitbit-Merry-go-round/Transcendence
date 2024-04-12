@@ -703,6 +703,12 @@ export default class Scene {
   prepareDisappear() {
     this.#bgm.current.pause();
     this.#bgm.current.currentTime = 0;
+    this.#gameScene.removeParticle();
+    this.#gameScene.removeBall(); 
+    this.#gameScene.remove();
+    this.#timer.stop();
+    this.#gameScene = null;
+    this.#scene.remove.apply(this.#scene, this.#scene.children)
   }
 
   #loadAsset() {

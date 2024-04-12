@@ -91,6 +91,7 @@ export default class GameScene extends THREE.Group {
     atmosphere: null,
     physicsId: null 
   };
+
   get ball() {
     return {
       mesh: this.#ball.mesh,
@@ -383,6 +384,8 @@ export default class GameScene extends THREE.Group {
   }
 
   removeBall() {
+    if (this.#ball.physicsId == null)
+      return ;
     const id = this.#ball.physicsId
     this.#physics.removeCollisionCallback(id);
     this.#physics.removeObject(id);

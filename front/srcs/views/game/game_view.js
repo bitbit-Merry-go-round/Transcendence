@@ -11,7 +11,7 @@ import Observable from "@/lib/observable";
 import { getRandomFromArray } from "@/utils/type_util";
 import GameDataEmitter from "@/game/game_data_emitter";
 import globalData, { DEBUG, STATE } from "@/data/global";
-import { route } from "@/router";
+import { NAVIGATE_DRIRECTION, route } from "@/router";
 import ResultModal from "@/views/components/result_modal";
 
 export default class GameView extends View {
@@ -388,6 +388,7 @@ export default class GameView extends View {
     }
     super.disconnectedCallback();
     this.#scene.prepareDisappear();
+    this.#scene = null;
     STATE.setPlayingGame(false);
   }
 
@@ -457,8 +458,12 @@ export default class GameView extends View {
       },
       confirmHandler: () => {
         route({
-          path: "/"
-        })
+          path: "/",
+          direction: NAVIGATE_DRIRECTION.backward,
+          callback: () => window.location.assign("/")
+        }, 
+
+        )
       }
     });
     await modal.render();
