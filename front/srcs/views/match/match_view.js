@@ -35,7 +35,7 @@ export default class MatchView extends View {
       [name]: true
     });
     if (Object.values(this.#parameter).indexOf(false) == -1) {
-      this.#startButton.hidden = false;
+      this.#startButton.id = "";
     }
   }
 
@@ -136,10 +136,13 @@ export default class MatchView extends View {
 
   connectedCallback() {
     super.connectedCallback();
+    const styleElement = document.createElement('style');
+    styleElement.textContent = `#game-link{ display: none !important}`;
+    document.head.append(styleElement);
     const mapModalBtn = this.querySelector('#confMapBtn');
     const mapModal = this.querySelector("#map-modal");
     this.#startButton = this.querySelector("a[href='/game']");
-    this.#startButton.hidden = true;
+    this.#startButton.id = "game-link";
 
     mapModalBtn.addEventListener("click", () => {
       mapModal.style.display = "block";
