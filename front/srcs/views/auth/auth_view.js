@@ -1,6 +1,5 @@
 import View from "@/lib/view";
 import httpRequest from "@/utils/httpRequest";
-import { ConstantColorFactor } from "three";
 
 export default class AuthView extends View {
 
@@ -64,6 +63,7 @@ export default class AuthView extends View {
         this._failToAuthHandler();
         return ;
       }
+
       await httpRequest('POST', url, body, this._setJWT.bind(this), this._failToAuthHandler.bind(this));
     })
   }

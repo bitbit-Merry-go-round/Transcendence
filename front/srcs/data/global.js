@@ -146,15 +146,23 @@ const globalData = (() =>{
     return gameMap;
   }
 
+  let recordUser = null;
+  const record = {
+    getUsername: () => recordUser,
+    setUsername: (user) => recordUser = user
+  };
+
   return ({ 
     gameData: () => gameData, 
     gameMap: () => gameMap ?? createMap(),
     registerLocalGame,
     registerTournamentGame, 
     removeGame, 
-    setGameParameter 
+    setGameParameter,
+    record, 
   });
 })();
 
 export default globalData;
 export const Types = {};
+export const endpoint = "http://10.14.4.1:8000";

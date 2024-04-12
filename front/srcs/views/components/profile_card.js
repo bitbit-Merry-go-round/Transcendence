@@ -1,12 +1,8 @@
 import View from "@/lib/view";
-import ObservableObject from "@/lib/observable_object";
-import User from "@/data/user";
 
 export default class ProfileCard extends View {
 
-
   constructor() {
-    /** @type {ObservableObject} user */
     super();
   }
 

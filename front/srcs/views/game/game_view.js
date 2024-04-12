@@ -490,7 +490,7 @@ function _url() {
   return window.location.href.replace(":8080", ":8000");
 }
 
-async function getToken(needRefresh = false) {
+export async function getToken(needRefresh = false) {
   const accessToken = localStorage.getItem("access");
   const refreshToken = localStorage.getItem("refresh");
 
@@ -653,7 +653,6 @@ async function sendResult(scores, gameType) {
       return ;
   }
 
-  console.log("body", body);
   fetch(url, {
     method: "POST",
     mode: "cors",

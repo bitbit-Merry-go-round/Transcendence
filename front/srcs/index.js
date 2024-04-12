@@ -71,6 +71,7 @@ window.addEventListener("popstate",
 
 function handleLogin() {
   const url = window.location.href;
+  
   if (!url.includes("code"))
     return false;
 

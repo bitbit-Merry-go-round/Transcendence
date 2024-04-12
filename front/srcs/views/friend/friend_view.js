@@ -1,3 +1,4 @@
+import globalData from "@/data/global";
 import View from "@/lib/view";
 import { route } from "@/router";
 import httpRequest from "@/utils/httpRequest";
@@ -121,19 +122,22 @@ export default class FriendView extends View {
     const userLevelId = profileCardModal.querySelector('.user-level-id');
     const userScore = profileCardModal.querySelector('.score');
     const stateMessage = profileCardModal.querySelector('.state-message');
+    globalData.record.setUsername(data.is_me ? data.username: null);
     
-    profileCardModal.setAttribute('data-user', `${data.username}`);
+    profileCardModal.setAttribute('data-user', `${data.username}`); {
     if (data.is_me === true)
       profileCardModal.setAttribute('data-user-type', `${TYPE_EDIT}`);
     else if (data.is_friend === true)
       profileCardModal.setAttribute('data-user-type', `${TYPE_DELETE}`);
     else
       profileCardModal.setAttribute('data-user-type', `${TYPE_ADD}`);
+    }
 
     userLevelId.textContent = `Lv.${data.level} ${data.username}`;
     userAvatar.src = `data:image;base64,${data.avatar}`;
     userScore.textContent = `${data.wins} 승 ${data.loses} 패`;
     stateMessage.textContent = `${data.message}`;
+    
   }
 
   async _friendListModalEventHandler(e) {
