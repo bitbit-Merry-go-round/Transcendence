@@ -97,7 +97,7 @@ export default class FriendView extends View {
           const documentFragment = document.importNode(listTemplate.content, true);
           const friendElement = documentFragment.querySelector('li');
           friendElement.querySelector('img').src = `data:image;base64,${friend.avatar}`;
-          if (friend.status === 'OF')
+          if (friend.status === 'OFFLINE')
           {
             friendElement.querySelector('.status-circle-sm').classList.add('status-offline');
           }
