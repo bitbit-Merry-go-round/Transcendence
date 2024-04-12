@@ -1,3 +1,4 @@
+import globalData from "@/data/global";
 import View from "@/lib/view";
 import { route } from "@/router";
 import httpRequest from "@/utils/httpRequest";
@@ -121,19 +122,22 @@ export default class FriendView extends View {
     const userLevelId = profileCardModal.querySelector('.user-level-id');
     const userScore = profileCardModal.querySelector('.score');
     const stateMessage = profileCardModal.querySelector('.state-message');
+
     
-    profileCardModal.setAttribute('data-user', `${data.username}`);
+    profileCardModal.setAttribute('data-user', `${data.username}`); {
     if (data.is_me === true)
       profileCardModal.setAttribute('data-user-type', `${TYPE_EDIT}`);
     else if (data.is_friend === true)
       profileCardModal.setAttribute('data-user-type', `${TYPE_DELETE}`);
     else
       profileCardModal.setAttribute('data-user-type', `${TYPE_ADD}`);
+    }
 
     userLevelId.textContent = `Lv.${data.level} ${data.username}`;
     userAvatar.src = `data:image;base64,${data.avatar}`;
     userScore.textContent = `${data.wins} 승 ${data.loses} 패`;
     stateMessage.textContent = `${data.message}`;
+    
   }
 
   async _friendListModalEventHandler(e) {
@@ -143,6 +147,8 @@ export default class FriendView extends View {
     const user = clickedList.getAttribute('data-user');
     const profileCardModal = document.getElementById('profileCardModal');
     const url = `${window.location.protocol}//${window.location.host}/api/users/${user}/profile/`;
+
+    globalData.record.setUsername(user);
     
     await httpRequest('GET', url, null, (res) => {
       this._fillModalData(res);
@@ -227,5 +233,11 @@ export default class FriendView extends View {
       this._fetchFriendList();
       this._fillModalWithUserData();
       this._searchFriend();
+      this.querySelector("#record-link").addEventListener("click",  () => {
+
+        /** @type{ HTMLElement } */
+        const modal = this.querySelector("#profileCardModal");
+        globalData.record.setUsername(modal.dataset.user)
+      })
     }
 }

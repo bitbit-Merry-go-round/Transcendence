@@ -146,15 +146,27 @@ const globalData = (() =>{
     return gameMap;
   }
 
+  let recordUser = null;
+  const record = {
+    getUsername: () => {
+      return recordUser;
+    },
+    setUsername: (user) => {
+      recordUser = user
+    }
+  };
+
   return ({ 
     gameData: () => gameData, 
     gameMap: () => gameMap ?? createMap(),
     registerLocalGame,
     registerTournamentGame, 
     removeGame, 
-    setGameParameter 
+    setGameParameter,
+    record, 
   });
 })();
 
 export default globalData;
 export const Types = {};
+
