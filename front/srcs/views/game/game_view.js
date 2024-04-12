@@ -109,7 +109,15 @@ export default class GameView extends View {
         fill: "forwards"
       }
     )
-    this.#setAlertButton(callback, alert);
+
+    const onPress = (cancel) => {
+      if (cancel)
+        globalData.removeGame();
+
+      callback(cancel);
+    };
+
+    this.#setAlertButton(onPress, alert);
   }
 
   #setAlertButton(callback, alert) {
