@@ -1,6 +1,5 @@
 import View from "@/lib/view";
 import httpRequest from "@/utils/httpRequest";
-import { ConstantColorFactor } from "three";
 
 export default class AuthView extends View {
 
@@ -51,8 +50,9 @@ export default class AuthView extends View {
   _submitBtnControl() {
     const otpInput = this.querySelector('#tfa');
     const submitBtn = this.querySelector('#btn-tfa');
-    const url = `http://localhost:8000/validate-otp/`
+    const url = `${window.location.protocol}//${window.location.host}/api/validate-otp/`
     
+    console.log(url);
     submitBtn.addEventListener('click', async (e) => {
       const body = JSON.stringify({
         otp: otpInput.value,
@@ -64,6 +64,7 @@ export default class AuthView extends View {
         this._failToAuthHandler();
         return ;
       }
+
       await httpRequest('POST', url, body, this._setJWT.bind(this), this._failToAuthHandler.bind(this));
     })
   }

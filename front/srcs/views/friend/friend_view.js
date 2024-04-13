@@ -1,3 +1,4 @@
+import globalData from "@/data/global";
 import View from "@/lib/view";
 import { route } from "@/router";
 import httpRequest from "@/utils/httpRequest";
@@ -22,7 +23,7 @@ export default class FriendView extends View {
     e.preventDefault();
     if (type === TYPE_DELETE)
     {
-      url = `http://${window.location.hostname}:8000/users/me/friends/${user}/`;
+      url = `${window.location.protocol}//${window.location.host}/api/users/me/friends/${user}/`;
       await httpRequest('DELETE', url, null, () => {
         this._fetchFriendList();
         profileCardModal.style.display = 'none';
@@ -30,7 +31,7 @@ export default class FriendView extends View {
     }
     else if (type === TYPE_ADD)
     {
-      url = `http://${window.location.hostname}:8000/users/me/friends/`;
+      url = `${window.location.protocol}//${window.location.host}/api/users/me/friends/`;
       const body = JSON.stringify({"to_user": `${user}`})
       await httpRequest('POST', url, body, () => {
         this._fetchFriendList();
@@ -73,7 +74,7 @@ export default class FriendView extends View {
 
   async _fetchFriendList() {
     const friendGroup = this.querySelector('ul');
-    const url = `http://${window.location.hostname}:8000/users/me/friends/`;
+    const url = `${window.location.protocol}//${window.location.host}/api/users/me/friends/`;
     
     httpRequest('GET', url, null, (res) => {
       friendGroup.classList.remove('justify-content-center', 'align-items-center');
@@ -121,28 +122,35 @@ export default class FriendView extends View {
     const userLevelId = profileCardModal.querySelector('.user-level-id');
     const userScore = profileCardModal.querySelector('.score');
     const stateMessage = profileCardModal.querySelector('.state-message');
+
     
-    profileCardModal.setAttribute('data-user', `${data.username}`);
+    profileCardModal.setAttribute('data-user', `${data.username}`); {
     if (data.is_me === true)
       profileCardModal.setAttribute('data-user-type', `${TYPE_EDIT}`);
     else if (data.is_friend === true)
       profileCardModal.setAttribute('data-user-type', `${TYPE_DELETE}`);
     else
       profileCardModal.setAttribute('data-user-type', `${TYPE_ADD}`);
+    }
 
     userLevelId.textContent = `Lv.${data.level} ${data.username}`;
     userAvatar.src = `data:image;base64,${data.avatar}`;
     userScore.textContent = `${data.wins} 승 ${data.loses} 패`;
     stateMessage.textContent = `${data.message}`;
+    
   }
 
   async _friendListModalEventHandler(e) {
     if (e.target === e.currentTarget)
       return ;
     const clickedList = e.target.closest('li');
+    if (!clickedList)
+      return ;
     const user = clickedList.getAttribute('data-user');
     const profileCardModal = document.getElementById('profileCardModal');
-    const url = `http://${window.location.hostname}:8000/users/${user}/profile/`;
+    const url = `${window.location.protocol}//${window.location.host}/api/users/${user}/profile/`;
+
+    globalData.record.setUsername(user);
     
     await httpRequest('GET', url, null, (res) => {
       this._fillModalData(res);
@@ -162,7 +170,7 @@ export default class FriendView extends View {
     const profileCardModal = document.getElementById('profileCardModal');
 
     profileCardModalBtn.addEventListener('click', async () => {
-      const url = `http://${window.location.hostname}:8000/users/me/profile/`;
+      const url = `${window.location.protocol}//${window.location.host}/api/users/me/profile/`;
 
       await httpRequest('GET', url, null, (res) => {
         this._fillModalData(res);
@@ -191,7 +199,7 @@ export default class FriendView extends View {
         }, 2000);
         return ;
       }
-      const url = `http://${window.location.hostname}:8000/users/?search=${username}`;
+      const url = `${window.location.protocol}//${window.location.host}/api/users/?search=${username}`;
 
       await httpRequest('GET', url, null, (res) => {
         this._fillModalData(res);
@@ -227,5 +235,11 @@ export default class FriendView extends View {
       this._fetchFriendList();
       this._fillModalWithUserData();
       this._searchFriend();
+      this.querySelector("#record-link").addEventListener("click",  () => {
+
+        /** @type{ HTMLElement } */
+        const modal = this.querySelector("#profileCardModal");
+        globalData.record.setUsername(modal.dataset.user)
+      })
     }
 }

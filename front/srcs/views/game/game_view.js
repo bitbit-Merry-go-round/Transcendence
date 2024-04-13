@@ -487,10 +487,10 @@ export default class GameView extends View {
 }
 
 function _url() {
-  return window.location.href.replace(":8080", ":8000");
+  return "https://" + window.location.hostname;
 }
 
-async function getToken(needRefresh = false) {
+export async function getToken(needRefresh = false) {
   const accessToken = localStorage.getItem("access");
   const refreshToken = localStorage.getItem("refresh");
 
@@ -503,7 +503,7 @@ async function getToken(needRefresh = false) {
   if (!refreshToken)
     return null;
 
-  const url = new URL("/token/refresh/", _url());
+  const url = new URL("/api/token/refresh/", _url());
   const res = await fetch(url, {
     method: "POST",
     mode: "cors",
@@ -537,7 +537,7 @@ export async function getUsername(retry = false) {
   if (storageName)
     return storageName;
 
-  const url = new URL("/users/me/profile/", _url());
+  const url = new URL("/api/users/me/profile/", _url());
   try {
   const res = await fetch(url, {
     method: "GET",
@@ -582,7 +582,7 @@ async function sendResult(scores, gameType) {
       const player2 = Object.keys(scores[0]).find(name => name != player1);
       if (!player1 || !player2)
         return ;
-      url = new URL("/game/me/1v1s/", url);
+      url = new URL("/api/game/me/1v1s/", url);
       body = {
         "player_one": player1,
         "player_two": player2,
@@ -595,7 +595,7 @@ async function sendResult(scores, gameType) {
       if (scores.length < 3)
         return ;
 
-      url = new URL("/game/me/tournaments/", url);
+      url = new URL("/api/game/me/tournaments/", url);
       body = {};
       let lastOne = null;
       if (scores[0]["playerA"].score > scores[0]["playerB"].score) {
@@ -653,7 +653,6 @@ async function sendResult(scores, gameType) {
       return ;
   }
 
-  console.log("body", body);
   fetch(url, {
     method: "POST",
     mode: "cors",

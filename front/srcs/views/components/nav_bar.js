@@ -1,3 +1,4 @@
+import globalData from "@/data/global";
 import View from "@/lib/view";
 import { NAVIGATE_DRIRECTION, route } from "@/router";
 import httpRequest from "@/utils/httpRequest";
@@ -17,6 +18,7 @@ export default class NavBar extends View {
     profileCardModalBtn.addEventListener('click', () => {
       editBtn.textContent = '정보변경';
       profileCardModal.style.display = 'flex';
+      globalData.record.setUsername(null);
     });
     editBtn.addEventListener('click', (e) => {
       if (!editBtn.closest('friend-view'))
@@ -44,7 +46,6 @@ export default class NavBar extends View {
     const stateMessage = profileCardModal.querySelector('.state-message');
     if (!userLevelId)
     {
-      // 왜 this 아래 아무것도 없는지 의아.
       return;
     }
     userLevelId.textContent = `Lv.${data.level} ${data.username}`
@@ -58,7 +59,6 @@ export default class NavBar extends View {
     const userImg = this.querySelector('#profileCardModalBtn');
     if (!userLevelId)
     {
-      // 왜 this 아래 아무것도 없는지 의아.
       return;
     }
     userLevelId.textContent = `Lv.${data.level} ${data.username}`;
@@ -67,13 +67,13 @@ export default class NavBar extends View {
   }
 
   async _fetchInfo() {
-    const url = `http://${window.location.hostname}:8000/users/me/profile/`;
+    const url = `${window.location.protocol}//${window.location.host}/api/users/me/profile/`;
 
     await httpRequest('GET', url, null, this._initNavbarData.bind(this));
   }
     
   _logoutEvent() {
-    const url = `http://${window.location.hostname}:8000/logout/`;
+    const url = `${window.location.protocol}//${window.location.host}/api/logout/`;
     const logoutBtn = this.querySelector('#logout');
     const body = JSON.stringify({
       refresh: `${localStorage.getItem('refresh')}`

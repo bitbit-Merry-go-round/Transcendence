@@ -16,7 +16,7 @@ export default class EditView extends View {
     const imgInput = editProfileImg.querySelector('input');
     const imgContainer = editProfileImg.querySelector('.test');
     
-    const url = `http://${window.location.hostname}:8000/users/me/profile/`
+    const url = `${window.location.protocol}//${window.location.host}/api/users/me/profile/`
 
     await httpRequest('GET', url, null, (data) => {
       profileImg.src = `data:image;base64,${data.avatar}`;
@@ -46,7 +46,7 @@ export default class EditView extends View {
     btnSave.addEventListener('click', async () => {
       const reader = new FileReader();
       const file = imgInput.files[0];
-      const url = `http://${window.location.hostname}:8000/users/me/profile/`;
+      const url = `${window.location.protocol}//${window.location.host}/api/users/me/profile/`;
 
       if (!file)
       {

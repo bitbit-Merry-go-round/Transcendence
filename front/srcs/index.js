@@ -71,12 +71,13 @@ window.addEventListener("popstate",
 
 function handleLogin() {
   const url = window.location.href;
+  
   if (!url.includes("code"))
     return false;
 
   const code = new URL(url).searchParams.get("code");
-  const callbackUrl = new URL("/42/callback/", url.replace(":8080", ":8000"));
-  callbackUrl.searchParams.append("code", code);
+
+  const callbackUrl = `https://${window.location.host}/api/42/callback/?code=${code}`;
   
   document.body.innerHTML = `
       <div id="app">
@@ -85,17 +86,16 @@ function handleLogin() {
         <p id="loadingMessage" class="mt-5 loading-message">접속 중...</p>
       </div>
     `
+
+  console.log("url: ",callbackUrl);
   fetch(callbackUrl, {
     method: "GET",
     mode: "cors",
     cache: "no-cache",
-    credentials: "same-origin",
-    headers: {
-      "Content-Type": "application/json",
-    }
   })
     .then(res => {
-      console.log("logini res", res.status, res.body);
+      console.log(res);
+      console.log("login res", res.status, res.body);
       return res.json();
     })
     .then(json =>  {
@@ -109,6 +109,9 @@ function handleLogin() {
           index: 0,
         }, "42 Pong", "/");
       }
+    })
+    .catch((res) => {
+      console.log(res);
     });
   return true;
 }
