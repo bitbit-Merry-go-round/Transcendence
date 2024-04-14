@@ -31,9 +31,14 @@ export default class RecordView extends View {
           true
         );
         const pvpListElement = documentFragment.querySelector("li");
+        const winner = pvpListElement.querySelector(".winner");
         const detail = pvpListElement.querySelector(".score-detail");
         const date = pvpListElement.querySelector(".score-date");
 
+        if (res.player_one_score > res.player_two_score)
+          winner.textContent = res.player_one;
+        else 
+          winner.textContent = `👑 ${res.player_two}`;
         detail.textContent = `${res.player_one_score}:${res.player_two_score}`;
         date.textContent = `${res.time}`;
         pvpLists.appendChild(pvpListElement);
@@ -46,6 +51,7 @@ export default class RecordView extends View {
   #fetchTournamentDetail(res) {
     const tournamentDetailGroup = document.getElementById('tournament-detail-list');
     const tournamentDetails = tournamentDetailGroup.querySelectorAll('li');
+    const modal = document.getElementById("infoModal");
     let winner;
 
     if (res.game_three.player_one_score > res.game_three.player_two_score)
@@ -66,7 +72,7 @@ export default class RecordView extends View {
       tournamentDetails[i].querySelector('.score-detail').textContent = `${data.player_one_score}:${data.player_two_score}`;
       tournamentDetails[i].querySelector('.second-score-date').textContent = `${data.time}`;
     }
-    
+    modal.style.display = "block";
   }
 
   #modalEventSet(moreInfoBtn) {
@@ -77,7 +83,6 @@ export default class RecordView extends View {
       await httpRequest("GET", url, null, this.#fetchTournamentDetail.bind(this), (url, res) => {
         console.error(`can't fetch record data: `, res);
       })
-      modal.style.display = "block"; //모달 창을 보이게 설정
     });
     // 모달 창을 가져옵니다.
     const modal = document.getElementById("infoModal");
