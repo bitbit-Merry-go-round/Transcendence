@@ -15,20 +15,6 @@ import View from "@/lib/view";
  *  }} playerB
 */
 
-/** @type {Match} */
-const match = {
-  playerA:  {
-    name: "a",
-    score: 10,
-    class: "winner",
-  },
-  playerB: {
-    name: "b",
-    score: 12,
-    class: "looser",
-  }
-};
-
 export default class TournamentPanel extends View {
 
   /** @type {{

@@ -13,9 +13,6 @@
       padding: 0;
     }
 
-    li {
-    }
-
     .game + li {
       flex-grow: 1.2;
     }
@@ -30,12 +27,12 @@
     }
 
     .winner {
+      color: green;
       font-weight: bold;
     }
 
     .looser {
-      color: grey;
-      font-size: 10px;
+      color: darkgray;
     }
 
     .game span {
@@ -48,7 +45,11 @@
     }
 
     .game-top.winner {
-      border-bottom: 6px solid black;
+      border-bottom: 2px thick double black;
+    }
+
+    .game-top.looser {
+      border-bottom: 2px dashed black;
     }
 
     .game-top + li {
@@ -61,7 +62,11 @@
     }
 
     .game-bottom.winner {
-      border-top: 6px solid black;
+      border-top: 2px thick double black;
+    }
+
+    .game-bottom.looser {
+      border-bottom: 2px dashed black;
     }
 
   </style>

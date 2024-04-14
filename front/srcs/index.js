@@ -3,10 +3,9 @@ import { anchorToLink, route, NAVIGATE_DRIRECTION } from "@/router";
 import { DEBUG, STATE } from "@/data/global";
 import { isAvailableAddress, isNavigatableAddress } from "@/views/config";
 
-anchorToLink(document);
-
 document.addEventListener("DOMContentLoaded", async () => {
   init();
+  anchorToLink(document);
   const hash = window.location.hash;
   if (hash === "#debug" || hash === "#DEBUG")
     DEBUG.setDebug(true);
@@ -15,13 +14,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   const history = window.history.state?.history;
   const index = window.history.state?.index;
 
+
+  if (!DEBUG.isDebug() && handleLogin())
+    return ;
+
   if (!DEBUG.isDebug() && 
     (!history || index == undefined)) {
     path = isAvailableAddress(path) ? path:  "/";
     if (!history || index == undefined) {
-      if (handleLogin()) {
-        return ;
-      }
       window.history.replaceState({
         history: [ path ],
         index: 0,
@@ -71,47 +71,56 @@ window.addEventListener("popstate",
 
 function handleLogin() {
   const url = window.location.href;
-  
-  if (!url.includes("code"))
+  const isLogIn = (window.localStorage.getItem("username") ||
+    window.localStorage.getItem("access"));
+
+  if (isLogIn) 
     return false;
+
+  if (!url.includes("code")) {
+    route({
+      path: "/login"
+    });
+    window.history.replaceState({
+      history: [ "/" ],
+      index: 0,
+    }, "42 Pong", "/");
+    return true;
+  }
 
   const code = new URL(url).searchParams.get("code");
 
-  const callbackUrl = `https://${window.location.host}/api/42/callback/?code=${code}`;
-  
-  document.body.innerHTML = `
-      <div id="app">
-        <div class="loading-wrap">
-        <div class="loading-spinner my-5"></div>
-        <p id="loadingMessage" class="mt-5 loading-message">접속 중...</p>
-      </div>
-    `
+  const callbackUrl = new URL("/api/42/callback/?code=" + code,
+    window.location.origin);
 
-  console.log("url: ",callbackUrl);
-  fetch(callbackUrl, {
-    method: "GET",
-    mode: "cors",
-    cache: "no-cache",
-  })
-    .then(res => {
-      console.log(res);
-      console.log("login res", res.status, res.body);
-      return res.json();
+  try {
+    fetch(callbackUrl, {
+      method: "GET",
+      mode: "cors",
+      cache: "no-cache",
     })
-    .then(json =>  {
-      if (json["username"]) {
-        window.localStorage.setItem("username", json["username"]);
-        route({
-          path: "/auth"
-        });
-        window.history.replaceState({
-          history: [ "/" ],
-          index: 0,
-        }, "42 Pong", "/");
-      }
-    })
-    .catch((res) => {
-      console.log(res);
-    });
+      .then(res => res.json())
+      .then(json =>  {
+        if (json["username"]) {
+          window.localStorage.setItem("username", json["username"]);
+          route({
+            path: "/auth"
+          });
+          window.history.replaceState({
+            history: [ "/" ],
+            index: 0,
+          }, "42 Pong", "/");
+        }
+      })
+    document.getElementById("app").innerHTML = loading;  
+  } catch (err) {
+    if (DEBUG.isDebug())
+      console.error(err);
+  }
   return true;
 }
+
+const loading = `
+<div class="loading-wrap">
+  <div class="loading-spinner my-5"></div>
+  <p id="loadingMessage" class="mt-5 loading-message">접속 중...</p>`;

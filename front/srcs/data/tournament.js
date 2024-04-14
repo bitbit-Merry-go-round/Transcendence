@@ -94,6 +94,15 @@ export default class Tournament {
   goToNextMatch() {
     if (!this.isCurrentMatchFinished)
       throw ("current match is not finished");
+    const match = this.#_currentRound.matches[this.#_currentMatchIndex];
+    if (match.playerA.score > match.playerB.score) {
+      match.playerA.class = "winner";
+      match.playerB.class = "looser";
+    }
+    else {
+      match.playerB.class = "winner";
+      match.playerA.class = "looser";
+    }
 
     if (this.#_currentMatchIndex + 1 < this.#_currentRound.matches.length) 
       this.#_currentMatchIndex += 1;
