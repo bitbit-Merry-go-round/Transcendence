@@ -36,7 +36,7 @@ export default class RecordView extends View {
         const date = pvpListElement.querySelector(".score-date");
 
         if (res.player_one_score > res.player_two_score)
-          winner.textContent = res.player_one;
+          winner.textContent = `👑 ${res.player_one}`;
         else 
           winner.textContent = `👑 ${res.player_two}`;
         detail.textContent = `${res.player_one_score}:${res.player_two_score}`;
