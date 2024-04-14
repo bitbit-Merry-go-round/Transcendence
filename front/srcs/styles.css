@@ -135,6 +135,7 @@ body {
 .profile-card-record {
     background-color: white;
     border-radius: 1em;
+    width: 20em;
     padding: 20px;
 }
 
@@ -374,7 +375,7 @@ ul {
     border-radius: 10px;
     margin: 0px;
     padding: 10px;
-    width: 50em;
+    width: 35em;
     height: 30em;
     margin-right: 1em;
 }
