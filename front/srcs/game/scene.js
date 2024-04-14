@@ -582,6 +582,7 @@ export default class Scene {
         };
         scene.rotation.y = Math.PI * 0.4;
         board.scale.x = -0.8;
+        board.scale.y = 1.2;
         scene.position.set(-2.5, 0, 1);
         board.position.z -= 0.1;
         board.rotation.y = Math.PI;

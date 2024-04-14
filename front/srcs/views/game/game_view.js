@@ -373,8 +373,8 @@ export default class GameView extends View {
 
     panel.defaultBoardStyle = {
       display: "block",
-      width:  "1200px",
-      height: "800px",
+      width:  "1600px",
+      height: "1200px",
     };
     await panel.render();
     /** @type {HTMLElement} */ //@ts-ignore
@@ -471,7 +471,11 @@ export default class GameView extends View {
     this.appendChild(modal); 
     const finalScores = this.#gameData.finalScores;
     sendResult(finalScores, this.#gameData.gameType)
-      .then(() => globalData.removeGame());
+      .then(() => globalData.removeGame())
+      .catch(err => {
+        if (DEBUG.isDebug())
+          console.error(err);
+      })
   }
 
   #returnToGame() {
@@ -516,7 +520,7 @@ export async function getToken(needRefresh = false) {
     body: JSON.stringify( {
       "refresh": refreshToken
     })
-  });
+  })
   if (!res.ok)
     return null;
   const json = await res.json(); 
