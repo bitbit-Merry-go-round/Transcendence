@@ -106,7 +106,7 @@ export default class FriendView extends View {
           {
             friendElement.querySelector('.status-circle-sm').classList.remove('status-offline');
           }
-          friendElement.querySelector('.user-level').textContent = `Lv.${friend.level}`;
+          friendElement.querySelector('.user-level').textContent = `Lv ${friend.level}`;
           friendElement.querySelector('.user-name').textContent = `${friend.username}`;
           friendElement.setAttribute('data-user', `${friend.username}`);
           friendElement.setAttribute('data-user-type', `${TYPE_DELETE}`);
@@ -133,7 +133,7 @@ export default class FriendView extends View {
       profileCardModal.setAttribute('data-user-type', `${TYPE_ADD}`);
     }
 
-    userLevelId.textContent = `Lv.${data.level} ${data.username}`;
+    userLevelId.textContent = `Lv ${data.level} ${data.username}`;
     userAvatar.src = `data:image;base64,${data.avatar}`;
     userScore.textContent = `${data.wins} 승 ${data.loses} 패`;
     stateMessage.textContent = `${data.message}`;

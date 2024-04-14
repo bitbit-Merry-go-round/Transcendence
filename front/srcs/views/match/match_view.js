@@ -60,7 +60,7 @@ export default class MatchView extends View {
     const userScore = this.querySelector('.match-player-card .score');
     const stateMessage = this.querySelector('.match-player-card .state-message');
 
-    userLevelId.textContent = `Lv.${data.level} ${data.username}`
+    userLevelId.textContent = `Lv ${data.level} ${data.username}`
     this.username = data.username;
     userAvatar.src = `data:image;base64,${data.avatar}`;
     userScore.textContent = `${data.wins} 승 ${data.loses} 패`;

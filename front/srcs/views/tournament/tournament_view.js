@@ -51,23 +51,7 @@ export default class TournamentView extends View {
   _setRandomPlayerName() {
     const playerNameElements = this.querySelectorAll('.input-player');
     
-    /** @type { HTMLInputElement } */ //@ts-ignore
-    const firstInput = playerNameElements[0];
-    firstInput.readOnly = true;
-    getUsername()
-      .then(name =>  {
-        if (name)
-          firstInput.value = name;
-        else  {
-          firstInput.readOnly = false;
-        firstInput.value = generateRandomName();
-        }
-      })
-      .catch(() => {
-        firstInput.value = generateRandomName();
-        firstInput.readOnly = false;
-      })
-    for (let i = 1; i < playerNameElements.length; ++i) {
+    for (let i = 0; i < playerNameElements.length; ++i) {
       /** @type { HTMLInputElement } */ //@ts-ignore
       const input = playerNameElements[i];
       input.value = generateRandomName();
@@ -77,19 +61,41 @@ export default class TournamentView extends View {
   _playerNameCheck() {
     const playerNameElements = this.querySelectorAll('.input-player');
     const errorMassage = this.querySelector('#error-message');
-    const playerNames = Array.from(playerNameElements, (ele) => ele.value).filter(ele => ele !== '');
+    const playerNames = Array.from(playerNameElements, (ele) => ele.value.trim()).filter(ele => ele !== '');
     const playerNameSet = new Set(playerNames);
-    
+    const playerLengthValid = playerNames.every(name => name.length <= 8);
+    function is_alnum(str) { return /^[a-zA-Z0-9]+$/.test(str); }
+    const playerInputValid = playerNames.every(name => is_alnum(name));
+
     if (playerNames.length !== 4) {
       errorMassage.textContent = '빈 문자열은 허용되지 않습니다.';
       return false;
-    }
-    else if (playerNameSet.size !== 4) {
+    } else if (playerNameSet.size !== 4) {
       errorMassage.textContent = '중복된 이름은 허용되지 않습니다.';
       return false;
+    } else if (!playerLengthValid) {
+      errorMassage.textContent = '닉네임은 8글자 이하여야 합니다.';
+      return false;
+    } else if (!playerInputValid) {
+      errorMassage.textContent = '특수문자는 허용되지 않습니다.';
+      return false;
+    } else {
+      return true;
     }
-    else {
-      this.setNickname(playerNames);
+  }
+
+  _gameSettingCheck() {
+    const isValidSetting = Object.values(this.#parameter).every(setting => setting);
+    const errorMassage = this.querySelector('#error-message');
+
+    console.log('setting: s',this.#parameter);
+    if (!isValidSetting)
+    {
+      errorMassage.textContent = '세팅이 완료되지 않았습니다.';
+      return false;
+    }
+    else 
+    {
       return true;
     }
   }
@@ -154,33 +160,43 @@ export default class TournamentView extends View {
       })
     }
   }
-
-  _inputDuplicateCheck() {
+  _gameValidCheck() {
     const confirmBtn = this.querySelector('.btn-play');
     confirmBtn.addEventListener('click', (event) => {
       const errorMassage = this.querySelector('#error-message');
+      const configBar = this.querySelector('.game-config')
       const playerNameElements = this.querySelectorAll('.input-player');
-      const valid = this._playerNameCheck();
-      if (valid)
-        this.#setParameter("nicknames");
-
-      if (valid && Object.values(this.#parameter).indexOf(false) == -1) {
-        /** @type { HTMLAnchorElement } */
-        const a = this.querySelector("#game-link")
-        a.click();
-      }
-      else
+      const playerNames = Array.from(playerNameElements, (ele) => ele.value.trim()).filter(ele => ele !== '');
+      
+      if (!this._playerNameCheck())
       {
         errorMassage.style.display = 'flex';
-        for (const player of playerNameElements)
-        {
+        for (const player of playerNameElements) {
           player.classList.add(`vibration`);
           setTimeout(() => {
             player.classList.remove("vibration");
             errorMassage.style.display = 'none';
           }, 500);
         }
+        return ;
       }
+      this.setNickname(playerNames);
+      this.#setParameter("nicknames");
+
+      if (!this._gameSettingCheck())
+      {
+        errorMassage.style.display = 'flex';
+        configBar.classList.add('vibration');
+          setTimeout(() => {
+            configBar.classList.remove('vibration');
+            errorMassage.style.display = 'none';
+          }, 500);
+        return ;
+      }
+
+      /** @type { HTMLAnchorElement } */
+      const a = this.querySelector("#game-link")
+      a.click();
     });
   }
 
@@ -210,8 +226,7 @@ export default class TournamentView extends View {
     this._setRandomPlayerName();
     this._setPaddleModal();
     this._setItemModal();
-    this._inputDuplicateCheck();
-
+    this._gameValidCheck();
 
     const backBtn = document.getElementById('move-to-mode');
     backBtn.addEventListener('click', () => {
