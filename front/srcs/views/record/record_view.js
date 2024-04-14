@@ -22,8 +22,8 @@ export default class RecordView extends View {
     }
 
     httpRequest("GET", url, null, (res) => {
-      const pvpLists = document.getElementById("pvp-lists");
-      const pvpListTemplate = document.getElementById("pvp-list-template");
+      const pvpLists = this.querySelector("#pvp-lists");
+      const pvpListTemplate = this.querySelector("#pvp-list-template");
 
       res.forEach((res, index) => {
         const documentFragment = document.importNode(
@@ -49,9 +49,9 @@ export default class RecordView extends View {
     }
 
   #fetchTournamentDetail(res) {
-    const tournamentDetailGroup = document.getElementById('tournament-detail-list');
+    const tournamentDetailGroup = this.querySelector('#tournament-detail-list');
     const tournamentDetails = tournamentDetailGroup.querySelectorAll('li');
-    const modal = document.getElementById("infoModal");
+    const modal = this.querySelector("#infoModal");
     let winner;
 
     if (res.game_three.player_one_score > res.game_three.player_two_score)
@@ -85,7 +85,7 @@ export default class RecordView extends View {
       })
     });
     // 모달 창을 가져옵니다.
-    const modal = document.getElementById("infoModal");
+    const modal = this.querySelector("#infoModal");
     // 모달 창의 닫기 버튼을 가져옵니다.
     const closeModalBtn = document.getElementsByClassName("close")[0];
     // 모달 창의 닫기 버튼을 클릭할 때 모달 창을 숨깁니다.
@@ -111,8 +111,8 @@ export default class RecordView extends View {
 
     httpRequest("GET", url, null, (res) => {
       // 토너먼트 결과를 렌더링할 요소 선택
-      const tournamentGroup = document.getElementById('tournament-group');
-      const tournamentTemplate = document.getElementById('tournament-list-template');
+      const tournamentGroup = this.querySelector('#tournament-group');
+      const tournamentTemplate = this.querySelector('#tournament-list-template');
       res.forEach((tournament, index) => {
         const documentFragment = document.importNode(tournamentTemplate.content, true);
         const tournamentElement = documentFragment.querySelector('li');
@@ -121,7 +121,7 @@ export default class RecordView extends View {
         const moreInfoBtn = tournamentElement.querySelector('#infoBtn');
     
         this.#modalEventSet(moreInfoBtn);
-        winner.textContent = `${tournament.winner}`;
+        winner.textContent = `👑 ${tournament.winner}`;
         time.textContent = `${tournament.time}`;
         tournamentElement.setAttribute('data-game-id', `${tournament.id}`);
         tournamentGroup.appendChild(tournamentElement);
@@ -154,7 +154,7 @@ export default class RecordView extends View {
     const userScore = profileCardRecord.querySelector(".score");
     const stateMessage = profileCardRecord.querySelector(".state-message");
 
-    userLevelId.textContent = `Lv.${data.level} ${data.username}`;
+    userLevelId.textContent = `Lv ${data.level} ${data.username}`;
     userAvatar.src = `data:image;base64,${data.avatar}`;
     userScore.textContent = `${data.wins} 승 ${data.loses} 패`;
     stateMessage.textContent = `${data.message}`;

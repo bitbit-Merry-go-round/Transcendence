@@ -48,7 +48,7 @@ export default class NavBar extends View {
     {
       return;
     }
-    userLevelId.textContent = `Lv.${data.level} ${data.username}`
+    userLevelId.textContent = `Lv ${data.level} ${data.username}`
     userAvatar.src = `data:image;base64,${data.avatar}`;
     userScore.textContent = `${data.wins} 승 ${data.loses} 패`;
     stateMessage.textContent = `${data.message}`;
@@ -61,7 +61,7 @@ export default class NavBar extends View {
     {
       return;
     }
-    userLevelId.textContent = `Lv.${data.level} ${data.username}`;
+    userLevelId.textContent = `Lv ${data.level} ${data.username}`;
     userImg.src = `data:image;base64,${data.avatar}`;
     this._initModalData(data);
   }
@@ -92,6 +92,12 @@ export default class NavBar extends View {
     
     this._fetchInfo();
     this._logoutEvent();
-    this._modalToggler();    
+    this._modalToggler();
+    const username = this.querySelector('.user-level-id');
+    
+    username.addEventListener('click', () => {
+      this.querySelector('#profileCardModalBtn').click();
+    });
+    username.style.cursor = 'pointer';
   }
 }
