@@ -9,7 +9,7 @@ export default class EditView extends View {
     this.data = data
   }
 
-  async _imgUploadEffect() {
+  async _imgUploadEventSet() {
     const editProfileImg = this.querySelector('.edit-profile-img');
     const profileImg = editProfileImg.querySelector('.img-profile');
     const imgWrapper = editProfileImg.querySelector('.img-wrapper');
@@ -32,7 +32,14 @@ export default class EditView extends View {
   
     imgInput.addEventListener('input', e => {
       if (imgInput.files && imgInput.files[0]) {
-        profileImg.src = URL.createObjectURL(file.files[0]);
+        if (imgInput.files[0].size > 2 * 1024 * 1024)
+          alert('업로드 제한을 초과하였습니다.')
+        else
+          profileImg.src = URL.createObjectURL(file.files[0]);
+      }
+      else
+      {
+        alert('사진 업로드 취소가 감지되었습니다. 다시 등록해주세요.');
       }
     });
   }
@@ -74,8 +81,11 @@ export default class EditView extends View {
           route({
             path: 'home'
           })
+        }, () => {
+          alert('파일 업로드를 실패하였습니다. 다시 시도해주세요.');
         })
       });
+
       reader.readAsBinaryString(file);
     });
 
@@ -86,10 +96,21 @@ export default class EditView extends View {
     });
   }
     
+  _textInputEventSet() {
+    const textInput = this.querySelector('.edit-user-message-input');
+    const letterCounter = this.querySelector('.letter-count');
+
+    textInput.addEventListener('input', (e) => {
+      letterCounter.textContent = e.target.value.length;
+
+    })
+  }
+
   connectedCallback() {
     super.connectedCallback();
     
-    this._imgUploadEffect();
+    this._imgUploadEventSet();
+    this._textInputEventSet();
     this._editBtnEvent();
   }
 }
