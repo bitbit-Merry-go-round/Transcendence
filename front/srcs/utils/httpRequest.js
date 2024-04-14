@@ -26,7 +26,7 @@ export default function httpRequest(method, url, body, success, fail = fetch_fai
     {
         headers.Authorization = `Bearer ${access}`;
     }
-    console.log('url: ', url);
+    // console.log('url: ', url);
     fetch(url, {
         method: method,
         mode: "cors",

@@ -427,18 +427,6 @@ ul {
 }
 
 /* 토너먼트 */
-.vibration {
-    background-color: rgb(255, 240, 240);
-    animation: vibration .1s infinite;
-}
-@keyframes vibration {
-    from {
-        transform: rotate(0.5deg);
-    }
-    to {
-        transform: rotate(-0.5deg);
-    }
-}
 
 .tournament-box {
     background-color: #B1C59A;
@@ -542,6 +530,19 @@ ul {
     margin-left: auto;
     margin-right: auto;
     border-radius: 1em;
+}
+
+.vibration {
+    background-color: rgb(255, 240, 240);
+    animation: vibration .1s infinite;
+}
+@keyframes vibration {
+    from {
+        transform: rotate(0.5deg);
+    }
+    to {
+        transform: rotate(-0.5deg);
+    }
 }
 
 .match-player-name {
