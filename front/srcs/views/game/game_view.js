@@ -13,6 +13,7 @@ import GameDataEmitter from "@/game/game_data_emitter";
 import globalData, { DEBUG, STATE } from "@/data/global";
 import { NAVIGATE_DRIRECTION, route } from "@/router";
 import ResultModal from "@/views/components/result_modal";
+import { requestRefresh } from "@/utils/httpRequest";
 
 export default class GameView extends View {
 
@@ -535,11 +536,6 @@ export async function getToken(needRefresh = false) {
 
 export async function getUsername(retry = false) {
   const accessToken = await getToken();
-  if (!accessToken)
-    return "USER";
-  const storageName = localStorage.getItem("username");
-  if (storageName)
-    return storageName;
 
   const url = new URL("/api/users/me/profile/", _url());
   try {
@@ -554,10 +550,12 @@ export async function getUsername(retry = false) {
     },
   })
   if (!res.ok && !retry && res.status == 401) {
+    await requestRefresh();
     return await getUsername(true); 
   }
-  else if (!res.ok)
+  else if (!res.ok) {
     return null;
+  }
   const json = await res.json();
   return json["username"] ?? "USER";
   } catch  {
@@ -566,11 +564,9 @@ export async function getUsername(retry = false) {
 }
 
 async function sendResult(scores, gameType) {
-  const accessToken = await getToken();
+ 
   const username = await getUsername();
-
-  //if (!username || !accessToken)
-  //return ;
+  const accessToken = await getToken();
 
   /** @type { URL | string } */
   let url = _url();
