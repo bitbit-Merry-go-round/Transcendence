@@ -24,9 +24,9 @@ app.use("/node_modules", express.static(path.resolve(__dirname, "node_modules"),
   { extensions: ["js"] }
 ));
 
-app.get("/*", (req, res) => {
+
+app.get("/*", (req, res, next) => {
   res.sendFile(path.resolve("front/srcs", "index.html"));
 });
-
 
 app.listen(8080, () => console.log("Server running"));

@@ -5,23 +5,25 @@
     <div class="d-flex justify-content-between mx-5 my-5">
         <h1 class="page-name me-5">프로필 편집</h1>
     </div>
-	<div class="d-flex justify-content-center mb-5 edit-profile-img ">
+	<div class="d-flex flex-column align-items-center justify-content-center mb-5 edit-profile-img ">
         <div class="position-relative test">
-            <img class="img-profile" src="https://media.istockphoto.com/id/1251434169/ko/%EC%82%AC%EC%A7%84/%EC%97%B4%EB%8C%80-%EC%9E%8E-%EC%A0%95%EA%B8%80%EC%9D%98-%EC%A7%99%EC%9D%80-%EB%85%B9%EC%83%89-%EB%8B%A8%ED%92%8D-%EC%9E%90%EC%97%B0-%EB%B0%B0%EA%B2%BD.jpg?s=612x612&amp;w=0&amp;k=20&amp;c=-v5nlfyzPmVxWkzUVcZ8-LJ7edlQIpbT6Tf1O-eAXEs=" style="width: 12em;height: 12em;border-radius: 50%;"  >
+            <img class="img-profile" src="" style="width: 12em;height: 12em;border-radius: 50%;"  >
             <label for="file">
                 <div class="img-wrapper" style="display:none;">
                     <svg class="edit-icon" xmlns="http://www.w3.org/2000/svg" fill="#FFF" height="24" viewBox="0 -960 960 960" width="24"><path d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z"/></svg>
                 </div>
             </label>
-            <input type="file" name="file" id="file" accept="image/png, image/jpeg">
+            <input class="edit-user-img-input" type="file" name="file" id="file" accept="image/png, image/jpeg">
         </div>
+        <span class="explain-text mt-3">* 업로드 제한: 1.8mb</span>
 	</div>
     <div class="d-flex justify-content-center overflow-hidden my-1">
         <div class="d-flex flex-column align-items-center py-2">
-            <input type="text" class="form-control edit-user-message-input mb-2" placeholder="상태 메시지 입력" aria-label="Status message" aria-describedby="statusMessage">
+            <textarea type="text" class="form-control edit-user-message-input mb-2" placeholder="상태 메시지 입력" style="word-break: break-all;" cols="20" maxlength="45"></textarea>
+            <div class="d-flex justify-content-end w-100 mb-1 explain-text">(<span class="letter-count">0</span><span>/45 자)</span></div>
             <div class="d-flex justify-content-end w-100">
-                <button type="button" class="ms-2 btn btn-primary">저장</button>
-                <button type="button" class="ms-2 btn btn-primary">취소</button>
+                <button type="button" class="ms-2 btn btn-primary btn-save">저장</button>
+                <button type="button" class="ms-2 btn btn-primary btn-cancel">취소</button>
             </div>
         </div>
     </div>

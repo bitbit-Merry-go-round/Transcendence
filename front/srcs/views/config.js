@@ -6,11 +6,16 @@ import FriendView from "@/views/friend/friend_view";
 import ModeView from "@/views/mode/mode_view";
 import RecordView from "@/views/record/record_view";
 import TournamentView from "@/views/tournament/tournament_view";
+import TournamentPanel from "@/views/components/tournament_panel";
 import MatchView from "@/views/match/match_view";
 import EditView from "@/views/edit/edit_view";
+import AuthView from "@/views/auth/auth_view";
 import NavBar from "@/views/components/nav_bar";
 import ProfileCard from "@/views/components/profile_card";
 import UserLabel from "@/views/components/user_label";
+import ColorPicker from "@/views/components/color_picker.js";
+import GraphView from "@/views/dash_board/graph_view";
+import ResultModal from "@/views/components/result_modal";
 
 /**
  * fileName for view class MUST contain '_' or '-' (Web components requirement)
@@ -35,6 +40,18 @@ export default {
       {
         "className": "UserLabel",
         "fileName": "user_label.html"
+      },
+      {
+        "className": "TournamentPanel",
+        "fileName": "tournament_panel.html"
+      },
+      {
+        "className": "ColorPicker",
+        "fileName": "color_picker.html"
+      },
+      {
+        "className": "ResultModal",
+        "fileName": "result_modal.html"
       },
     ],
     "home": [ 
@@ -90,7 +107,19 @@ export default {
         "className": "EditView",
         "fileName": "edit_view.html"
       }
-    ]
+    ],
+    "dash_board": [
+      {
+        "className": "GraphView",
+        "fileName": "graph_view.html"
+      }
+    ],
+    "auth": [
+      {
+        "className": "AuthView",
+        "fileName": "auth_view.html"
+      }
+    ],
   }
 }
 
@@ -104,10 +133,15 @@ export const viewConstructors = {
   TournamentView,
   EditView,
   MatchView,
+  AuthView,
   NavBar,
   ProfileCard,
   MapSelector,
-  UserLabel
+  UserLabel,
+  TournamentPanel,
+  ColorPicker,
+  GraphView,
+  ResultModal
 };
 
 export const routes = [
@@ -120,4 +154,30 @@ export const routes = [
   { path: "/match", view: MatchView },
   { path: "/tournament", view: TournamentView },
   { path: "/edit", view: EditView },
+  { path: "/auth", view: AuthView },
 ];
+
+/** @param { string } path 
+ *  @returns { boolean }
+ */
+export function isAvailableAddress(path) {
+  if (path.length == 0) {
+    return true;
+  }
+  let _path = path[0] == "/" ? path.substring(1): path;
+  const availableAddress = [ "login" ];
+  return (availableAddress.findIndex(addr => _path.includes(addr)) != -1);
+}
+
+/** @param { string } path 
+ *  @returns { boolean }
+ */
+export function isNavigatableAddress(path) {
+  if (path.length == 0) {
+    return true;
+  }
+  let _path = path[0] == "/" ? path.substring(1): path;
+  const notAvailableAddress = [ "game" ];
+
+  return (notAvailableAddress.indexOf(_path) == -1);
+}

@@ -1,4 +1,5 @@
 import View from "@/lib/view";
+import { NAVIGATE_DRIRECTION, route } from "@/router";
 
 export default class ModeView extends View {
 
@@ -9,14 +10,16 @@ export default class ModeView extends View {
   connectedCallback() {
     super.connectedCallback();
 
-    const waitToMatch = this.querySelector('.online-mode .online-game');
-    waitToMatch.addEventListener('click', () => {
-      const loadingWrap = this.querySelector('.loading-wrap');
-      const matchCompleted = loadingWrap.querySelector('a');
-      loadingWrap.style.display = 'flex';
-      setTimeout(() => {
-        matchCompleted.click();
-      }, 5000);
+    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+    const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+
+    const backBtn = document.getElementById('move-to-home');
+    backBtn.addEventListener('click', () => {
+      route({
+        path: '/home',
+        direction: NAVIGATE_DRIRECTION.backward
+      })
     })
   }
+
 }

@@ -10,6 +10,13 @@
 
 import { clamp } from "three/src/math/MathUtils";
 
+export const MAP_SIZE = Object.freeze({
+  width: 100,
+  height: 100,
+  halfWidth: 50,
+  halfHeight: 50
+});
+
 export const WALL_TYPES = Object.freeze({
   safe: "SAFE",
   trap: "TRAP",
@@ -41,6 +48,14 @@ export class GameMap {
    * }}
    */
   #allWallBySize = {};
+
+  /** @param {Wall[]} walls */
+  static createFromWalls(walls) {
+     return new GameMap({
+      safeWalls: walls.filter(wall => wall.type == WALL_TYPES.safe),
+      trapWalls: walls.filter(wall => wall.type == WALL_TYPES.trap)
+    });
+  }
 
   /**
    * constructor.
@@ -189,3 +204,87 @@ export class GameMap {
       height: key % 1000 })
   }
 }
+
+const exampleWalls = [
+  {
+    safeWalls: [ ]
+  },
+  {
+    safeWalls: [
+      {
+        centerX: 20,
+        centerY: 35,
+        width: 40,
+        height: 5
+      },
+      {
+        centerX: 80,
+        centerY: 65,
+        width: 40,
+        height: 5
+      }
+    ],
+  },
+  {
+    safeWalls: [ 
+      {
+        centerX: 50,
+        centerY: 30,
+        width: 30,
+        height: 5,
+      },
+      {
+        centerX: 50,
+        centerY: 70,
+        width: 30,
+        height: 5,
+      }
+    ]
+  },
+  {
+    safeWalls: [ 
+      {
+        centerX: 20,
+        centerY: 35,
+        width: 30,
+        height: 20,
+      },
+      {
+        centerX: 80,
+        centerY: 65,
+        width: 30,
+        height: 20,
+      },
+    ]
+  },
+  {
+    safeWalls: [ 
+      {
+        centerX: 30,
+        centerY: 50,
+        width: 10,
+        height: 60,
+      },
+      {
+        centerX: 70,
+        centerY: 50,
+        width: 10,
+        height: 60,
+      },
+    ]
+  },
+];
+
+export const examples = exampleWalls.map(({safeWalls, trapWalls}) => {
+    const map = new GameMap({
+      safeWalls,
+      trapWalls: trapWalls ?? [],
+    });
+    map.addBorderWalls();
+    return ({
+      textureName: "brick",
+      map,
+    });
+});
+
+export const Types = {};

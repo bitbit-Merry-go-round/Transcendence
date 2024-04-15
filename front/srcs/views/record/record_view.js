@@ -1,45 +1,173 @@
+import globalData from "@/data/global";
 import View from "@/lib/view";
+import httpRequest from "@/utils/httpRequest";
 
 export default class RecordView extends View {
 
-  constructor({data}) {
-    
+  #username = null;
+
+  constructor({ data }) {
     super();
-    this.data = data
+    this.data = data;
+  }
+
+  async #fetchAndRenderPvpResults() {
+    let url = `${window.location.protocol}//${window.location.host}`;
+    /** @type { string | URL } */
+    if (this.#username) {
+      url = new URL(`/api/game/${this.#username}/1v1s/`, url);
+    }
+    else {
+      url = new URL(`/api/game/me/1v1s/`, url);
+    }
+
+    httpRequest("GET", url, null, (res) => {
+      const pvpLists = this.querySelector("#pvp-lists");
+      const pvpListTemplate = this.querySelector("#pvp-list-template");
+
+      res.forEach((res, index) => {
+        const documentFragment = document.importNode(
+          pvpListTemplate.content,
+          true
+        );
+        const pvpListElement = documentFragment.querySelector("li");
+        const winner = pvpListElement.querySelector(".winner");
+        const detail = pvpListElement.querySelector(".score-detail");
+        const date = pvpListElement.querySelector(".score-date");
+
+        if (res.player_one_score > res.player_two_score)
+          winner.textContent = `👑 ${res.player_one}`;
+        else 
+          winner.textContent = `👑 ${res.player_two}`;
+        detail.textContent = `${res.player_one_score}:${res.player_two_score}`;
+        date.textContent = `${res.time}`;
+        pvpLists.appendChild(pvpListElement);
+      })
+      }, (res) => {
+        console.error("can't fetch record data: ", res);
+      });
+    }
+
+  #fetchTournamentDetail(res) {
+    const tournamentDetailGroup = this.querySelector('#tournament-detail-list');
+    const tournamentDetails = tournamentDetailGroup.querySelectorAll('li');
+    const modal = this.querySelector("#infoModal");
+    let winner;
+
+    if (res.game_three.player_one_score > res.game_three.player_two_score)
+      winner = res.game_three.player_one;
+    else
+      winner = res.game_three.player_two;
+    this.querySelector('.tournament-winner').textContent = `👑 ${winner}`;
+    let data;
+    for (let i = 0; i < 3; i++)
+    {
+      if (i == 0)
+        data = res.game_one;
+      else if (i == 1)
+        data = res.game_two;
+      else
+        data = res.game_three;
+      tournamentDetails[i].querySelector('.tournament-play').textContent = `${data.player_one} VS ${data.player_two}`;
+      tournamentDetails[i].querySelector('.score-detail').textContent = `${data.player_one_score}:${data.player_two_score}`;
+      tournamentDetails[i].querySelector('.second-score-date').textContent = `${data.time}`;
+    }
+    modal.style.display = "block";
+  }
+
+  #modalEventSet(moreInfoBtn) {
+
+    moreInfoBtn.addEventListener("click", async (e) => {
+      const tournamentId = e.target.closest('li').getAttribute('data-game-id');
+      const url = `${window.location.protocol}//${window.location.host}/api/game/tournaments/${tournamentId}/`
+      await httpRequest("GET", url, null, this.#fetchTournamentDetail.bind(this), (url, res) => {
+        console.error(`can't fetch record data: `, res);
+      })
+    });
+    // 모달 창을 가져옵니다.
+    const modal = this.querySelector("#infoModal");
+    // 모달 창의 닫기 버튼을 가져옵니다.
+    const closeModalBtn = document.getElementsByClassName("close")[0];
+    // 모달 창의 닫기 버튼을 클릭할 때 모달 창을 숨깁니다.
+    closeModalBtn.addEventListener("click", function () {
+      modal.style.display = "none";
+    });
+    window.addEventListener("click", function (event) {
+      if (event.target == modal) {
+        modal.style.display = "none";
+      }
+    });
+  }
+  
+  async #fetchAndRenderTournamentResults() {
+    /** @type { string | URL } */
+    let url = window.location.href;
+    if (this.#username) {
+      url = new URL(`/api/game/${this.#username}/tournaments/`, url);
+    }
+    else {
+      url = new URL(`/api/game/me/tournaments/`, url);
+    }
+
+    httpRequest("GET", url, null, (res) => {
+      // 토너먼트 결과를 렌더링할 요소 선택
+      const tournamentGroup = this.querySelector('#tournament-group');
+      const tournamentTemplate = this.querySelector('#tournament-list-template');
+      res.forEach((tournament, index) => {
+        const documentFragment = document.importNode(tournamentTemplate.content, true);
+        const tournamentElement = documentFragment.querySelector('li');
+        const winner = tournamentElement.querySelector('.score-detail');
+        const time = tournamentElement.querySelector('.tournament-time');
+        const moreInfoBtn = tournamentElement.querySelector('#infoBtn');
+    
+        this.#modalEventSet(moreInfoBtn);
+        winner.textContent = `👑 ${tournament.winner}`;
+        time.textContent = `${tournament.time}`;
+        tournamentElement.setAttribute('data-game-id', `${tournament.id}`);
+        tournamentGroup.appendChild(tournamentElement);
+      });
+    }, (url, res) => {
+      console.error('Error fetching and rendering tournament results:', url, res);
+    })
+  }
+
+  #fetchProfileInfo() {
+    /** @type { string | URL } */
+    let url = `${window.location.protocol}//${window.location.host}`;
+    if (this.#username) {
+      url = new URL(`/api/users/${this.#username}/profile/`, url);
+    }
+    else {
+      url = new URL(`/api/users/me/profile/`, url);
+    }
+
+    httpRequest("GET", url, null, this.#initProfileData.bind(this), (res) => {
+      console.log('Error fetching Profile data: ', res);
+    });
+  }
+
+  // 서버에서 가져온 프로필 정보로 모달 업데이트
+  #initProfileData(data) {
+    const profileCardRecord = this.querySelector('.profile-card-record');
+    const userAvatar = profileCardRecord.querySelector(".user-avatar");
+    const userLevelId = profileCardRecord.querySelector(".user-level");
+    const userScore = profileCardRecord.querySelector(".score");
+    const stateMessage = profileCardRecord.querySelector(".state-message");
+
+    userLevelId.textContent = `Lv ${data.level} ${data.username}`;
+    userAvatar.src = `data:image;base64,${data.avatar}`;
+    userScore.textContent = `${data.wins} 승 ${data.loses} 패`;
+    stateMessage.textContent = `${data.message}`;
   }
 
   connectedCallback() {
     super.connectedCallback();
-    const profileCardModalBtn = this.querySelector('#profileCardModalBtn');
-    const profileCardModal = this.querySelector('#profileCardModal');
-    const modalCloseBtn = this.querySelector('.btn-close');
-    profileCardModalBtn.addEventListener('click', () => {
-      profileCardModal.querySelector('img').src = "https://media.istockphoto.com/id/1251434169/ko/%EC%82%AC%EC%A7%84/%EC%97%B4%EB%8C%80-%EC%9E%8E-%EC%A0%95%EA%B8%80%EC%9D%98-%EC%A7%99%EC%9D%80-%EB%85%B9%EC%83%89-%EB%8B%A8%ED%92%8D-%EC%9E%90%EC%97%B0-%EB%B0%B0%EA%B2%BD.jpg?s=612x612&w=0&k=20&c=-v5nlfyzPmVxWkzUVcZ8-LJ7edlQIpbT6Tf1O-eAXEs="
-      profileCardModal.querySelector('.user-level').textContent = 'Lv.20';
-      profileCardModal.querySelector('.user-name').textContent = '홍길동';
-      profileCardModal.style.display = 'flex';
-    });
-    modalCloseBtn.addEventListener('click', () => {
-      profileCardModal.style.display = 'none';
-    });
-    profileCardModal.addEventListener('click', e => {
-      if (e.target === e.currentTarget)
-        profileCardModal.style.display = 'none';
-    });
-
-    /* test on/offline */
-    const friendGroup = this.querySelector('ul');
-    friendGroup.addEventListener('click', e => {
-      if (e.target === e.currentTarget)
-        return ;
-      const clickedList = e.target.closest('li');
-      const statusBadge = clickedList.querySelector('.status-circle-sm');
-      statusBadge.classList.toggle('status-offline');
-      
-      profileCardModal.querySelector('img').src = clickedList.querySelector('img').src;
-      profileCardModal.querySelector('.user-level').textContent = clickedList.querySelector('.user-level').textContent;
-      profileCardModal.querySelector('.user-name').textContent = clickedList.querySelector('.user-name').textContent;
-      profileCardModal.style.display = 'flex';
-    })
+    this.#username = globalData.record.getUsername();
+    console.log("record",this.#username)
+    
+    this.#fetchProfileInfo();
+    this.#fetchAndRenderPvpResults();
+    this.#fetchAndRenderTournamentResults();
   }
 }
+

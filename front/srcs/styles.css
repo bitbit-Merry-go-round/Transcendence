@@ -28,18 +28,6 @@ body {
   display: block;
 }
 
-.canvas_container {
-  margin: 0;
-  width: 100%;
-  height: 100%;
-}
-.game_canvas
-{
-  top: 0;
-  left: 0;
-  outline: none;
-}
-
 .page-name {
     color: #7D9F56;
     text-shadow: 2px 1px 0 rgba(0, 0, 0, 0.154);
@@ -50,11 +38,24 @@ body {
     background-color: #ECEEE7;
 }
 
-.img-login {
-    background-image: url(./assets/forest.jpeg);
+.home-view-bg {
+    background-image: url(./assets/home_bg.png);
     height: 100vh; 
     background-repeat: no-repeat; 
-    background-size: cover;
+    background-size: contain;
+    background-position: right;
+}
+
+.explain-text {
+    color:rgb(105, 105, 105);
+}
+
+.img-login {
+    background-image: url(./assets/forest.jpeg);
+    background-color: black;
+    height: 100vh; 
+    background-repeat: no-repeat; 
+    background-size: contain;
     background-position: center;
 }
 
@@ -80,8 +81,8 @@ body {
     --bs-btn-active-border-color: #b3baa5;
     --bs-btn-active-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
     --bs-btn-disabled-color: #fff;
-    --bs-btn-disabled-bg: #D0D8C0;
-    --bs-btn-disabled-border-color: #D0D8C0;
+    --bs-btn-disabled-bg: #bebebe;
+    --bs-btn-disabled-border-color: #bebebe;
 }
 
 .navbar {
@@ -120,6 +121,10 @@ body {
     background-color: rgba(0, 0, 0, 0.4);
 }
 
+#profileCardModalBtn {
+    cursor: pointer;
+}
+
 .profile-card {
     transition: all 0.1s;
     position: fixed;
@@ -134,7 +139,12 @@ body {
 .profile-card-record {
     background-color: white;
     border-radius: 1em;
+    width: 20em;
     padding: 20px;
+}
+
+.state-message {
+    word-break: break-all;
 }
 
 .user-avatar {
@@ -172,6 +182,11 @@ body {
     border-color: #97B278;
 }
 
+.btn-del-friend {
+    background-color: rgb(232, 96, 96); 
+    border-color: rgb(232, 96, 96); 
+}
+
 .btn-record {
     background-color: #756655;
     border-color: #756655;
@@ -203,7 +218,13 @@ ul {
     border-radius: 10px;
     width: 50em;
     height: 30em;
+    margin-left: 1em;
     margin-right: 1em;
+    padding: 10px;
+}
+
+.warning-message {
+    color: red;
 }
 
 .scroll {
@@ -232,6 +253,7 @@ ul {
 }
 
 .friend-list-element {
+    cursor: pointer;
     background-color: #FAFBF9;
     margin-right: 1em;
     border-radius: 3em;
@@ -264,7 +286,7 @@ ul {
 .mode-box {
     background-color: white;
     border-radius: 2em;
-    width: 30vw;
+    width: 50vw;
     height: 50vh;
     margin-top: 10vh;
     margin-left: 10vh;
@@ -295,6 +317,61 @@ ul {
     border-color: #756655;
 }
 
+/* record view */
+
+.tournament-winner{
+    font-size: xx-large;
+}
+
+.tournament-play{
+    margin-top: auto;
+    margin-bottom: auto;
+}
+
+.tournament-list {
+    box-sizing: border-box;
+    background-color: #B1C59A;
+    justify-content: center;
+    border-radius: 10px;
+    margin: 0px;
+    padding: 10px;
+    width: 30em;    
+    height: 50%;
+    margin-right: 1em;
+}
+
+.modal {
+    display: none; /* 기본적으로 숨김 */
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    height: 50%;
+
+    max-width: 600px;
+}
+
+/* 모달 */
+.info-modal-v-line {
+    height: 2em;
+    margin-right: 0.4em;
+    margin-right: 1em;
+    margin-top: auto;
+    margin-bottom: auto;
+    border-left: 3px solid #7D9F5677;
+}
+
 .record-list {
     box-sizing: border-box;
     background-color: #B1C59A;
@@ -303,7 +380,7 @@ ul {
     border-radius: 10px;
     margin: 0px;
     padding: 10px;
-    width: 50em;
+    width: 35em;
     height: 30em;
     margin-right: 1em;
 }
@@ -314,11 +391,14 @@ ul {
 }
 
 .record-list-element {
+    align-items: center;
+    
     background-color: #fff;
     padding: 1em;
     border-radius: 3em;
     color: black;
     font-size: medium;
+    height: 50px;
 }
 
 .v-line {
@@ -327,8 +407,8 @@ ul {
     border-radius: 1em;
     margin-top: auto;
     margin-bottom: auto;
-    margin-left: 1em;
-    margin-right: 1em;
+    margin-left: 1.5em;
+    margin-right: 1.5em;
 }
 
 .score-detail {
@@ -338,14 +418,21 @@ ul {
 
 .score-date {
     margin-right: 1em;
+    justify-content: center;
+    margin-top: auto;
+    margin-bottom: auto;
     color: #D0D0D0;
 }
 
-.score-day {
-    margin-right: 1em;
+.second-score-date {
+    position: relative;
+    margin-top: auto;
+    margin-bottom: auto;
+    color: #D0D0D0;
 }
 
 /* 토너먼트 */
+
 .tournament-box {
     background-color: #B1C59A;
     border-radius: 2em;
@@ -359,13 +446,14 @@ ul {
     border-radius: 0.5em;
     padding: 1em;
     height: 3em;
-    font-size: x-large;
+    font-size: 2.5em;
     border-color: #ffffff00;
 }
 
 .btn-tournament {
     background-color: #756655;
     border-color: #756655;
+    font-size: 2em;
 }
 
 .tournament-footer {
@@ -381,7 +469,7 @@ ul {
     justify-content: center;
     width: 100%;
     height: 100%;
-    background-color: #000a;
+    background-color: #ECEEE7;
     position: fixed;
 }
   
@@ -405,7 +493,7 @@ ul {
 
 .loading-message {
     font-size: 3em;
-    color: white;
+    color: black;
     opacity: 1;
     animation: animate 3s infinite;
 }
@@ -425,8 +513,8 @@ ul {
 /* match */
 .match-player-card {
     overflow: hidden;
-    height: 100%;
-    width: 20%;
+    height: 500px;
+    width: 300px;
 }
 
 .match-container {
@@ -449,13 +537,27 @@ ul {
     border-radius: 1em;
 }
 
+.vibration {
+    background-color: rgb(255, 240, 240);
+    animation: vibration .1s infinite;
+}
+@keyframes vibration {
+    from {
+        transform: rotate(0.5deg);
+    }
+    to {
+        transform: rotate(-0.5deg);
+    }
+}
+
 .match-player-name {
     font-size: 1.5em;
 }
 
 .user-avatar-match {
     border-radius: 50%;
-    width: 60%;
+    width: 200px;
+    height: 200px;
 }
 
 .game-play {
@@ -463,7 +565,7 @@ ul {
 }
 
 .btn-play {
-    display: flex;
+    display: flex!important;
     margin-top: 0.5em;
     border-radius: 1em;
     background-color: #756655;
@@ -507,6 +609,11 @@ ul {
     background-color: #ECEEE7;
     border-radius: 1em;
     padding: 20px;   
+}
+
+.disuse-item {
+    background-color: rgb(163, 104, 104);
+    border-color: rgb(163, 104, 104);
 }
 
 .img-map {
@@ -554,11 +661,10 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .edit-user-message-input {
-    /* text-align: start; */
-    vertical-align: top;
+    text-align: center;
     width: 20em;
     height: 7em;
-    /* padding-bottom: 6.5em  */
+    resize: none;
 }
 
 input[type="file"] {
@@ -586,4 +692,21 @@ input[type="file"] {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
+}
+
+/* auth view */
+input::-webkit-inner-spin-button {
+    appearance: none;
+    -moz-appearance: none;
+    -webkit-appearance: none;
+}
+
+.input-otp {
+    align-items: center;
+    text-align: center;
+    height: 70px;
+    width: 400px;
+    font-size: 40px;
+    border: #6B7964 solid 5px;
+    border-radius: 10px;
 }

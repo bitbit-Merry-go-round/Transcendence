@@ -1,26 +1,21 @@
 import View from "@/lib/view";
-import Observable from "@/lib/observable";
-import binding from "@/lib/binding";
-import BindedView from "@/lib/binded_view";
-import ObservableObject from "@/lib/observable_object";
+import httpRequest from "@/utils/httpRequest";
 
-export default class LoginView extends BindedView {
-
-  #user;
+export default class LoginView extends View {
 
   constructor({data}) {
-    const user = data.user;
-    super({
-      data,
-      bindingParams:{}});
-    this.#user = user;
+    super({data});
   }
 
   connectedCallback() {
     super.connectedCallback();
-    this.#user.subscribe("profile", () => this.reRender());
-    // document.getElementById('login-button').addEventListener('click', () => {
-    //   alert('login failed');
-    // });
+    localStorage.clear();
+
+    const loginBtn = this.querySelector('#btn-login');
+    loginBtn.addEventListener('click', () => {
+      const client_id = 'u-s4t2ud-c2f2e5bdcebfdc16951b04539fe1cb50ab27565e22cdc3aaf0c3a2d33c33a9ee';
+      const redirect_uri = 'https%3A%2F%2F10.14.4.1%2Flogin';
+      window.location.href = `https://api.intra.42.fr/oauth/authorize?client_id=${client_id}&redirect_uri=${redirect_uri}&response_type=code`;
+    })
   }
 }

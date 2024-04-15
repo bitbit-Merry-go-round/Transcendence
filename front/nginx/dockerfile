@@ -6,17 +6,17 @@ ARG SSL_PATH=/etc/ssl/private
 
 RUN apk update && \
     apk --no-cache add nginx \
-    npm 
-    # openssl \
+    npm \
+    openssl
     # dumb-init && \
 
 RUN adduser -D ts
 
-# RUN openssl genrsa -out ${SSL_PATH}/jeseo.42.fr.key 2048 && \
-#     openssl req -new -key ${SSL_PATH}/jeseo.42.fr.key -out ${SSL_PATH}/jeseo.42.fr.crt \
-#     -subj "/C=KR/ST=Seoul/L=Gaepodong/O=42seoul/OU=Cadet/CN=jeseo.42.kr" && \
-#     openssl x509 -req -days 1000 -in ${SSL_PATH}/jeseo.42.fr.crt -signkey ${SSL_PATH}/jeseo.42.fr.key -out ${SSL_PATH}/jeseo.42.fr.crt && \
-#     chown -R nginx ${SSL_PATH}
+RUN openssl genrsa -out ${SSL_PATH}/fresh_pong.key 2048 && \
+    openssl req -new -key ${SSL_PATH}/fresh_pong.key -out ${SSL_PATH}/fresh_pong.crt \
+    -subj "/C=KR/ST=Seoul/L=Gaepodong/O=42seoul/OU=Cadet/CN=jeseo.42.kr" && \
+    openssl x509 -req -days 1000 -in ${SSL_PATH}/fresh_pong.crt -signkey ${SSL_PATH}/fresh_pong.key -out ${SSL_PATH}/fresh_pong.crt && \
+    chown -R nginx ${SSL_PATH}
 
 WORKDIR /var/www/html
 
