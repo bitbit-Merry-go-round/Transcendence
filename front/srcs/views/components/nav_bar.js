@@ -93,6 +93,7 @@ export default class NavBar extends View {
     this._fetchInfo();
     this._logoutEvent();
     this._modalToggler();
+
     const username = this.querySelector('.user-level-id');
     
     username.addEventListener('click', () => {

@@ -51,7 +51,6 @@ export default class AuthView extends View {
     const submitBtn = this.querySelector('#btn-tfa');
     const url = `${window.location.protocol}//${window.location.host}/api/validate-otp/`
     
-    console.log(url);
     submitBtn.addEventListener('click', async (e) => {
       const body = JSON.stringify({
         otp: otpInput.value,
