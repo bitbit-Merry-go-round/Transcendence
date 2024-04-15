@@ -13,6 +13,7 @@ function fetch_failed(url, res) {
  *  call: boolean,
  *  refresh: boolean,
  *  done: boolean
+ *  maxTry: number
  * }[]} 
  * */
 let serverCallQueue = [];
@@ -28,7 +29,7 @@ function addQueue({method, url, body, success, fail}) {
 
     serverCallQueue.push({
         method, url, body, success, id, fail,
-        call: false, refresh: false, done: false
+        call: false, refresh: false, done: false, maxTry: 2,
     });
     return serverCallQueue[serverCallQueue.length - 1];
 }
@@ -75,31 +76,37 @@ export default function httpRequest(method, url, body, success, fail = fetch_fai
     setTimeout(() => {
         if (serverCallQueue.filter(e => !e.done).length != 0)
             clearQueue();
-    }, 1000);
-   
+    }, 100);
 } 
 
 function clearQueue() {
     for (const queuedCall of serverCallQueue.filter(e => !e.done)) {
+        queuedCall.done = true;
         try {
             getResult(queuedCall)
             .then((res) => {
-               if (queuedCall.refresh) {
-                return  fetch(queuedCall.url, {
-                        method: queuedCall.method,
-                        headers: getHeader(),
-                        body: queuedCall.body
-                    });
-               } else if (res) {
-                queuedCall.done = true;
-                 queuedCall.success(res);
-               }else {
-                queuedCall.fail(queuedCall.url);
-               }
+                if (res.status === 204) {
+                    queuedCall.done = true;
+                    queuedCall.success(res);
+                } else if (res.status === 401) {
+                    if (queuedCall.maxTry > 0) {
+                        queuedCall.done = false;
+                        queuedCall.maxTry--;
+                    }
+                    else {
+                        queuedCall.done = true;
+                        queuedCall.fail(queuedCall.url);
+                    }
+                } else if (400 <= res.status && res.status < 600) {
+                    queuedCall.done = true;
+                    queuedCall.fail(queuedCall.url);
+                } else {
+                    queuedCall.done = true;
+                    queuedCall.success(res);
+                }
             })
         }
         catch (error) {
-            // console.log('error', error);
             queuedCall.fail(queuedCall.url);
         }
     }
@@ -124,6 +131,7 @@ export async function getResult(call) {
 
     const headers = getHeader();
     let res;
+
     res = await fetch(url, {
         method: method,
         mode: "cors",
@@ -131,7 +139,10 @@ export async function getResult(call) {
         body: body
     });
 
-    if (res.ok) {
+    if (res.status === 204) {
+        return (res);
+    }
+    else if (res.ok) {
         return res.json();
     }
     else if (res.status === 401 && refresh) {
@@ -139,10 +150,11 @@ export async function getResult(call) {
         refreshing = true;
         const refreshed = await requestRefresh();
         refreshing = false;
-        
+        return (res);
     }
     else if (res.status == 404) {
         call.done = true;
+        return (res);
     }
-    return null;
+    return res.status;
 }
