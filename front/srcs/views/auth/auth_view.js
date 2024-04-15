@@ -39,7 +39,6 @@ export default class AuthView extends View {
   }
 
   _setJWT(data) {
-    console.log('jwt token', data);
     window.localStorage.removeItem('username');
     window.localStorage.setItem('access', data.access);
     window.localStorage.setItem('refresh', data.refresh);
