@@ -341,7 +341,7 @@ ul {
 }
 
 .modal {
-    display: none; /* 기본적으로 숨김 */
+    display: none;
     position: fixed;
     z-index: 1000;
     left: 0;
@@ -361,6 +361,21 @@ ul {
 
     max-width: 600px;
 }
+
+.logout-modal-content {
+    background-color: #fefefe;
+    position: fixed;
+    margin: 0;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%,-50%);
+    border: 1px solid #888;
+    width: 30%;
+    height: 15%;
+
+    max-width: 600px;
+}
+
 
 /* 모달 */
 .info-modal-v-line {

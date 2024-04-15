@@ -1,7 +1,22 @@
 import { NAVIGATE_DRIRECTION, route } from "@/router";
 
-function fetch_failed(url, res) {
+export function showLogoutModal() {
+    const logoutModal = document.createElement('div');
+    console.log('logout modal', logoutModal)
+    logoutModal.innerHTML =`	
+    <div id="logout-modal" class="logout-modal modal">
+    <div id="logout-modal-content" class="logout-modal-content modal-content">
+        <p>로그아웃 되었습니다.</p>
+        <a href="/login" class="btn btn-primary">확인</a>
+    </div>
+    </div>
+    `;
+    logoutModal.querySelector('#logout-modal').style.display = 'flex';
+    document.body.appendChild(logoutModal);
+}
 
+function fetch_failed(url, res) {
+    showLogoutModal();
 }
 
 /** @type {{
@@ -69,14 +84,14 @@ let refreshing = false;
  * @param {function} fail
 */
 export default function httpRequest(method, url, body, success, fail = fetch_failed) {
- 
     const newCall = addQueue({method, url, body, success, fail});
-    let refreshing = false;
+    const access = window.localStorage.getItem('access');
+
     clearQueue();
     setTimeout(() => {
         if (serverCallQueue.filter(e => !e.done).length != 0)
             clearQueue();
-    }, 100);
+    }, 300);
 } 
 
 function clearQueue() {
@@ -95,6 +110,7 @@ function clearQueue() {
                     }
                     else {
                         queuedCall.done = true;
+                        showLogoutModal();
                         queuedCall.fail(queuedCall.url);
                     }
                 } else if (400 <= res.status && res.status < 600) {
@@ -149,6 +165,10 @@ export async function getResult(call) {
         call.refresh = true;
         refreshing = true;
         const refreshed = await requestRefresh();
+        if (!refreshed) {
+            showLogoutModal();
+            return (res);
+        }
         refreshing = false;
         return (res);
     }
