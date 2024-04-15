@@ -84,11 +84,8 @@ export default class RecordView extends View {
         console.error(`can't fetch record data: `, res);
       })
     });
-    // 모달 창을 가져옵니다.
     const modal = this.querySelector("#infoModal");
-    // 모달 창의 닫기 버튼을 가져옵니다.
     const closeModalBtn = document.getElementsByClassName("close")[0];
-    // 모달 창의 닫기 버튼을 클릭할 때 모달 창을 숨깁니다.
     closeModalBtn.addEventListener("click", function () {
       modal.style.display = "none";
     });
@@ -110,7 +107,6 @@ export default class RecordView extends View {
     }
 
     httpRequest("GET", url, null, (res) => {
-      // 토너먼트 결과를 렌더링할 요소 선택
       const tournamentGroup = this.querySelector('#tournament-group');
       const tournamentTemplate = this.querySelector('#tournament-list-template');
       res.forEach((tournament, index) => {
@@ -146,7 +142,6 @@ export default class RecordView extends View {
     });
   }
 
-  // 서버에서 가져온 프로필 정보로 모달 업데이트
   #initProfileData(data) {
     const profileCardRecord = this.querySelector('.profile-card-record');
     const userAvatar = profileCardRecord.querySelector(".user-avatar");
