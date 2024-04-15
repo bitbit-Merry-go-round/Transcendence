@@ -72,7 +72,7 @@ export default class RecordView extends View {
       tournamentDetails[i].querySelector('.score-detail').textContent = `${data.player_one_score}:${data.player_two_score}`;
       tournamentDetails[i].querySelector('.second-score-date').textContent = `${data.time}`;
     }
-    modal.style.display = "block";
+    modal.style.display = "flex";
   }
 
   #modalEventSet(moreInfoBtn) {
@@ -163,7 +163,6 @@ export default class RecordView extends View {
   connectedCallback() {
     super.connectedCallback();
     this.#username = globalData.record.getUsername();
-    console.log("record",this.#username)
     
     this.#fetchProfileInfo();
     this.#fetchAndRenderPvpResults();
