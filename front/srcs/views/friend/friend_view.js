@@ -133,6 +133,11 @@ export default class FriendView extends View {
       profileCardModal.setAttribute('data-user-type', `${TYPE_ADD}`);
     }
 
+    if (data.status === "OFFLINE")
+      profileCardModal.querySelector('.status-circle').classList.add('status-offline')
+    else
+      profileCardModal.querySelector('.status-circle').classList.remove('status-offline')
+
     userLevelId.textContent = `Lv ${data.level} ${data.username}`;
     userAvatar.src = `data:image;base64,${data.avatar}`;
     userScore.textContent = `${data.wins} 승 ${data.loses} 패`;
