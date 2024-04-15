@@ -149,6 +149,15 @@ export default class RecordView extends View {
     const userScore = profileCardRecord.querySelector(".score");
     const stateMessage = profileCardRecord.querySelector(".state-message");
 
+    if (data.status === 'OFFLINE')
+    {
+      profileCardRecord.querySelector('.status-circle').classList.add('status-offline');
+    }
+    else
+    {
+      profileCardRecord.querySelector('.status-circle').classList.remove('status-offline');
+    }
+
     userLevelId.textContent = `Lv ${data.level} ${data.username}`;
     userAvatar.src = `data:image;base64,${data.avatar}`;
     userScore.textContent = `${data.wins} 승 ${data.loses} 패`;
