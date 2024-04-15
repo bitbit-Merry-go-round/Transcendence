@@ -582,9 +582,8 @@ export default class Scene {
         };
         scene.rotation.y = Math.PI * 0.4;
         board.scale.x = -0.8;
-        board.scale.y = 1.2;
         scene.position.set(-2.5, 0, 1);
-        board.position.z -= 0.1;
+        board.position.z -= 0.2;
         board.rotation.y = Math.PI;
         this.#scene.add(scene);
         this.#tournamentBoard.generator.generate(content)

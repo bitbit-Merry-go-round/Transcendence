@@ -42,5 +42,5 @@ void main() {
   gl_PointSize = uSize * dist * (aScale + sin(uTime) * 0.2);
   gl_PointSize *= (isIn.x * isIn.y);
   vColor = color;
-  vAlpha = dist * aRandomness;
+  vAlpha = dist * aRandomness + aSpeed;
 }
