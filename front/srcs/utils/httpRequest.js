@@ -166,7 +166,7 @@ export async function getResult(call) {
         refreshing = true;
         const refreshed = await requestRefresh();
         if (!refreshed) {
-            showLogoutModal();
+            // showLogoutModal();
             return (res);
         }
         refreshing = false;
