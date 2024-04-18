@@ -40,6 +40,7 @@ export default class FriendView extends View {
     }
     else
     {
+      profileCardModal.style.display = 'none';
       route({
         path: "/edit",
       })
