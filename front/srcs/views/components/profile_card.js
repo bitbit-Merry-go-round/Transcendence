@@ -19,13 +19,12 @@ export default class ProfileCard extends View {
 
       const rotateX = +(y / window.innerHeight) * force;
       const rotateY = -(x / window.innerWidth) * force;
-      
       profileCard.style.transform = `translate(-50%, -50%) perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
     }, false);
 
     profileCard.addEventListener('mouseleave', function() {
         profileCard.style.transform = 'translate(-50%, -50%) perspective(1000px) rotateX(0deg) rotateY(0deg)';
-    });
+    }, false);
   }
   
   connectedCallback() {

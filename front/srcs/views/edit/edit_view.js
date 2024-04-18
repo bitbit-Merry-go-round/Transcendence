@@ -2,6 +2,7 @@
 import View from "@/lib/view";
 import { route } from "@/router";
 import httpRequest from "@/utils/httpRequest";
+import { XSSCheck } from "@/utils/xssCheck_util";
 
 export default class EditView extends View {
   constructor({data}) {
@@ -54,11 +55,13 @@ export default class EditView extends View {
       const reader = new FileReader();
       const file = imgInput.files[0];
       const url = `${window.location.protocol}//${window.location.host}/api/users/me/profile/`;
+      const messageInputValue = messageInput.value;
 
+      XSSCheck(messageInputValue);
       if (!file)
       {
         const body = JSON.stringify({
-          "message" : `${messageInput.value}`
+          "message" : `${messageInputValue}`
         });
         await httpRequest('PATCH', url, body, () => {
           alert(`profile is successfully edited!`);
@@ -74,7 +77,7 @@ export default class EditView extends View {
 
         const body = JSON.stringify({
           "avatar": `${fileData}`,
-          "message" : `${messageInput.value}`
+          "message" : `${messageInputValue}`
         });
         await httpRequest('PATCH', url, body, () => {
           alert(`profile is successfully edited!`);

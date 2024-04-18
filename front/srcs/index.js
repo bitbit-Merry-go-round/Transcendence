@@ -21,6 +21,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (!DEBUG.isDebug() && 
     (!history || index == undefined)) {
     path = isAvailableAddress(path) ? path:  "/";
+    if (!window.localStorage.getItem('access') || window.localStorage.getItem('access') == 'undefined') {
+      path = '/login'
+    }
     if (!history || index == undefined) {
       window.history.replaceState({
         history: [ path ],

@@ -1,7 +1,7 @@
 import globalData from "@/data/global";
 import View from "@/lib/view";
 import { NAVIGATE_DRIRECTION, route } from "@/router";
-import httpRequest from "@/utils/httpRequest";
+import httpRequest, { showLogoutModal } from "@/utils/httpRequest";
 
 export default class NavBar extends View {
   
@@ -80,7 +80,7 @@ export default class NavBar extends View {
     })
     logoutBtn.addEventListener('click', () => {
       httpRequest('POST', url, body, () => {
-        alert('Logout success');
+        showLogoutModal();
       }, () => {
       })
       localStorage.clear();
@@ -93,6 +93,7 @@ export default class NavBar extends View {
     this._fetchInfo();
     this._logoutEvent();
     this._modalToggler();
+
     const username = this.querySelector('.user-level-id');
     
     username.addEventListener('click', () => {

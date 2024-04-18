@@ -1,13 +1,79 @@
 import { NAVIGATE_DRIRECTION, route } from "@/router";
 
-function fetch_failed(url, res) {
-    // console.error(`fetch to ${url} failed`, `result: ${res}`);
-    // TODO: access 토큰 또는 refresh 토큰 유효하지 않을 경우 처리할 로직.
-//   route({
-//     path: "/login",
-//     direction: NAVIGATE_DRIRECTION.backward
-//   })
+export function showLogoutModal() {
+    const logoutModal = document.createElement('div');
+    console.log('logout modal', logoutModal)
+    logoutModal.innerHTML =`	
+    <div id="logout-modal" class="logout-modal modal">
+    <div id="logout-modal-content" class="logout-modal-content modal-content">
+        <p>로그아웃 되었습니다.</p>
+        <a href="/login" class="btn btn-primary">확인</a>
+    </div>
+    </div>
+    `;
+    logoutModal.querySelector('#logout-modal').style.display = 'flex';
+    document.body.appendChild(logoutModal);
 }
+
+function fetch_failed(url, res) {
+    showLogoutModal();
+}
+
+/** @type {{
+ *  method: string,
+ *  url: URL | string,
+ *  body: Object,
+ *  success: any,
+ *  id: number,
+ *  call: boolean,
+ *  refresh: boolean,
+ *  done: boolean
+ *  maxTry: number
+ * }[]} 
+ * */
+let serverCallQueue = [];
+let lastCallId = 0;
+
+function addQueue({method, url, body, success, fail}) {
+
+    let id = lastCallId;
+    if (serverCallQueue.length > 0) {
+     id = serverCallQueue[serverCallQueue.length - 1].id + 1;
+    }
+    lastCallId = id;
+
+    serverCallQueue.push({
+        method, url, body, success, id, fail,
+        call: false, refresh: false, done: false, maxTry: 2,
+    });
+    return serverCallQueue[serverCallQueue.length - 1];
+}
+
+export async function requestRefresh()
+{
+    const GET_TOKEN_URI = `${window.location.protocol}//${window.location.host}/api/token/refresh/`;
+    const bodyOnlyRefresh = JSON.stringify({
+        'refresh': `${window.localStorage.getItem('refresh')}`
+    });
+    try {
+        const res = await fetch(GET_TOKEN_URI, {
+            method: "POST",
+            headers: getHeader(),
+            body: bodyOnlyRefresh
+        })
+        if (!res.ok)
+            return false;
+        const result = await res.json();
+        localStorage.setItem("access", result.access)
+        localStorage.setItem("refresh", result.refresh)
+        return true;
+    }
+    catch(error) {
+      //  console.error('refresh error', error)
+        return (false);
+    };
+}
+let refreshing = false;
 
 /**
  * httpRequest.
@@ -18,67 +84,97 @@ function fetch_failed(url, res) {
  * @param {function} fail
 */
 export default function httpRequest(method, url, body, success, fail = fetch_failed) {
-    const access = localStorage.getItem("access");
-    const headers = {
-        "Content-Type": "application/json"
-    };
-    if (access && access != 'undefined')
-    {
-        headers.Authorization = `Bearer ${access}`;
+    const newCall = addQueue({method, url, body, success, fail});
+    const access = window.localStorage.getItem('access');
+
+    clearQueue();
+    setTimeout(() => {
+        if (serverCallQueue.filter(e => !e.done).length != 0)
+            clearQueue();
+    }, 300);
+} 
+
+function clearQueue() {
+    for (const queuedCall of serverCallQueue.filter(e => !e.done)) {
+        queuedCall.done = true;
+        try {
+            getResult(queuedCall)
+            .then((res) => {
+                if (res.status === 204) {
+                    queuedCall.done = true;
+                    queuedCall.success(res);
+                } else if (res.status === 401) {
+                    if (queuedCall.maxTry > 0) {
+                        queuedCall.done = false;
+                        queuedCall.maxTry--;
+                    }
+                    else {
+                        queuedCall.done = true;
+                        showLogoutModal();
+                        queuedCall.fail(queuedCall.url);
+                    }
+                } else if (400 <= res.status && res.status < 600) {
+                    queuedCall.done = true;
+                    queuedCall.fail(queuedCall.url);
+                } else {
+                    queuedCall.done = true;
+                    queuedCall.success(res);
+                }
+            })
+        }
+        catch (error) {
+            queuedCall.fail(queuedCall.url);
+        }
     }
-    fetch(url, {
+}
+function getHeader() {
+    const access = localStorage.getItem("access");
+    if (!access || access == "undefined") {
+        return ({
+        "Content-Type": "application/json"
+        })
+    }
+    return {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${access}`
+    }
+}
+
+export async function getResult(call) {
+    const { method, url, body, success } = call;
+    const access = localStorage.getItem("access");
+    const refresh = localStorage.getItem("refresh")
+
+    const headers = getHeader();
+    let res;
+
+    res = await fetch(url, {
         method: method,
         mode: "cors",
         headers: headers,
         body: body
-    })
-    .then((res) => {
-        if (res.status === 204)
-        {
-            return ;
+    });
+
+    if (res.status === 204) {
+        return (res);
+    }
+    else if (res.ok) {
+        return res.json();
+    }
+    else if (res.status === 401 && refresh) {
+        call.refresh = true;
+        refreshing = true;
+        const refreshed = await requestRefresh();
+        if (!refreshed) {
+            // showLogoutModal();
+            return (res);
         }
-        if (200 <= res.status && res.status < 300) 
-        {
-            return res.json();
-        }
-        const refresh = localStorage.getItem("refresh")
-        // access 토큰이 만료되어 권한이 없고, 리프레시 토큰이 있다면 그 리프레시 토큰을 이용해서 새로운 access token 을 요청
-        if (res.status === 401 && refresh) {
-            const GET_TOKEN_URI = `${window.location.protocol}//${window.location.host}/api/token/refresh/`;
-            const body = JSON.stringify({
-                'refresh': `${refresh}`
-            });
-            console.log('body: ', body);
-            fetch(GET_TOKEN_URI, {
-                method: "POST",
-                headers: headers,
-                body: body
-            })
-            .then((res) => res.json())
-            .then((result) => {
-                console.log('jwt token: ', result)
-                localStorage.setItem("access", result.access)
-                localStorage.setItem("refresh", result.refresh)
-            })
-            .then(() => {
-                httpRequest(method, url, body, success, () => {
-                    // throw new Error(`${res.status}`);
-                })
-            })
-            .catch(() => {
-                localStorage.removeItem('refresh');
-                // throw new Error('failed to refresh token.');
-            })
-        }
-        else {
-            // console.log('res', res)
-            throw new Error(`${res.status}`);
-        }
-    })
-    .then((json) => {
-        success(json);
-    })
-    .catch((res) => {
-        fail(url, res);
-    })
+        refreshing = false;
+        return (res);
+    }
+    else if (res.status == 404) {
+        call.done = true;
+        return (res);
+    }
+    return res.status;
 }

@@ -88,7 +88,6 @@ export default class TournamentView extends View {
     const isValidSetting = Object.values(this.#parameter).every(setting => setting);
     const errorMassage = this.querySelector('#error-message');
 
-    console.log('setting: s',this.#parameter);
     if (!isValidSetting)
     {
       errorMassage.textContent = '세팅이 완료되지 않았습니다.';

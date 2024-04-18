@@ -40,6 +40,7 @@ export default class FriendView extends View {
     }
     else
     {
+      profileCardModal.style.display = 'none';
       route({
         path: "/edit",
       })
@@ -132,6 +133,11 @@ export default class FriendView extends View {
     else
       profileCardModal.setAttribute('data-user-type', `${TYPE_ADD}`);
     }
+
+    if (data.status === "OFFLINE")
+      profileCardModal.querySelector('.status-circle').classList.add('status-offline')
+    else
+      profileCardModal.querySelector('.status-circle').classList.remove('status-offline')
 
     userLevelId.textContent = `Lv ${data.level} ${data.username}`;
     userAvatar.src = `data:image;base64,${data.avatar}`;

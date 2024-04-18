@@ -121,10 +121,6 @@ export default class ColorPicker extends View {
       event => {
         this.#pickColor(event.offsetX + 2, event.offsetY + 2);
       })
-    //this.#picker.addEventListener("mousemove", 
-    //  event => {
-    //    console.log("mousemove", event.clientX, event.clientY);
-    //  })
   }
 
   /** @param {number} pointX 
